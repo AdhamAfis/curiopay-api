@@ -3,16 +3,26 @@ import {
   NotFoundException,
   ConflictException,
   BadRequestException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
 import { UpdateUserRoleDto } from './dto/update-user-role.dto';
 import { UserRole, ROLE_HIERARCHY } from './interfaces/role.enum';
 import * as bcrypt from 'bcrypt';
+import { UsersRepository } from './users.repository';
+import { RegisterDto } from '../auth/dto/register.dto';
+import { Role } from '@prisma/client';
+import { EncryptionService } from '../../common/services/encryption.service';
 
 @Injectable()
 export class UsersService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly usersRepository: UsersRepository,
+    private readonly encryptionService: EncryptionService,
+  ) {}
 
   async create(createUserDto: CreateUserDto) {
     const existingUser = await this.prisma.user.findUnique({
@@ -34,7 +44,7 @@ export class UsersService {
         email: createUserDto.email,
         firstName: createUserDto.firstName,
         lastName: createUserDto.lastName,
-        role: createUserDto.role || 'USER',
+        role: (createUserDto.role as Role) || Role.USER,
         isActive: true,
         auth: {
           create: {
@@ -76,95 +86,57 @@ export class UsersService {
     });
   }
 
-  async findAll(currentUserRole: UserRole) {
-    const allowedRoles = ROLE_HIERARCHY[currentUserRole];
+  async findAll(currentUserRole?: Role) {
+    if (!currentUserRole) {
+      return this.prisma.user.findMany();
+    }
 
+    const allowedRoles = [currentUserRole, ...ROLE_HIERARCHY[currentUserRole]];
     return this.prisma.user.findMany({
       where: {
-        role: { in: allowedRoles },
-        isDeleted: false,
+        role: {
+          in: allowedRoles,
+        },
       },
-      select: {
-        id: true,
-        email: true,
-        firstName: true,
-        lastName: true,
-        role: true,
-        isActive: true,
-        lastLoginAt: true,
-        createdAt: true,
-        updatedAt: true,
-      },
-      orderBy: { createdAt: 'desc' },
     });
   }
 
   async findOne(id: string) {
-    const user = await this.prisma.user.findFirst({
-      where: {
-        id,
-        isDeleted: false,
-      },
-      select: {
-        id: true,
-        email: true,
-        firstName: true,
-        lastName: true,
-        role: true,
-        isActive: true,
-        lastLoginAt: true,
-        createdAt: true,
-        updatedAt: true,
-        contactInfo: {
-          select: {
-            phone: true,
-          },
-        },
-        preferences: {
-          select: {
-            currencyId: true,
-            languageId: true,
-            themeId: true,
-          },
-        },
-      },
+    const user = await this.prisma.user.findUnique({
+      where: { id },
     });
 
     if (!user) {
-      throw new NotFoundException('User not found');
+      throw new NotFoundException(`User with ID ${id} not found`);
     }
 
     return user;
   }
 
-  async updateRole(
-    id: string,
-    updateUserRoleDto: UpdateUserRoleDto,
-    currentUserRole: UserRole,
-  ) {
-    const user = await this.findOne(id);
+  async update(id: string, updateUserDto: UpdateUserDto) {
+    return this.prisma.user.update({
+      where: { id },
+      data: updateUserDto,
+    });
+  }
 
-    // Check if current user has permission to update to the new role
-    const currentUserHierarchy = ROLE_HIERARCHY[currentUserRole];
-    if (!currentUserHierarchy.includes(updateUserRoleDto.role)) {
-      throw new BadRequestException(
-        'You do not have permission to assign this role',
-      );
+  async updateRole(id: string, updateUserRoleDto: UpdateUserRoleDto, currentUserRole: Role) {
+    const targetUser = await this.findOne(id);
+    const newRole = updateUserRoleDto.role as Role;
+
+    if (!ROLE_HIERARCHY[currentUserRole].includes(newRole)) {
+      throw new UnauthorizedException('You are not authorized to assign this role');
     }
 
     return this.prisma.user.update({
       where: { id },
-      data: { role: updateUserRoleDto.role },
-      select: {
-        id: true,
-        email: true,
-        firstName: true,
-        lastName: true,
-        role: true,
-        isActive: true,
-        lastLoginAt: true,
-        updatedAt: true,
-      },
+      data: { role: newRole },
+    });
+  }
+
+  async remove(id: string) {
+    return this.prisma.user.delete({
+      where: { id },
     });
   }
 
@@ -201,8 +173,32 @@ export class UsersService {
       },
       include: {
         auth: true,
-        contactInfo: true,
-        preferences: true,
+      },
+    });
+  }
+
+  async createUser(createUserDto: RegisterDto) {
+    const existingUser = await this.findByEmail(createUserDto.email);
+    if (existingUser) {
+      throw new ConflictException('User with this email already exists');
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(createUserDto.password, salt);
+
+    return this.prisma.user.create({
+      data: {
+        email: createUserDto.email,
+        firstName: await this.encryptionService.encrypt(createUserDto.firstName),
+        lastName: await this.encryptionService.encrypt(createUserDto.lastName),
+        role: Role.USER,
+        isActive: true,
+        auth: {
+          create: {
+            password: hashedPassword,
+            passwordSalt: salt,
+          },
+        },
       },
     });
   }

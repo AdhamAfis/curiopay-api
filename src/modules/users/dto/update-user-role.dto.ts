@@ -1,14 +1,14 @@
 import { IsEnum, IsNotEmpty } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
-import { UserRole } from '../interfaces/role.enum';
+import { Role } from '@prisma/client';
 
 export class UpdateUserRoleDto {
   @ApiProperty({
-    enum: UserRole,
-    example: UserRole.ADMIN,
-    description: 'New user role',
+    enum: Role,
+    description: 'User role',
+    example: 'ADMIN',
   })
-  @IsEnum(UserRole)
+  @IsEnum(Role)
   @IsNotEmpty()
-  role: UserRole;
+  role: Role;
 }

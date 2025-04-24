@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { User, UserAuth, Prisma } from '@prisma/client';
+import { Prisma, User, UserAuth } from '@prisma/client';
 
 @Injectable()
 export class UsersRepository {
@@ -48,9 +48,11 @@ export class UsersRepository {
     });
   }
 
-  async update(id: string, data: Prisma.UserUpdateInput): Promise<User> {
+  async update(userId: string, data: Prisma.UserUpdateInput): Promise<User> {
     return this.prisma.user.update({
-      where: { id },
+      where: {
+        id: userId,
+      },
       data,
       include: {
         contactInfo: true,
@@ -72,7 +74,9 @@ export class UsersRepository {
 
   async findUserAuthById(userId: string): Promise<UserAuth | null> {
     return this.prisma.userAuth.findUnique({
-      where: { userId },
+      where: {
+        userId,
+      },
     });
   }
 
@@ -85,8 +89,18 @@ export class UsersRepository {
     data: Prisma.UserAuthUpdateInput,
   ): Promise<UserAuth> {
     return this.prisma.userAuth.update({
-      where: { userId },
+      where: {
+        userId,
+      },
       data,
+    });
+  }
+
+  async findUserAuthByResetToken(token: string): Promise<UserAuth | null> {
+    return this.prisma.userAuth.findFirst({
+      where: {
+        passwordResetToken: token,
+      },
     });
   }
 
