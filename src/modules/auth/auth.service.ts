@@ -13,6 +13,7 @@ import { EncryptionService } from '../../common/services/encryption.service';
 import { EmailService } from '../../common/services/email.service';
 import { authenticator } from 'otplib';
 import { toDataURL } from 'qrcode';
+import { CategoriesService } from '../categories/categories.service';
 
 @Injectable()
 export class AuthService {
@@ -23,6 +24,7 @@ export class AuthService {
     private configService: ConfigService,
     private encryptionService: EncryptionService,
     private emailService: EmailService,
+    private categoriesService: CategoriesService,
   ) {}
 
   async login(loginDto: LoginDto) {
@@ -191,6 +193,9 @@ export class AuthService {
           },
         },
       });
+
+      // Seed default categories for the new user
+      await this.categoriesService.seedUserDefaultCategories(user.id);
 
       const payload = {
         sub: user.id,

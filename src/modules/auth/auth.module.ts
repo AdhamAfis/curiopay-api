@@ -7,6 +7,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
 import { UsersModule } from '../users/users.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { CommonModule } from '../../common/common.module';
+import { CategoriesModule } from '../categories/categories.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { CommonModule } from '../../common/common.module';
     }),
     UsersModule,
     CommonModule,
+    CategoriesModule,
   ],
   controllers: [AuthController],
   providers: [

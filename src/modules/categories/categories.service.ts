@@ -8,10 +8,14 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { CreateCategoryDto, CategoryTypeEnum } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 import { QueryCategoryDto } from './dto/query-category.dto';
+import { CategoriesSeeder } from './seeds/categories.seeder';
 
 @Injectable()
 export class CategoriesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly categoriesSeeder: CategoriesSeeder,
+  ) {}
 
   async create(userId: string, createCategoryDto: CreateCategoryDto) {
     try {
@@ -285,5 +289,9 @@ export class CategoriesService {
         isSystem: true,
       },
     });
+  }
+
+  async seedUserDefaultCategories(userId: string) {
+    return this.categoriesSeeder.seedDefaultCategories(userId);
   }
 }
