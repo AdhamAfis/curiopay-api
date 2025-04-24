@@ -186,7 +186,10 @@ export class CategoriesService {
       return await this.prisma.category.update({
         where: { id },
         data: {
-          ...updateCategoryDto,
+          name: updateCategoryDto.name,
+          icon: updateCategoryDto.icon,
+          color: updateCategoryDto.color,
+          isDefault: updateCategoryDto.isDefault,
           typeId,
         },
         include: {

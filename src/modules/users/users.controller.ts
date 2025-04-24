@@ -17,7 +17,7 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { IUser } from './interfaces/user.interface';
-import { UserRole } from './interfaces/role.enum';
+import { UserRole, ROLE_HIERARCHY } from './interfaces/role.enum';
 import {
   ApiTags,
   ApiOperation,
@@ -58,7 +58,8 @@ export class UsersController {
   @ApiResponse({ status: 404, description: 'User not found.' })
   async findOne(@CurrentUser() currentUser: IUser, @Param('id') id: string) {
     // Users can only view their own profile unless they are admin/super_admin
-    if (currentUser.id !== id && !ROLE_HIERARCHY[currentUser.role as UserRole].includes(UserRole.ADMIN)) {
+    const userRoleHierarchy = ROLE_HIERARCHY[currentUser.role as UserRole] || [];
+    if (currentUser.id !== id && !userRoleHierarchy.includes(UserRole.ADMIN)) {
       throw new ForbiddenException('You do not have permission to view this user');
     }
     return this.usersService.findOne(id);

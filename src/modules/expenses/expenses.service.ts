@@ -207,4 +207,84 @@ export class ExpensesService {
       throw new BadRequestException('Failed to void expense record');
     }
   }
+
+  async findById(id: string, userId: string) {
+    try {
+      const expense = await this.prisma.expense.findFirst({
+        where: { id, userId },
+        include: {
+          category: {
+            select: { name: true, icon: true },
+          },
+          paymentMethod: {
+            select: { name: true },
+          },
+          recurring: {
+            select: {
+              id: true,
+              pattern: {
+                select: {
+                  type: true,
+                  frequency: true,
+                },
+              },
+              startDate: true,
+              endDate: true,
+              nextProcessDate: true,
+            },
+          },
+        },
+      });
+
+      if (!expense) {
+        throw new NotFoundException('Expense record not found');
+      }
+
+      return expense;
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new BadRequestException('Failed to fetch expense record');
+    }
+  }
+
+  async getExpenseTotalsByCategory(userId: string, startDate: Date, endDate: Date) {
+    try {
+      const totals = await this.prisma.expense.groupBy({
+        by: ['categoryId'],
+        where: {
+          userId,
+          date: {
+            gte: startDate,
+            lte: endDate,
+          },
+          isVoid: false,
+        },
+        _sum: {
+          amount: true,
+        },
+      });
+
+      const categories = await this.prisma.category.findMany({
+        where: {
+          id: {
+            in: totals.map(t => t.categoryId),
+          },
+        },
+        select: {
+          id: true,
+          name: true,
+          icon: true,
+        },
+      });
+
+      return totals.map(total => ({
+        category: categories.find(c => c.id === total.categoryId),
+        total: total._sum.amount,
+      }));
+    } catch (error) {
+      throw new BadRequestException('Failed to fetch expense totals by category');
+    }
+  }
 } 

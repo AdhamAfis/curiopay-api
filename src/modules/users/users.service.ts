@@ -24,8 +24,8 @@ export class UsersService {
     return this.prisma.user.create({
       data: {
         email: createUserDto.email,
-        firstName: createUserDto.name.split(' ')[0],
-        lastName: createUserDto.name.split(' ').slice(1).join(' ') || null,
+        firstName: createUserDto.firstName,
+        lastName: createUserDto.lastName,
         role: createUserDto.role || 'USER',
         isActive: true,
         auth: {
@@ -37,10 +37,18 @@ export class UsersService {
         },
         contactInfo: {
           create: {
-            firstName: createUserDto.name.split(' ')[0],
-            lastName: createUserDto.name.split(' ').slice(1).join(' ') || null,
+            firstName: createUserDto.firstName,
+            lastName: createUserDto.lastName,
+            phone: createUserDto.phone,
           },
         },
+        preferences: createUserDto.currencyId || createUserDto.languageId || createUserDto.themeId ? {
+          create: {
+            currencyId: createUserDto.currencyId || 'usd',
+            languageId: createUserDto.languageId || 'en',
+            themeId: createUserDto.themeId || 'light',
+          },
+        } : undefined,
       },
       select: {
         id: true,
@@ -94,6 +102,18 @@ export class UsersService {
         lastLoginAt: true,
         createdAt: true,
         updatedAt: true,
+        contactInfo: {
+          select: {
+            phone: true,
+          },
+        },
+        preferences: {
+          select: {
+            currencyId: true,
+            languageId: true,
+            themeId: true,
+          },
+        },
       },
     });
 
@@ -159,6 +179,11 @@ export class UsersService {
       where: { 
         email,
         isDeleted: false,
+      },
+      include: {
+        auth: true,
+        contactInfo: true,
+        preferences: true,
       },
     });
   }

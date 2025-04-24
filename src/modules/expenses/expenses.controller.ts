@@ -9,6 +9,7 @@ import {
   UseGuards,
   Query,
   Req,
+  BadRequestException,
 } from '@nestjs/common';
 import { ExpensesService } from './expenses.service';
 import { CreateExpenseDto } from './dto/create-expense.dto';
@@ -52,14 +53,12 @@ export class ExpensesController {
   }
 
   @Get(':id')
-  @ApiOperation({ summary: 'Get a specific expense by ID' })
+  @ApiOperation({ summary: 'Get an expense by ID' })
   @ApiParam({ name: 'id', description: 'Expense ID' })
   @ApiResponse({ status: 200, description: 'Returns the expense.' })
-  @ApiResponse({ status: 401, description: 'Unauthorized.' })
-  @ApiResponse({ status: 403, description: 'Forbidden.' })
   @ApiResponse({ status: 404, description: 'Expense not found.' })
-  async findOne(@Req() req, @Param('id') id: string) {
-    return this.expensesService.findOne(id, req.user.id);
+  async findById(@Param('id') id: string, @CurrentUser() user: IUser) {
+    return this.expensesService.findById(id, user.id);
   }
 
   @Put()
@@ -83,20 +82,19 @@ export class ExpensesController {
   }
 
   @Get('stats/by-category')
-  @ApiOperation({ summary: 'Get expense totals grouped by category' })
-  @ApiQuery({ name: 'startDate', required: true, type: String, example: '2023-01-01' })
-  @ApiQuery({ name: 'endDate', required: true, type: String, example: '2023-12-31' })
+  @ApiOperation({ summary: 'Get expense totals by category' })
   @ApiResponse({ status: 200, description: 'Returns expense totals by category.' })
-  @ApiResponse({ status: 401, description: 'Unauthorized.' })
-  async getTotalByCategory(
-    @Req() req,
-    @Query('startDate') startDate: string,
-    @Query('endDate') endDate: string,
+  async getExpenseTotalsByCategory(
+    @Query() query: QueryExpenseDto,
+    @CurrentUser() user: IUser,
   ) {
-    return this.expensesService.getTotalByCategory(
-      req.user.id,
-      new Date(startDate),
-      new Date(endDate),
+    if (!query.startDate || !query.endDate) {
+      throw new BadRequestException('Start date and end date are required');
+    }
+    return this.expensesService.getExpenseTotalsByCategory(
+      user.id,
+      new Date(query.startDate),
+      new Date(query.endDate),
     );
   }
 } 

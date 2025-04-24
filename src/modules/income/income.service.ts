@@ -15,7 +15,7 @@ export class IncomeService {
       return await this.prisma.income.findMany({
         where: {
           userId,
-          ...(query.category && { categoryId: query.category }),
+          ...(query.categoryId && { categoryId: query.categoryId }),
           ...(query.startDate && query.endDate && {
             date: {
               gte: new Date(query.startDate),

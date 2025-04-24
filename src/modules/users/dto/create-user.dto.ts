@@ -1,4 +1,4 @@
-import { IsEmail, IsString, IsOptional, MinLength, IsNotEmpty, IsEnum, Matches } from 'class-validator';
+import { IsString, IsEmail, IsNotEmpty, IsEnum, IsOptional, MinLength, Matches } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { UserRole } from '../interfaces/role.enum';
 
@@ -12,15 +12,26 @@ export class CreateUserDto {
   email: string;
 
   @ApiProperty({
-    example: 'John Doe',
-    description: 'User full name',
+    example: 'John',
+    description: 'User first name',
   })
   @IsString()
   @IsNotEmpty()
-  @Matches(/^[a-zA-Z\s]{2,}$/, {
-    message: 'Name must contain only letters and spaces, and be at least 2 characters long',
+  @Matches(/^[a-zA-Z]{2,}$/, {
+    message: 'First name must contain only letters and be at least 2 characters long',
   })
-  name: string;
+  firstName: string;
+
+  @ApiPropertyOptional({
+    example: 'Doe',
+    description: 'User last name',
+  })
+  @IsString()
+  @IsOptional()
+  @Matches(/^[a-zA-Z]{2,}$/, {
+    message: 'Last name must contain only letters and be at least 2 characters long',
+  })
+  lastName?: string;
 
   @ApiProperty({
     example: 'StrongP@ssw0rd',
@@ -44,19 +55,15 @@ export class CreateUserDto {
   @IsOptional()
   role?: UserRole;
 
-  @ApiProperty({ example: 'John', description: 'User first name' })
-  @IsString()
-  @IsNotEmpty()
-  firstName: string;
-
-  @ApiProperty({ example: 'Doe', description: 'User last name' })
+  @ApiPropertyOptional({
+    example: '+1234567890',
+    description: 'User phone number',
+  })
   @IsString()
   @IsOptional()
-  lastName?: string;
-
-  @ApiProperty({ example: '+1234567890', description: 'User phone number' })
-  @IsString()
-  @IsOptional()
+  @Matches(/^\+?[1-9]\d{1,14}$/, {
+    message: 'Phone number must be in E.164 format',
+  })
   phone?: string;
 
   @ApiPropertyOptional({
