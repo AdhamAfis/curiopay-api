@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { NewsletterPreferencesDto } from './dto/newsletter-preferences.dto';
 import { EmailService } from '../../common/services/email.service';
+import { AuditService } from '../../common/services/audit.service';
 import { subMonths } from 'date-fns';
 
 @Injectable()
@@ -9,6 +10,7 @@ export class NewsletterService {
   constructor(
     private prisma: PrismaService,
     private emailService: EmailService,
+    private auditService: AuditService,
   ) {}
 
   async subscribe(userId: string, preferences?: NewsletterPreferencesDto) {
@@ -101,68 +103,122 @@ export class NewsletterService {
     };
   }
 
-  async sendNewsletterToAllSubscribers() {
-    const activeSubscriptions = await this.prisma.newsletterSubscription.findMany({
-      where: {
-        unsubscribedAt: null,
-        weeklyDigest: true,
-      },
-      include: {
-        user: {
-          select: {
-            email: true,
-            firstName: true,
+  async sendNewsletterToAllSubscribers(
+    adminUserId: string,
+    ipAddress: string,
+    userAgent: string,
+  ) {
+    try {
+      const activeSubscriptions = await this.prisma.newsletterSubscription.findMany({
+        where: {
+          unsubscribedAt: null,
+          weeklyDigest: true,
+        },
+        include: {
+          user: {
+            select: {
+              email: true,
+              firstName: true,
+            },
           },
         },
-      },
-    });
+      });
 
-    const results = await Promise.allSettled(
-      activeSubscriptions.map((subscription) =>
-        this.emailService.sendNewsletter(
-          subscription.user.email,
-          subscription.user.firstName,
+      const results = await Promise.allSettled(
+        activeSubscriptions.map((subscription) =>
+          this.emailService.sendNewsletter(
+            subscription.user.email,
+            subscription.user.firstName,
+          ),
         ),
-      ),
-    );
+      );
 
-    return {
-      totalAttempted: results.length,
-      succeeded: results.filter((r) => r.status === 'fulfilled').length,
-      failed: results.filter((r) => r.status === 'rejected').length,
-    };
+      const summary = {
+        totalAttempted: results.length,
+        succeeded: results.filter((r) => r.status === 'fulfilled').length,
+        failed: results.filter((r) => r.status === 'rejected').length,
+      };
+
+      await this.auditService.logNewsletterOperation({
+        userId: adminUserId,
+        action: 'SEND_NEWSLETTER',
+        ipAddress,
+        userAgent,
+        status: 'SUCCESS',
+        details: summary,
+      });
+
+      return summary;
+    } catch (error) {
+      await this.auditService.logNewsletterOperation({
+        userId: adminUserId,
+        action: 'SEND_NEWSLETTER',
+        ipAddress,
+        userAgent,
+        status: 'FAILURE',
+        details: { error: error.message },
+      });
+      throw error;
+    }
   }
 
-  async checkAndNotifyInactiveUsers() {
-    const oneMonthAgo = subMonths(new Date(), 1);
+  async checkAndNotifyInactiveUsers(
+    adminUserId: string,
+    ipAddress: string,
+    userAgent: string,
+  ) {
+    try {
+      const oneMonthAgo = subMonths(new Date(), 1);
 
-    const inactiveUsers = await this.prisma.user.findMany({
-      where: {
-        lastLoginAt: {
-          lt: oneMonthAgo,
+      const inactiveUsers = await this.prisma.user.findMany({
+        where: {
+          lastLoginAt: {
+            lt: oneMonthAgo,
+          },
+          newsletterSubscription: {
+            promotionalEmails: true,
+            unsubscribedAt: null,
+          },
         },
-        newsletterSubscription: {
-          promotionalEmails: true,
-          unsubscribedAt: null,
+        select: {
+          id: true,
+          email: true,
+          firstName: true,
         },
-      },
-      select: {
-        id: true,
-        email: true,
-        firstName: true,
-      },
-    });
+      });
 
-    const results = await Promise.allSettled(
-      inactiveUsers.map((user) =>
-        this.emailService.sendMissYouEmail(user.email, user.firstName),
-      ),
-    );
+      const results = await Promise.allSettled(
+        inactiveUsers.map((user) =>
+          this.emailService.sendMissYouEmail(user.email, user.firstName),
+        ),
+      );
 
-    return {
-      totalAttempted: results.length,
-      succeeded: results.filter((r) => r.status === 'fulfilled').length,
-      failed: results.filter((r) => r.status === 'rejected').length,
-    };
+      const summary = {
+        totalAttempted: results.length,
+        succeeded: results.filter((r) => r.status === 'fulfilled').length,
+        failed: results.filter((r) => r.status === 'rejected').length,
+      };
+
+      await this.auditService.logNewsletterOperation({
+        userId: adminUserId,
+        action: 'CHECK_INACTIVE',
+        ipAddress,
+        userAgent,
+        status: 'SUCCESS',
+        details: summary,
+      });
+
+      return summary;
+    } catch (error) {
+      await this.auditService.logNewsletterOperation({
+        userId: adminUserId,
+        action: 'CHECK_INACTIVE',
+        ipAddress,
+        userAgent,
+        status: 'FAILURE',
+        details: { error: error.message },
+      });
+      throw error;
+    }
   }
 } 

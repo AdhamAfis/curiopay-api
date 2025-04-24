@@ -1,12 +1,15 @@
-import { Body, Controller, Delete, Get, Post, Put, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiTags, ApiResponse } from '@nestjs/swagger';
+import { Body, Controller, Delete, Get, Post, Put, UseGuards, Req, HttpCode } from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiTags, ApiResponse, ApiHeader, ApiSecurity } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
+import { ApiKeyGuard } from '../../common/guards/api-key.guard';
 import { NewsletterService } from './newsletter.service';
 import { NewsletterPreferencesDto } from './dto/newsletter-preferences.dto';
 import { GetUser } from '../../common/decorators/get-user.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { Role } from '@prisma/client';
+import { Request } from 'express';
+import { ThrottlerGuard } from '@nestjs/throttler';
 
 @ApiTags('Newsletter')
 @Controller('newsletter')
@@ -87,26 +90,56 @@ export class NewsletterController {
   }
 
   @Post('send')
-  @Roles(Role.ADMIN)
+  @UseGuards(ApiKeyGuard, ThrottlerGuard)
+  @Roles(Role.SUPER_ADMIN)
+  @HttpCode(200)
   @ApiOperation({
     summary: 'Send newsletter to all subscribers',
-    description: 'Trigger sending of newsletter to all active subscribers. Admin only.'
+    description: 'Trigger sending of newsletter to all active subscribers. Super Admin only.'
   })
+  @ApiSecurity('X-API-Key')
   @ApiResponse({ status: 200, description: 'Newsletter sending initiated' })
-  @ApiResponse({ status: 403, description: 'Forbidden - Admin only' })
-  async sendNewsletter() {
-    return this.newsletterService.sendNewsletterToAllSubscribers();
+  @ApiResponse({ status: 401, description: 'Unauthorized - Invalid API key' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Super Admin only' })
+  @ApiResponse({ status: 429, description: 'Too Many Requests' })
+  async sendNewsletter(
+    @GetUser('id') userId: string,
+    @Req() request: Request,
+  ) {
+    const clientIp = request.ip || request.socket.remoteAddress || 'unknown';
+    const userAgent = request.headers['user-agent'] || 'unknown';
+
+    return this.newsletterService.sendNewsletterToAllSubscribers(
+      userId,
+      clientIp,
+      userAgent,
+    );
   }
 
   @Post('check-inactive')
-  @Roles(Role.ADMIN)
+  @UseGuards(ApiKeyGuard, ThrottlerGuard)
+  @Roles(Role.SUPER_ADMIN)
+  @HttpCode(200)
   @ApiOperation({
     summary: 'Check and notify inactive users',
-    description: 'Send "we miss you" emails to users who have not logged in for over a month. Admin only.'
+    description: 'Send "we miss you" emails to users who have not logged in for over a month. Super Admin only.'
   })
+  @ApiSecurity('X-API-Key')
   @ApiResponse({ status: 200, description: 'Inactive user check completed' })
-  @ApiResponse({ status: 403, description: 'Forbidden - Admin only' })
-  async checkInactiveUsers() {
-    return this.newsletterService.checkAndNotifyInactiveUsers();
+  @ApiResponse({ status: 401, description: 'Unauthorized - Invalid API key' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Super Admin only' })
+  @ApiResponse({ status: 429, description: 'Too Many Requests' })
+  async checkInactiveUsers(
+    @GetUser('id') userId: string,
+    @Req() request: Request,
+  ) {
+    const clientIp = request.ip || request.socket.remoteAddress || 'unknown';
+    const userAgent = request.headers['user-agent'] || 'unknown';
+
+    return this.newsletterService.checkAndNotifyInactiveUsers(
+      userId,
+      clientIp,
+      userAgent,
+    );
   }
 } 

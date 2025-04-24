@@ -74,6 +74,7 @@ model User {
   securityLevel   Int          @default(1) // For row-level security policies
   dataRegion      String?      // For data residency compliance
   newsletterSubscription NewsletterSubscription?
+  auditLogs       AuditLog[]
 
   @@index([email, isDeleted])
   @@index([securityLevel, isDeleted]) // Optimize row-level security queries
@@ -420,4 +421,22 @@ model NewsletterSubscription {
   user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("newsletter_subscriptions")
+}
+
+model AuditLog {
+  id          String    @id @default(cuid())
+  userId      String
+  action      String
+  category    String
+  ipAddress   String
+  userAgent   String
+  status      String
+  details     Json?
+  timestamp   DateTime  @default(now())
+  user        User      @relation(fields: [userId], references: [id])
+
+  @@index([userId, category])
+  @@index([timestamp])
+  @@index([action, status])
+  @@map("audit_logs")
 }

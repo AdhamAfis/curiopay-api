@@ -57,6 +57,7 @@ async function bootstrap() {
       - Category Management
       - Multi-factor Authentication
       - Data Export
+      - Newsletter Management
       
       ## Authentication
       Most endpoints require JWT authentication. Include the JWT token in the Authorization header:
@@ -69,6 +70,12 @@ async function bootstrap() {
       2. Login using POST /auth/login to get your JWT token
       3. Include the token in subsequent requests using the Authorization header
       4. Token expires in 24 hours by default
+
+      ## Newsletter Operations
+      Some newsletter operations require an API key. Include it in the X-API-Key header:
+      \`\`\`
+      X-API-Key: your_api_key
+      \`\`\`
     `)
     .setVersion('1.0')
     .addTag('auth', 'Authentication endpoints including login, register, and password reset')
@@ -78,20 +85,17 @@ async function bootstrap() {
     .addTag('categories', 'Category management for expenses and income')
     .addTag('export', 'Data export functionality')
     .addTag('newsletter', 'Newsletter subscription and preference management')
-    .addBearerAuth(
-      {
-        type: 'http',
-        scheme: 'bearer',
-        bearerFormat: 'JWT',
-        name: 'JWT',
-        description: 'Enter JWT token',
-        in: 'header',
-      },
-      'JWT-auth',
-    )
+    .addBearerAuth()
+    .addApiKey({ type: 'apiKey', name: 'X-API-Key', in: 'header' }, 'X-API-Key')
     .build();
   
-  const document = SwaggerModule.createDocument(app, config);
+  const document = SwaggerModule.createDocument(app, config, {
+    deepScanRoutes: true,
+    operationIdFactory: (
+      controllerKey: string,
+      methodKey: string
+    ) => methodKey
+  });
   
   // Customize Swagger UI
   SwaggerModule.setup('docs', app, document, {
@@ -100,6 +104,7 @@ async function bootstrap() {
       docExpansion: 'none',
       filter: true,
       showRequestDuration: true,
+      tryItOutEnabled: true,
     },
     customSiteTitle: 'CurioPay API Documentation',
   });

@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { ConfigModule } from '@nestjs/config';
+import { ThrottlerModule } from '@nestjs/throttler';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PrismaModule } from './prisma/prisma.module';
@@ -12,6 +13,7 @@ import { IncomesModule } from './modules/incomes/incomes.module';
 import { EncryptionModule } from './common/encryption.module';
 import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
 import { Reflector } from '@nestjs/core';
+import { NewsletterModule } from './modules/newsletter/newsletter.module';
 
 @Module({
   imports: [
@@ -19,6 +21,10 @@ import { Reflector } from '@nestjs/core';
       isGlobal: true,
       envFilePath: ['.env', '.env.local'],
     }),
+    ThrottlerModule.forRoot([{
+      ttl: 60000, // 1 minute
+      limit: 2, // 2 requests per minute
+    }]),
     PrismaModule,
     UsersModule,
     AuthModule,
@@ -26,6 +32,7 @@ import { Reflector } from '@nestjs/core';
     CategoriesModule,
     IncomesModule,
     EncryptionModule,
+    NewsletterModule,
   ],
   controllers: [AppController],
   providers: [
