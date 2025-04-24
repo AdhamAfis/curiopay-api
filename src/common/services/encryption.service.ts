@@ -1,90 +1,108 @@
 import { Injectable } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import * as crypto from 'crypto';
+import { createCipheriv, createDecipheriv, randomBytes, scrypt, BinaryLike, CipherKey } from 'crypto';
+import { promisify } from 'util';
 
 @Injectable()
 export class EncryptionService {
   private readonly algorithm = 'aes-256-gcm';
-  private readonly key: Buffer;
+  private readonly keyLength = 32;
   private readonly ivLength = 16;
-  private readonly saltLength = 64;
-  private readonly tagLength = 16;
+  private readonly saltLength = 32;
+  private readonly authTagLength = 16;
 
-  constructor(private configService: ConfigService) {
-    const encryptionKey = this.configService.get<string>('ENCRYPTION_KEY');
-    if (!encryptionKey) {
-      throw new Error('ENCRYPTION_KEY environment variable is not set');
+  constructor() {
+    // Ensure encryption key is set
+    if (!process.env.ENCRYPTION_KEY) {
+      throw new Error('ENCRYPTION_KEY environment variable must be set');
     }
-    // Derive a key using PBKDF2
-    const salt = crypto.randomBytes(this.saltLength);
-    this.key = crypto.pbkdf2Sync(encryptionKey, salt, 100000, 32, 'sha256');
   }
 
   /**
    * Encrypts sensitive data
-   * @param text The text to encrypt
-   * @returns Encrypted data in format: iv:authTag:salt:encryptedData (base64)
+   * @param data - The data to encrypt
+   * @returns The encrypted data as a base64 string
    */
-  encrypt(text: string): string {
-    if (!text) return text;
+  async encrypt(data: string): Promise<string> {
+    try {
+      // Generate a random salt
+      const salt = randomBytes(this.saltLength);
+      
+      // Generate key using scrypt
+      const key = (await promisify(scrypt)(
+        process.env.ENCRYPTION_KEY as BinaryLike,
+        salt,
+        this.keyLength
+      )) as CipherKey;
 
-    const iv = crypto.randomBytes(this.ivLength);
-    const salt = crypto.randomBytes(this.saltLength);
-    const cipher = crypto.createCipheriv(this.algorithm, this.key, iv);
+      // Generate IV
+      const iv = randomBytes(this.ivLength);
 
-    let encrypted = cipher.update(text, 'utf8', 'base64');
-    encrypted += cipher.final('base64');
+      // Create cipher
+      const cipher = createCipheriv(this.algorithm, key, iv);
 
-    const authTag = cipher.getAuthTag();
+      // Encrypt the data
+      const encryptedData = Buffer.concat([
+        cipher.update(data, 'utf8'),
+        cipher.final(),
+      ]);
 
-    // Combine IV, auth tag, salt and encrypted data
-    const combined = Buffer.concat([
-      iv,
-      authTag,
-      salt,
-      Buffer.from(encrypted, 'base64'),
-    ]);
+      // Get auth tag
+      const authTag = cipher.getAuthTag();
 
-    return combined.toString('base64');
+      // Combine all components
+      const combined = Buffer.concat([
+        salt,
+        iv,
+        authTag,
+        encryptedData,
+      ]);
+
+      // Return as base64 string
+      return combined.toString('base64');
+    } catch (error) {
+      throw new Error(`Encryption failed: ${error.message}`);
+    }
   }
 
   /**
    * Decrypts encrypted data
-   * @param encryptedData The encrypted data in format: iv:authTag:salt:encryptedData (base64)
-   * @returns Decrypted text
+   * @param encryptedData - The encrypted data as a base64 string
+   * @returns The decrypted data
    */
-  decrypt(encryptedData: string): string {
-    if (!encryptedData) return encryptedData;
-
+  async decrypt(encryptedData: string): Promise<string> {
     try {
-      const buffer = Buffer.from(encryptedData, 'base64');
+      // Convert base64 to buffer
+      const combined = Buffer.from(encryptedData, 'base64');
 
-      // Extract the IV, auth tag, salt and encrypted data
-      const iv = buffer.subarray(0, this.ivLength);
-      const authTag = buffer.subarray(
-        this.ivLength,
-        this.ivLength + this.tagLength,
+      // Extract components
+      const salt = combined.subarray(0, this.saltLength);
+      const iv = combined.subarray(this.saltLength, this.saltLength + this.ivLength);
+      const authTag = combined.subarray(
+        this.saltLength + this.ivLength,
+        this.saltLength + this.ivLength + this.authTagLength
       );
-      const salt = buffer.subarray(
-        this.ivLength + this.tagLength,
-        this.ivLength + this.tagLength + this.saltLength,
-      );
-      const encrypted = buffer.subarray(
-        this.ivLength + this.tagLength + this.saltLength,
-      );
+      const encrypted = combined.subarray(this.saltLength + this.ivLength + this.authTagLength);
+
+      // Generate key using scrypt
+      const key = (await promisify(scrypt)(
+        process.env.ENCRYPTION_KEY as BinaryLike,
+        salt,
+        this.keyLength
+      )) as CipherKey;
 
       // Create decipher
-      const decipher = crypto.createDecipheriv(this.algorithm, this.key, iv);
+      const decipher = createDecipheriv(this.algorithm, key, iv);
       decipher.setAuthTag(authTag);
 
-      // Decrypt
-      let decrypted = decipher.update(encrypted);
-      decrypted = Buffer.concat([decrypted, decipher.final()]);
+      // Decrypt the data
+      const decrypted = Buffer.concat([
+        decipher.update(encrypted),
+        decipher.final(),
+      ]);
 
       return decrypted.toString('utf8');
     } catch (error) {
-      console.error('Decryption failed:', error);
-      throw new Error('Failed to decrypt data');
+      throw new Error(`Decryption failed: ${error.message}`);
     }
   }
 

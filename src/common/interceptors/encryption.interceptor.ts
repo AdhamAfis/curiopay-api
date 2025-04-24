@@ -8,94 +8,83 @@ import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { EncryptionService } from '../services/encryption.service';
 
-// Define sensitive fields for each model
-const SENSITIVE_FIELDS = {
-  User: ['firstName', 'lastName'],
-  UserAuth: [
-    'password',
-    'passwordSalt',
-    'passwordResetToken',
-    'mfaSecret',
-    'backupCodes',
-  ],
-  UserContact: ['firstName', 'lastName', 'phone'],
-  Expense: ['description', 'notes', 'voidReason'],
-  Income: ['description', 'notes', 'voidReason'],
-};
+// Define sensitive field patterns
+const SENSITIVE_FIELDS = [
+  'firstName',
+  'lastName',
+  'phone',
+  'description',
+  'notes',
+  'voidReason',
+  'password',
+  'passwordSalt',
+  'passwordResetToken',
+  'mfaSecret',
+  'backupCodes'
+];
 
 @Injectable()
 export class EncryptionInterceptor implements NestInterceptor {
   constructor(private readonly encryptionService: EncryptionService) {}
 
-  intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
+  async intercept(context: ExecutionContext, next: CallHandler): Promise<Observable<any>> {
     const request = context.switchToHttp().getRequest();
-
+    
     // Encrypt request body if it contains sensitive data
     if (request.body) {
-      const modelName = this.getModelName(request.path);
-      if (modelName && SENSITIVE_FIELDS[modelName]) {
-        request.body = this.encryptionService.encryptObject(
-          request.body,
-          SENSITIVE_FIELDS[modelName],
-        );
-      }
+      await this.encryptSensitiveData(request.body);
     }
 
-    // Decrypt response data
     return next.handle().pipe(
-      map((data) => {
-        if (!data) return data;
-
-        // Handle arrays
-        if (Array.isArray(data)) {
-          return data.map((item) => this.decryptItem(item));
+      map(async (data) => {
+        // Decrypt response data if it contains sensitive data
+        if (data) {
+          await this.decryptSensitiveData(data);
         }
-
-        // Handle single objects
-        return this.decryptItem(data);
-      }),
+        return data;
+      })
     );
   }
 
-  private decryptItem(item: any): any {
-    if (!item || typeof item !== 'object') return item;
+  private async encryptSensitiveData(data: any): Promise<void> {
+    if (!data || typeof data !== 'object') return;
 
-    const modelName = this.getModelNameFromData(item);
-    if (modelName && SENSITIVE_FIELDS[modelName]) {
-      return this.encryptionService.decryptObject(
-        item,
-        SENSITIVE_FIELDS[modelName],
-      );
+    for (const [key, value] of Object.entries(data)) {
+      if (typeof value === 'object' && value !== null) {
+        await this.encryptSensitiveData(value);
+      } else if (
+        typeof value === 'string' &&
+        SENSITIVE_FIELDS.includes(key) &&
+        !this.isEncrypted(value)
+      ) {
+        data[key] = await this.encryptionService.encrypt(value);
+      }
     }
-
-    return item;
   }
 
-  private getModelName(path: string): string | null {
-    // Extract model name from path (e.g., /api/users -> User)
-    const pathSegments = path.split('/');
-    const lastSegment = pathSegments[pathSegments.length - 1];
+  private async decryptSensitiveData(data: any): Promise<void> {
+    if (!data || typeof data !== 'object') return;
 
-    // Map plural to singular and capitalize
-    const modelMapping = {
-      users: 'User',
-      expenses: 'Expense',
-      incomes: 'Income',
-      contacts: 'UserContact',
-      auth: 'UserAuth',
-    };
-
-    return modelMapping[lastSegment] || null;
+    for (const [key, value] of Object.entries(data)) {
+      if (typeof value === 'object' && value !== null) {
+        await this.decryptSensitiveData(value);
+      } else if (
+        typeof value === 'string' &&
+        SENSITIVE_FIELDS.includes(key) &&
+        this.isEncrypted(value)
+      ) {
+        data[key] = await this.encryptionService.decrypt(value);
+      }
+    }
   }
 
-  private getModelNameFromData(data: any): string | null {
-    // Try to determine model type from data structure
-    if (data.email && data.role) return 'User';
-    if (data.password && data.userId) return 'UserAuth';
-    if (data.phone && data.userId) return 'UserContact';
-    if (data.amount && data.categoryId && data.recurring) {
-      return data.type === 'INCOME' ? 'Income' : 'Expense';
+  private isEncrypted(value: string): boolean {
+    try {
+      const buffer = Buffer.from(value, 'base64');
+      // Check if the string is base64 encoded and has the minimum length for our encryption format
+      return buffer.toString('base64') === value && buffer.length >= 64;
+    } catch {
+      return false;
     }
-    return null;
   }
 }
