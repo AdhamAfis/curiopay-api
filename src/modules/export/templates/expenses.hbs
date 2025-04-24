@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Expenses - CurioPay</title>
+    <link rel="stylesheet" href="assets/styles.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>Expenses</h1>
+            <p>Generated on {{exportDate}}</p>
+        </header>
+
+        <nav class="nav">
+            <a href="index.html">Overview</a>
+            <a href="expenses.html">Expenses</a>
+            <a href="income.html">Income</a>
+            <a href="categories.html">Categories</a>
+            <a href="preferences.html">Preferences</a>
+            <a href="newsletter.html">Newsletter</a>
+        </nav>
+
+        <main>
+            <div class="card">
+                <h2>Summary</h2>
+                <table class="table">
+                    <tr>
+                        <th>Total Expenses</th>
+                        <td>{{summary.total}}</td>
+                    </tr>
+                    <tr>
+                        <th>Average per Month</th>
+                        <td>{{summary.monthlyAverage}}</td>
+                    </tr>
+                    <tr>
+                        <th>Highest Month</th>
+                        <td>{{summary.highestMonth.amount}} ({{summary.highestMonth.date}})</td>
+                    </tr>
+                    <tr>
+                        <th>Lowest Month</th>
+                        <td>{{summary.lowestMonth.amount}} ({{summary.lowestMonth.date}})</td>
+                    </tr>
+                </table>
+            </div>
+
+            <div class="card">
+                <h2>Expenses by Category</h2>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Category</th>
+                            <th>Total Amount</th>
+                            <th>Percentage</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {{#each categoryTotals}}
+                        <tr>
+                            <td>{{this.name}}</td>
+                            <td>{{this.amount}}</td>
+                            <td>{{this.percentage}}%</td>
+                        </tr>
+                        {{/each}}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="card">
+                <h2>All Expenses</h2>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Description</th>
+                            <th>Category</th>
+                            <th>Amount</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {{#each expenses}}
+                        <tr>
+                            <td>{{this.date}}</td>
+                            <td>{{this.description}}</td>
+                            <td>{{this.category.name}}</td>
+                            <td>{{this.amount}}</td>
+                            <td>
+                                <span class="badge {{this.status}}">
+                                    {{this.status}}
+                                </span>
+                            </td>
+                        </tr>
+                        {{/each}}
+                    </tbody>
+                </table>
+            </div>
+        </main>
+    </div>
+</body>
+</html> 

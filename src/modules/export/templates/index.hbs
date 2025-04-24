@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{title}} - CurioPay</title>
+    <link rel="stylesheet" href="assets/styles.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>CurioPay Data Export</h1>
+            <p>Generated on {{exportDate}}</p>
+        </header>
+
+        <nav class="nav">
+            <a href="index.html">Overview</a>
+            <a href="expenses.html">Expenses</a>
+            <a href="income.html">Income</a>
+            <a href="categories.html">Categories</a>
+            <a href="preferences.html">Preferences</a>
+            <a href="newsletter.html">Newsletter</a>
+        </nav>
+
+        <main>
+            <div class="card">
+                <h2>User Information</h2>
+                <table class="table">
+                    <tr>
+                        <th>Name</th>
+                        <td>{{user.name}}</td>
+                    </tr>
+                    <tr>
+                        <th>Email</th>
+                        <td>{{user.email}}</td>
+                    </tr>
+                    <tr>
+                        <th>Created At</th>
+                        <td>{{user.createdAt}}</td>
+                    </tr>
+                </table>
+            </div>
+
+            {{#if user.contactInfo}}
+            <div class="card">
+                <h2>Contact Information</h2>
+                <table class="table">
+                    <tr>
+                        <th>Phone</th>
+                        <td>{{user.contactInfo.phone}}</td>
+                    </tr>
+                    <tr>
+                        <th>Address</th>
+                        <td>{{user.contactInfo.address}}</td>
+                    </tr>
+                    <tr>
+                        <th>City</th>
+                        <td>{{user.contactInfo.city}}</td>
+                    </tr>
+                    <tr>
+                        <th>Country</th>
+                        <td>{{user.contactInfo.country}}</td>
+                    </tr>
+                </table>
+            </div>
+            {{/if}}
+
+            {{#if user.preferences}}
+            <div class="card">
+                <h2>User Preferences</h2>
+                <table class="table">
+                    <tr>
+                        <th>Currency</th>
+                        <td>{{user.preferences.currency.code}} ({{user.preferences.currency.symbol}})</td>
+                    </tr>
+                    <tr>
+                        <th>Language</th>
+                        <td>{{user.preferences.language.name}}</td>
+                    </tr>
+                    <tr>
+                        <th>Theme</th>
+                        <td>{{user.preferences.theme.name}}</td>
+                    </tr>
+                </table>
+            </div>
+            {{/if}}
+
+            {{#if user.newsletterSubscription}}
+            <div class="card">
+                <h2>Newsletter Subscription</h2>
+                <table class="table">
+                    <tr>
+                        <th>Status</th>
+                        <td>
+                            <span class="badge">
+                                {{#if user.newsletterSubscription.isSubscribed}}
+                                    Subscribed
+                                {{else}}
+                                    Unsubscribed
+                                {{/if}}
+                            </span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Subscription Date</th>
+                        <td>{{user.newsletterSubscription.subscribedAt}}</td>
+                    </tr>
+                </table>
+            </div>
+            {{/if}}
+        </main>
+    </div>
+</body>
+</html> 

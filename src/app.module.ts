@@ -14,6 +14,7 @@ import { EncryptionModule } from './common/encryption.module';
 import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
 import { Reflector } from '@nestjs/core';
 import { NewsletterModule } from './modules/newsletter/newsletter.module';
+import { ExportModule } from './modules/export/export.module';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { NewsletterModule } from './modules/newsletter/newsletter.module';
     IncomesModule,
     EncryptionModule,
     NewsletterModule,
+    ExportModule,
   ],
   controllers: [AppController],
   providers: [

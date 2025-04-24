@@ -11,7 +11,7 @@ import { Role } from '@prisma/client';
 import { Request } from 'express';
 import { ThrottlerGuard } from '@nestjs/throttler';
 
-@ApiTags('Newsletter')
+@ApiTags('newsletter')
 @Controller('newsletter')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @ApiBearerAuth()
