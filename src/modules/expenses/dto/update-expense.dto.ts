@@ -8,6 +8,7 @@ import {
   Max,
 } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
+import { Decimal } from '@prisma/client/runtime/library';
 
 export class UpdateExpenseDto {
   @IsString()
@@ -38,7 +39,7 @@ export class UpdateExpenseDto {
   @Min(0)
   @Max(999999999.99)
   @IsOptional()
-  amount?: number;
+  amount?: Decimal;
 
   @ApiPropertyOptional({
     example: 'category-uuid',

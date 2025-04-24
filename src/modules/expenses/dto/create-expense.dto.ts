@@ -12,6 +12,7 @@ import {
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { RecurringPatternDto } from './recurring-pattern.dto';
+import { Decimal } from '@prisma/client/runtime/library';
 
 export class CreateExpenseDto {
   @ApiProperty({
@@ -37,7 +38,7 @@ export class CreateExpenseDto {
   @IsNumber()
   @Min(0)
   @Max(999999999.99)
-  amount: number;
+  amount: Decimal;
 
   @ApiProperty({
     example: 'category-uuid',

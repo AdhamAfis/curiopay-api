@@ -44,7 +44,7 @@ export class ExpensesController {
     @CurrentUser() user: IUser,
     @Body() createExpenseDto: CreateExpenseDto,
   ) {
-    return this.expensesService.create(user.id, createExpenseDto);
+    return this.expensesService.create(createExpenseDto, user.id);
   }
 
   @Get()
@@ -86,11 +86,11 @@ export class ExpensesController {
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
   @ApiResponse({ status: 403, description: 'Forbidden.' })
   @ApiResponse({ status: 404, description: 'Expense not found.' })
-  async void(
+  async remove(
     @CurrentUser() user: IUser,
     @Query() voidExpenseDto: VoidExpenseDto,
   ) {
-    return this.expensesService.void(user.id, voidExpenseDto);
+    return this.expensesService.remove(voidExpenseDto.id, user.id);
   }
 
   @Get('stats/by-category')
