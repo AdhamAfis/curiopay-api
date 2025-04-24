@@ -26,9 +26,9 @@ import {
 } from '@nestjs/swagger';
 
 @ApiTags('income')
+@ApiBearerAuth('JWT-auth')
 @Controller('income')
 @UseGuards(JwtAuthGuard)
-@ApiBearerAuth()
 export class IncomeController {
   constructor(private readonly incomeService: IncomeService) {}
 

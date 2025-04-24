@@ -1,31 +1,39 @@
-import { IsEmail, IsString, IsNotEmpty, MinLength, Matches } from 'class-validator';
+import { IsEmail, IsString, IsNotEmpty, MinLength, MaxLength } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
+import { IsStrongPassword } from '../decorators/password-strength.decorator';
 
 export class RequestPasswordResetDto {
-  @ApiProperty({ example: 'user@example.com', description: 'User email' })
+  @ApiProperty({ 
+    example: 'user@example.com', 
+    description: 'Email address associated with your account',
+    required: true
+  })
   @IsEmail()
   @IsNotEmpty()
   email: string;
 }
 
 export class ResetPasswordDto {
-  @ApiProperty({ description: 'Password reset token received via email' })
+  @ApiProperty({ 
+    description: 'Password reset token received via email',
+    required: true
+  })
   @IsString()
   @IsNotEmpty()
   token: string;
 
   @ApiProperty({ 
-    example: 'NewPassword123!', 
-    description: 'New password - must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special character' 
+    example: 'Tr0ub4dour&3', 
+    description: `New password requirements:
+    - Must be between 8 and 64 characters
+    - Must be strong enough according to zxcvbn password strength estimator
+    - Should include a mix of letters, numbers, and symbols`,
+    required: true
   })
   @IsString()
-  @MinLength(8)
-  @Matches(
-    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]+$/,
-    {
-      message: 'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character',
-    },
-  )
   @IsNotEmpty()
+  @MinLength(8)
+  @MaxLength(64)
+  @IsStrongPassword()
   newPassword: string;
 } 

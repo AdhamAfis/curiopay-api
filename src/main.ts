@@ -1,6 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { ValidationPipe } from '@nestjs/common';
+import { ValidationPipe, BadRequestException } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import helmet from 'helmet';
 import * as compression from 'compression';
@@ -23,6 +23,20 @@ async function bootstrap() {
       forbidNonWhitelisted: true,
       transformOptions: {
         enableImplicitConversion: true,
+      },
+      exceptionFactory: (errors) => {
+        console.log('Validation Errors:', JSON.stringify(errors, null, 2));
+        const formattedErrors = errors.map(error => ({
+          property: error.property,
+          value: error.value,
+          constraints: error.constraints,
+          children: error.children
+        }));
+        console.log('Formatted Validation Errors:', JSON.stringify(formattedErrors, null, 2));
+        return new BadRequestException({
+          message: errors.map(error => Object.values(error.constraints || {})).flat(),
+          details: formattedErrors
+        });
       },
     }),
   );
@@ -49,6 +63,12 @@ async function bootstrap() {
       \`\`\`
       Authorization: Bearer <your_jwt_token>
       \`\`\`
+
+      ## Getting Started
+      1. Register a new account using POST /auth/register
+      2. Login using POST /auth/login to get your JWT token
+      3. Include the token in subsequent requests using the Authorization header
+      4. Token expires in 24 hours by default
     `)
     .setVersion('1.0')
     .addTag('auth', 'Authentication endpoints including login, register, and password reset')
@@ -58,7 +78,7 @@ async function bootstrap() {
     .addTag('categories', 'Category management for expenses and income')
     .addTag('export', 'Data export functionality')
     .addBearerAuth(
-      { 
+      {
         type: 'http',
         scheme: 'bearer',
         bearerFormat: 'JWT',

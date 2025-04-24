@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { APP_INTERCEPTOR } from '@nestjs/core';
+import { APP_GUARD } from '@nestjs/core';
 import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -10,7 +10,8 @@ import { ExpensesModule } from './modules/expenses/expenses.module';
 import { CategoriesModule } from './modules/categories/categories.module';
 import { IncomesModule } from './modules/incomes/incomes.module';
 import { EncryptionModule } from './common/encryption.module';
-import { EncryptionInterceptor } from './common/interceptors/encryption.interceptor';
+import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
+import { Reflector } from '@nestjs/core';
 
 @Module({
   imports: [
@@ -30,9 +31,10 @@ import { EncryptionInterceptor } from './common/interceptors/encryption.intercep
   providers: [
     AppService,
     {
-      provide: APP_INTERCEPTOR,
-      useClass: EncryptionInterceptor,
-    },
+      provide: APP_GUARD,
+      useFactory: (reflector) => new JwtAuthGuard(reflector),
+      inject: [Reflector],
+    }
   ],
 })
 export class AppModule {}

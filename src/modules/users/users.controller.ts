@@ -30,13 +30,14 @@ import { AdminGuard } from '../auth/guards/admin.guard';
 import { RegisterDto } from '../auth/dto/register.dto';
 
 @ApiTags('users')
-@ApiBearerAuth()
-@UseGuards(JwtAuthGuard, RolesGuard, AdminGuard)
-@Controller('api/v1/users')
+@ApiBearerAuth('JWT-auth')
+@UseGuards(JwtAuthGuard)
+@Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Post()
+  @UseGuards(RolesGuard, AdminGuard)
   @ApiOperation({ summary: 'Create a new user (Admin only)' })
   @ApiResponse({ status: 201, description: 'User created successfully' })
   @ApiResponse({ status: 400, description: 'Invalid input' })
@@ -47,6 +48,7 @@ export class UsersController {
   }
 
   @Get()
+  @UseGuards(RolesGuard, AdminGuard)
   @ApiOperation({ summary: 'Get all users (Admin only)' })
   @ApiResponse({ status: 200, description: 'Returns list of users' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
@@ -56,7 +58,8 @@ export class UsersController {
   }
 
   @Get(':id')
-  @ApiOperation({ summary: 'Get user by ID' })
+  @UseGuards(RolesGuard, AdminGuard)
+  @ApiOperation({ summary: 'Get user by ID (Admin only)' })
   @ApiParam({ name: 'id', description: 'User ID' })
   @ApiResponse({ status: 200, description: 'Returns the user.' })
   @ApiResponse({ status: 404, description: 'User not found.' })
@@ -72,6 +75,7 @@ export class UsersController {
   }
 
   @Patch(':id/role')
+  @UseGuards(RolesGuard, AdminGuard)
   @ApiOperation({ summary: 'Update user role (Admin only)' })
   @ApiResponse({ status: 200, description: 'User role updated successfully' })
   @ApiResponse({ status: 400, description: 'Invalid input' })
@@ -86,7 +90,6 @@ export class UsersController {
   }
 
   @Patch(':id/toggle-active')
-  @Roles(Role.ADMIN, Role.SUPER_ADMIN)
   @ApiOperation({ summary: 'Toggle user active status' })
   @ApiParam({ name: 'id', description: 'User ID' })
   @ApiResponse({
@@ -94,7 +97,10 @@ export class UsersController {
     description: 'User status has been toggled successfully.',
   })
   @ApiResponse({ status: 404, description: 'User not found.' })
-  async toggleActive(@Param('id') id: string) {
+  async toggleActive(@Param('id') id: string, @CurrentUser() currentUser: IUser) {
+    if (currentUser.id !== id) {
+      throw new ForbiddenException('You can only toggle your own account status');
+    }
     return this.usersService.toggleActive(id);
   }
 

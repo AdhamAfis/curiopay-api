@@ -16,7 +16,7 @@ import { GetUser } from '../../common/decorators/get-user.decorator';
 import { User } from '@prisma/client';
 
 @ApiTags('incomes')
-@ApiBearerAuth()
+@ApiBearerAuth('JWT-auth')
 @UseGuards(JwtAuthGuard)
 @Controller('incomes')
 export class IncomesController {
