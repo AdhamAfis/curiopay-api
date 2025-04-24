@@ -8,12 +8,12 @@ export class EmailService {
 
   constructor(private configService: ConfigService) {
     this.transporter = nodemailer.createTransport({
-      host: this.configService.get<string>('SMTP_HOST'),
-      port: this.configService.get<number>('SMTP_PORT'),
+      host: this.configService.get('SMTP_HOST'),
+      port: this.configService.get('SMTP_PORT'),
       secure: true,
       auth: {
-        user: this.configService.get<string>('SMTP_USER'),
-        pass: this.configService.get<string>('SMTP_PASSWORD'),
+        user: this.configService.get('SMTP_USER'),
+        pass: this.configService.get('SMTP_PASS'),
       },
     });
   }
@@ -49,6 +49,73 @@ export class EmailService {
         <code>${secret}</code>
         <p>Keep this information secure and do not share it with anyone.</p>
       `,
+    });
+  }
+
+  async sendMissYouEmail(email: string, firstName: string) {
+    const subject = 'We Miss You at CurioPay! 💫';
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2>Hi ${firstName}!</h2>
+        <p>We noticed it's been a while since you last logged into CurioPay. We miss having you around! 🌟</p>
+        <p>A lot can happen in a month with your finances. Would you like to:</p>
+        <ul>
+          <li>Check your latest expense trends? 📊</li>
+          <li>Update your budget goals? 🎯</li>
+          <li>Review your savings progress? 💰</li>
+        </ul>
+        <p>We're here to help you stay on top of your financial journey!</p>
+        <div style="margin: 30px 0;">
+          <a href="${this.configService.get('APP_URL')}/login" 
+             style="background-color: #4CAF50; color: white; padding: 14px 20px; text-decoration: none; border-radius: 4px;">
+            Log In to CurioPay
+          </a>
+        </div>
+        <p>Best regards,<br>The CurioPay Team</p>
+      </div>
+    `;
+
+    return this.transporter.sendMail({
+      from: this.configService.get('SMTP_FROM'),
+      to: email,
+      subject,
+      html,
+    });
+  }
+
+  async sendNewsletter(email: string, firstName: string) {
+    const subject = 'Your CurioPay Financial Newsletter 📈';
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2>Hello ${firstName}!</h2>
+        <p>Welcome to your personalized CurioPay newsletter! 🌟</p>
+        
+        <h3>📊 Financial Tips of the Week</h3>
+        <ul>
+          <li>Track your daily expenses to identify spending patterns</li>
+          <li>Set realistic savings goals for the month</li>
+          <li>Review your recurring subscriptions</li>
+        </ul>
+
+        <h3>💡 Did You Know?</h3>
+        <p>Using CurioPay's category tracking can help you save up to 20% on monthly expenses by identifying unnecessary spending!</p>
+
+        <div style="margin: 30px 0;">
+          <a href="${this.configService.get('APP_URL')}/dashboard" 
+             style="background-color: #4CAF50; color: white; padding: 14px 20px; text-decoration: none; border-radius: 4px;">
+            View Your Dashboard
+          </a>
+        </div>
+
+        <p>Stay on top of your finances!<br>The CurioPay Team</p>
+      </div>
+    `;
+
+    return this.transporter.sendMail({
+      from: this.configService.get('SMTP_FROM'),
+      to: email,
+      subject,
+      html,
     });
   }
 } 

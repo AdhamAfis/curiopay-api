@@ -77,6 +77,7 @@ async function bootstrap() {
     .addTag('incomes', 'Income tracking and management')
     .addTag('categories', 'Category management for expenses and income')
     .addTag('export', 'Data export functionality')
+    .addTag('newsletter', 'Newsletter subscription and preference management')
     .addBearerAuth(
       {
         type: 'http',

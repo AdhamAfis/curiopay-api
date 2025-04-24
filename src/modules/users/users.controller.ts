@@ -8,11 +8,13 @@ import {
   UseGuards,
   Query,
   ForbiddenException,
+  Delete,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserRoleDto } from './dto/update-user-role.dto';
 import { UserProfileResponseDto } from './dto/user-profile.dto';
+import { DeleteAccountDto } from './dto/delete-account.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -114,5 +116,26 @@ export class UsersController {
   })
   async getProfile(@CurrentUser() user: IUser) {
     return this.usersService.getProfile(user.id);
+  }
+
+  @Delete('me/delete-account')
+  @ApiOperation({ summary: 'Delete current user account and all associated data' })
+  @ApiResponse({
+    status: 200,
+    description: 'Account successfully deleted.',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid request or confirmation not provided.',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Invalid password.',
+  })
+  async deleteAccount(
+    @CurrentUser() user: IUser,
+    @Body() deleteAccountDto: DeleteAccountDto,
+  ) {
+    return this.usersService.deleteAccount(user.id, deleteAccountDto);
   }
 }

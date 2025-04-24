@@ -10,6 +10,7 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UpdateUserRoleDto } from './dto/update-user-role.dto';
 import { UserProfileResponseDto } from './dto/user-profile.dto';
+import { DeleteAccountDto } from './dto/delete-account.dto';
 import { UserRole, ROLE_HIERARCHY } from './interfaces/role.enum';
 import * as bcrypt from 'bcrypt';
 import { UsersRepository } from './users.repository';
@@ -243,5 +244,99 @@ export class UsersService {
         },
       },
     });
+  }
+
+  async deleteAccount(userId: string, deleteAccountDto: DeleteAccountDto) {
+    if (!deleteAccountDto.confirm) {
+      throw new BadRequestException('Please confirm account deletion');
+    }
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        auth: true,
+      },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    // Verify password
+    const isPasswordValid = await bcrypt.compare(
+      deleteAccountDto.currentPassword,
+      user.auth?.password || '',
+    );
+
+    if (!isPasswordValid) {
+      throw new UnauthorizedException('Invalid password');
+    }
+
+    try {
+      // Use a transaction to ensure all data is deleted atomically
+      await this.prisma.$transaction(async (prisma) => {
+        // Delete all user data
+        await Promise.all([
+          // Delete user's categories (non-system ones)
+          prisma.category.deleteMany({
+            where: {
+              userId,
+              isSystem: false,
+            },
+          }),
+
+          // Delete user's expenses
+          prisma.expense.deleteMany({
+            where: { userId },
+          }),
+
+          // Delete user's incomes
+          prisma.income.deleteMany({
+            where: { userId },
+          }),
+
+          // Delete user's notification settings
+          prisma.notificationSetting.deleteMany({
+            where: { userId },
+          }),
+
+          // Delete user's sessions
+          prisma.session.deleteMany({
+            where: { userId },
+          }),
+
+          // Delete user's preferences
+          prisma.userPreference.deleteMany({
+            where: { userId },
+          }),
+
+          // Delete user's contact info
+          prisma.userContact.deleteMany({
+            where: { userId },
+          }),
+
+          // Delete user's auth
+          prisma.userAuth.delete({
+            where: { userId },
+          }),
+        ]);
+
+        // Finally, delete or anonymize the user
+        await prisma.user.update({
+          where: { id: userId },
+          data: {
+            isDeleted: true,
+            email: `deleted_${new Date().getTime()}_${Math.random().toString(36).substring(2, 15)}`,
+            firstName: await this.encryptionService.encrypt('[deleted]'),
+            lastName: await this.encryptionService.encrypt('[deleted]'),
+            isActive: false,
+          },
+        });
+      });
+
+      return { message: 'Account successfully deleted' };
+    } catch (error) {
+      throw new BadRequestException('Failed to delete account');
+    }
   }
 }

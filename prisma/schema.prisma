@@ -73,6 +73,7 @@ model User {
   updatedAt       DateTime      @updatedAt
   securityLevel   Int          @default(1) // For row-level security policies
   dataRegion      String?      // For data residency compliance
+  newsletterSubscription NewsletterSubscription?
 
   @@index([email, isDeleted])
   @@index([securityLevel, isDeleted]) // Optimize row-level security queries
@@ -405,4 +406,18 @@ model VerificationToken {
 
   @@unique([identifier, token])
   @@map("verification_tokens")
+}
+
+model NewsletterSubscription {
+  id              String    @id @default(cuid())
+  userId          String    @unique
+  weeklyDigest    Boolean   @default(true)
+  promotionalEmails Boolean @default(true)
+  productUpdates  Boolean   @default(true)
+  unsubscribedAt  DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("newsletter_subscriptions")
 }
