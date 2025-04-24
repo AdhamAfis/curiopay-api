@@ -24,6 +24,8 @@ import {
   ApiParam,
   ApiQuery,
 } from '@nestjs/swagger';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { IUser } from '../users/interfaces/user.interface';
 
 @ApiTags('expenses')
 @Controller('expenses')
@@ -37,16 +39,16 @@ export class ExpensesController {
   @ApiResponse({ status: 201, description: 'Expense created successfully.' })
   @ApiResponse({ status: 400, description: 'Bad request.' })
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
-  async create(@Req() req, @Body() createExpenseDto: CreateExpenseDto) {
-    return this.expensesService.create(req.user.id, createExpenseDto);
+  async create(@CurrentUser() user: IUser, @Body() createExpenseDto: CreateExpenseDto) {
+    return this.expensesService.create(user.id, createExpenseDto);
   }
 
   @Get()
   @ApiOperation({ summary: 'Get all expenses with pagination and filters' })
   @ApiResponse({ status: 200, description: 'Returns expenses with pagination.' })
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
-  async findAll(@Req() req, @Query() query: QueryExpenseDto) {
-    return this.expensesService.findAll(req.user.id, query);
+  async findAll(@CurrentUser() user: IUser, @Query() query: QueryExpenseDto) {
+    return this.expensesService.findAll(user.id, query);
   }
 
   @Get(':id')
@@ -60,45 +62,24 @@ export class ExpensesController {
     return this.expensesService.findOne(id, req.user.id);
   }
 
-  @Put(':id')
+  @Put()
   @ApiOperation({ summary: 'Update an expense' })
-  @ApiParam({ name: 'id', description: 'Expense ID' })
   @ApiResponse({ status: 200, description: 'Expense updated successfully.' })
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
   @ApiResponse({ status: 403, description: 'Forbidden.' })
   @ApiResponse({ status: 404, description: 'Expense not found.' })
-  async update(
-    @Req() req,
-    @Param('id') id: string,
-    @Body() updateExpenseDto: UpdateExpenseDto,
-  ) {
-    return this.expensesService.update(id, req.user.id, updateExpenseDto);
+  async update(@CurrentUser() user: IUser, @Body() updateExpenseDto: UpdateExpenseDto) {
+    return this.expensesService.update(user.id, updateExpenseDto);
   }
 
-  @Delete(':id')
+  @Delete()
   @ApiOperation({ summary: 'Delete an expense' })
-  @ApiParam({ name: 'id', description: 'Expense ID' })
   @ApiResponse({ status: 200, description: 'Expense deleted successfully.' })
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
   @ApiResponse({ status: 403, description: 'Forbidden.' })
   @ApiResponse({ status: 404, description: 'Expense not found.' })
-  async remove(@Req() req, @Param('id') id: string) {
-    return this.expensesService.remove(id, req.user.id);
-  }
-
-  @Post(':id/void')
-  @ApiOperation({ summary: 'Void an expense' })
-  @ApiParam({ name: 'id', description: 'Expense ID' })
-  @ApiResponse({ status: 200, description: 'Expense voided successfully.' })
-  @ApiResponse({ status: 401, description: 'Unauthorized.' })
-  @ApiResponse({ status: 403, description: 'Forbidden.' })
-  @ApiResponse({ status: 404, description: 'Expense not found.' })
-  async void(
-    @Req() req,
-    @Param('id') id: string,
-    @Body() voidExpenseDto: VoidExpenseDto,
-  ) {
-    return this.expensesService.void(id, req.user.id, voidExpenseDto);
+  async void(@CurrentUser() user: IUser, @Query() voidExpenseDto: VoidExpenseDto) {
+    return this.expensesService.void(user.id, voidExpenseDto);
   }
 
   @Get('stats/by-category')

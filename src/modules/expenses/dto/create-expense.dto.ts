@@ -1,41 +1,65 @@
-import { IsString, IsNumber, IsOptional, IsDate, IsNotEmpty, Min } from 'class-validator';
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
+import { IsDate, IsNotEmpty, IsNumber, IsOptional, IsString, IsObject, ValidateNested, Min, Max } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { RecurringPatternDto } from './recurring-pattern.dto';
 
 export class CreateExpenseDto {
-  @ApiProperty({ example: '2023-04-21T00:00:00.000Z', description: 'Expense date' })
+  @ApiProperty({
+    example: '2023-05-15',
+    description: 'Date when the expense occurred',
+  })
   @IsDate()
   @Type(() => Date)
-  @IsNotEmpty()
   date: Date;
 
-  @ApiProperty({ example: 'Groceries', description: 'Expense description' })
+  @ApiProperty({
+    example: 'Grocery Shopping',
+    description: 'Description of the expense',
+  })
   @IsString()
   @IsNotEmpty()
   description: string;
 
-  @ApiProperty({ example: 50.25, description: 'Expense amount' })
+  @ApiProperty({
+    example: 15000,
+    description: 'Expense amount in cents (e.g., $150.00 = 15000)',
+  })
   @IsNumber()
   @Min(0)
-  @IsNotEmpty()
+  @Max(999999999.99)
   amount: number;
 
-  @ApiProperty({ example: 'category-id', description: 'Category ID' })
+  @ApiProperty({
+    example: 'category-uuid',
+    description: 'Category ID for the expense',
+  })
   @IsString()
-  @IsNotEmpty()
   categoryId: string;
 
-  @ApiProperty({ example: 'payment-method-id', description: 'Payment method ID' })
+  @ApiProperty({
+    example: 'payment-method-uuid',
+    description: 'Payment method ID (e.g., credit card, cash)',
+  })
   @IsString()
-  @IsNotEmpty()
   paymentMethodId: string;
 
-  @ApiPropertyOptional({ example: 'Additional notes about the expense', description: 'Notes' })
+  @ApiPropertyOptional({
+    example: 'Monthly groceries including special items',
+    description: 'Additional notes about the expense',
+  })
   @IsString()
   @IsOptional()
   notes?: string;
 
-  @ApiPropertyOptional({ description: 'Receipt file information (to be implemented)' })
   @IsOptional()
-  receipt?: any;
+  @IsObject()
+  @ValidateNested()
+  @Type(() => RecurringPatternDto)
+  recurring?: {
+    pattern: {
+      type: 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEARLY';
+      frequency: number;
+    };
+    endDate?: Date;
+  };
 } 

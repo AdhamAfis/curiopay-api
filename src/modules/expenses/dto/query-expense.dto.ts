@@ -1,36 +1,87 @@
-import { IsOptional, IsString, IsNumber, IsBoolean, IsDate } from 'class-validator';
+import { IsOptional, IsString, IsNumber, IsBoolean, IsDate, Min } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 
 export class QueryExpenseDto {
-  @ApiPropertyOptional({ description: 'Page number for pagination', example: 1 })
-  @IsNumber()
+  @ApiPropertyOptional({
+    example: '2023-01-01',
+    description: 'Start date for filtering expense entries',
+  })
+  @IsDate()
+  @Type(() => Date)
   @IsOptional()
-  @Type(() => Number)
-  page?: number = 1;
+  startDate?: Date;
 
-  @ApiPropertyOptional({ description: 'Number of items per page', example: 10 })
-  @IsNumber()
+  @ApiPropertyOptional({
+    example: '2023-12-31',
+    description: 'End date for filtering expense entries',
+  })
+  @IsDate()
+  @Type(() => Date)
   @IsOptional()
-  @Type(() => Number)
-  limit?: number = 10;
+  endDate?: Date;
 
-  @ApiPropertyOptional({ description: 'Filter by category ID', example: 'category-id' })
+  @ApiPropertyOptional({
+    example: 'category-uuid',
+    description: 'Filter by category ID',
+  })
   @IsString()
   @IsOptional()
   categoryId?: string;
 
-  @ApiPropertyOptional({ description: 'Start date for filtering', example: '2023-01-01T00:00:00.000Z' })
-  @IsDate()
+  @ApiPropertyOptional({
+    example: 'payment-method-uuid',
+    description: 'Filter by payment method ID',
+  })
+  @IsString()
   @IsOptional()
-  @Type(() => Date)
-  startDate?: Date;
+  paymentMethodId?: string;
 
-  @ApiPropertyOptional({ description: 'End date for filtering', example: '2023-12-31T23:59:59.999Z' })
-  @IsDate()
+  @ApiPropertyOptional({
+    example: 'Groceries',
+    description: 'Search term for description',
+  })
+  @IsString()
   @IsOptional()
-  @Type(() => Date)
-  endDate?: Date;
+  searchTerm?: string;
+
+  @ApiPropertyOptional({
+    example: 1000,
+    description: 'Minimum amount in cents',
+  })
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  minAmount?: number;
+
+  @ApiPropertyOptional({
+    example: 50000,
+    description: 'Maximum amount in cents',
+  })
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  maxAmount?: number;
+
+  @ApiPropertyOptional({
+    example: 1,
+    description: 'Page number for pagination',
+  })
+  @IsNumber()
+  @Min(1)
+  @Type(() => Number)
+  @IsOptional()
+  page?: number = 1;
+
+  @ApiPropertyOptional({
+    example: 20,
+    description: 'Number of items per page',
+  })
+  @IsNumber()
+  @Min(1)
+  @Type(() => Number)
+  @IsOptional()
+  limit?: number = 20;
 
   @ApiPropertyOptional({ description: 'Include void expenses', example: false })
   @IsBoolean()

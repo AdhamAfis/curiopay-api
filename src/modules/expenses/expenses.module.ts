@@ -1,11 +1,11 @@
 import { Module } from '@nestjs/common';
 import { ExpensesController } from './expenses.controller';
 import { ExpensesService } from './expenses.service';
-import { ExpensesRepository } from './expenses.repository';
+import { PrismaService } from '../../prisma/prisma.service';
 
 @Module({
   controllers: [ExpensesController],
-  providers: [ExpensesService, ExpensesRepository],
-  exports: [ExpensesService, ExpensesRepository],
+  providers: [ExpensesService, PrismaService],
+  exports: [ExpensesService],
 })
 export class ExpensesModule {} 

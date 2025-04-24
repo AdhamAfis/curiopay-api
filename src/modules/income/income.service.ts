@@ -1,48 +1,27 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { CreateExpenseDto } from './dto/create-expense.dto';
-import { UpdateExpenseDto } from './dto/update-expense.dto';
-import { QueryExpenseDto } from './dto/query-expense.dto';
-import { VoidExpenseDto } from './dto/void-expense.dto';
+import { CreateIncomeDto } from './dto/create-income.dto';
+import { UpdateIncomeDto } from './dto/update-income.dto';
+import { QueryIncomeDto } from './dto/query-income.dto';
+import { VoidIncomeDto } from './dto/void-income.dto';
 import { calculateNextProcessDate } from '../../common/utils/dates.util';
 
 @Injectable()
-export class ExpensesService {
+export class IncomeService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findAll(userId: string, query: QueryExpenseDto) {
+  async findAll(userId: string, query: QueryIncomeDto) {
     try {
-      const {
-        categoryId,
-        paymentMethodId,
-        startDate,
-        endDate,
-        searchTerm,
-        minAmount,
-        maxAmount,
-        page = 1,
-        limit = 20,
-      } = query;
-
-      return await this.prisma.expense.findMany({
+      return await this.prisma.income.findMany({
         where: {
           userId,
-          ...(categoryId && { categoryId }),
-          ...(paymentMethodId && { paymentMethodId }),
-          ...(startDate && endDate && {
+          ...(query.category && { categoryId: query.category }),
+          ...(query.startDate && query.endDate && {
             date: {
-              gte: new Date(startDate),
-              lte: new Date(endDate),
+              gte: new Date(query.startDate),
+              lte: new Date(query.endDate),
             },
           }),
-          ...(searchTerm && {
-            description: {
-              contains: searchTerm,
-              mode: 'insensitive',
-            },
-          }),
-          ...(minAmount && { amount: { gte: minAmount } }),
-          ...(maxAmount && { amount: { lte: maxAmount } }),
           isVoid: false,
         },
         include: {
@@ -68,20 +47,18 @@ export class ExpensesService {
           },
         },
         orderBy: { date: 'desc' },
-        skip: (page - 1) * limit,
-        take: limit,
       });
     } catch (error) {
-      throw new BadRequestException('Failed to fetch expense records');
+      throw new BadRequestException('Failed to fetch income records');
     }
   }
 
-  async create(userId: string, createExpenseDto: CreateExpenseDto) {
-    const { categoryId, paymentMethodId, recurring, ...expenseData } = createExpenseDto;
+  async create(userId: string, createIncomeDto: CreateIncomeDto) {
+    const { categoryId, paymentMethodId, recurring, ...incomeData } = createIncomeDto;
 
     try {
-      const expenseCreate = {
-        ...expenseData,
+      const incomeCreate = {
+        ...incomeData,
         userId,
         categoryId,
         paymentMethodId,
@@ -92,30 +69,30 @@ export class ExpensesService {
                 create: {
                   type: recurring.pattern.type,
                   frequency: recurring.pattern.frequency,
-                  dayOfWeek: recurring.pattern.type === 'WEEKLY' ? new Date(expenseData.date).getDay() : null,
+                  dayOfWeek: recurring.pattern.type === 'WEEKLY' ? new Date(incomeData.date).getDay() : null,
                   dayOfMonth: ['MONTHLY', 'YEARLY'].includes(recurring.pattern.type) 
-                    ? new Date(expenseData.date).getDate() 
+                    ? new Date(incomeData.date).getDate() 
                     : null,
                   monthOfYear: recurring.pattern.type === 'YEARLY' 
-                    ? new Date(expenseData.date).getMonth() + 1 
+                    ? new Date(incomeData.date).getMonth() + 1 
                     : null,
                 },
               },
-              startDate: new Date(expenseData.date),
+              startDate: new Date(incomeData.date),
               endDate: recurring.endDate ? new Date(recurring.endDate) : null,
               lastProcessed: new Date(),
               nextProcessDate: calculateNextProcessDate(
-                new Date(expenseData.date),
+                new Date(incomeData.date),
                 recurring.pattern.type,
                 recurring.pattern.frequency,
                 ['MONTHLY', 'YEARLY'].includes(recurring.pattern.type) 
-                  ? new Date(expenseData.date).getDate() 
+                  ? new Date(incomeData.date).getDate() 
                   : null,
                 recurring.pattern.type === 'WEEKLY' 
-                  ? new Date(expenseData.date).getDay() 
+                  ? new Date(incomeData.date).getDay() 
                   : null,
                 recurring.pattern.type === 'YEARLY' 
-                  ? new Date(expenseData.date).getMonth() + 1 
+                  ? new Date(incomeData.date).getMonth() + 1 
                   : null,
               ),
             },
@@ -123,8 +100,8 @@ export class ExpensesService {
         }),
       };
 
-      return await this.prisma.expense.create({
-        data: expenseCreate,
+      return await this.prisma.income.create({
+        data: incomeCreate,
         include: {
           category: true,
           paymentMethod: true,
@@ -136,23 +113,23 @@ export class ExpensesService {
         },
       });
     } catch (error) {
-      throw new BadRequestException('Failed to create expense record');
+      throw new BadRequestException('Failed to create income record');
     }
   }
 
-  async update(userId: string, updateExpenseDto: UpdateExpenseDto) {
-    const { id, ...updateData } = updateExpenseDto;
+  async update(userId: string, updateIncomeDto: UpdateIncomeDto) {
+    const { id, ...updateData } = updateIncomeDto;
 
     try {
-      const expense = await this.prisma.expense.findFirst({
+      const income = await this.prisma.income.findFirst({
         where: { id, userId },
       });
 
-      if (!expense) {
-        throw new NotFoundException('Expense record not found');
+      if (!income) {
+        throw new NotFoundException('Income record not found');
       }
 
-      return await this.prisma.expense.update({
+      return await this.prisma.income.update({
         where: { id },
         data: updateData,
         include: {
@@ -182,29 +159,29 @@ export class ExpensesService {
       if (error instanceof NotFoundException) {
         throw error;
       }
-      throw new BadRequestException('Failed to update expense record');
+      throw new BadRequestException('Failed to update income record');
     }
   }
 
-  async void(userId: string, voidExpenseDto: VoidExpenseDto) {
+  async void(userId: string, voidIncomeDto: VoidIncomeDto) {
     try {
-      const expense = await this.prisma.expense.findFirst({
-        where: { id: voidExpenseDto.id, userId },
+      const income = await this.prisma.income.findFirst({
+        where: { id: voidIncomeDto.id, userId },
       });
 
-      if (!expense) {
-        throw new NotFoundException('Expense record not found');
+      if (!income) {
+        throw new NotFoundException('Income record not found');
       }
 
-      return await this.prisma.expense.update({
-        where: { id: voidExpenseDto.id },
+      return await this.prisma.income.update({
+        where: { id: voidIncomeDto.id },
         data: { isVoid: true },
       });
     } catch (error) {
       if (error instanceof NotFoundException) {
         throw error;
       }
-      throw new BadRequestException('Failed to void expense record');
+      throw new BadRequestException('Failed to void income record');
     }
   }
 } 

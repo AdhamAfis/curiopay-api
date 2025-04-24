@@ -1,6 +1,6 @@
 import { IsString } from 'class-validator';
 
-export class VoidExpenseDto {
+export class VoidIncomeDto {
   @IsString()
   id: string;
 } 

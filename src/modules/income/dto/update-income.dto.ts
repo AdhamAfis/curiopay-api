@@ -1,8 +1,11 @@
 import { Type } from 'class-transformer';
-import { IsDate, IsNumber, IsOptional, IsString, IsUUID, Min } from 'class-validator';
+import { IsDate, IsNumber, IsOptional, IsString, IsUUID, Min, Max } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 
 export class UpdateIncomeDto {
+  @IsString()
+  id: string;
+
   @ApiPropertyOptional({
     example: '2023-05-15',
     description: 'Date when the income was received',
@@ -26,6 +29,7 @@ export class UpdateIncomeDto {
   })
   @IsNumber()
   @Min(0)
+  @Max(999999999.99)
   @IsOptional()
   amount?: number;
 
@@ -33,7 +37,7 @@ export class UpdateIncomeDto {
     example: 'category-uuid',
     description: 'Category ID for the income',
   })
-  @IsUUID()
+  @IsString()
   @IsOptional()
   categoryId?: string;
 
@@ -41,7 +45,7 @@ export class UpdateIncomeDto {
     example: 'payment-method-uuid',
     description: 'Payment method ID (e.g., bank account, cash)',
   })
-  @IsUUID()
+  @IsString()
   @IsOptional()
   paymentMethodId?: string;
 
