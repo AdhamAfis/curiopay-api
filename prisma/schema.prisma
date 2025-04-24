@@ -76,6 +76,9 @@ model User {
 
   @@index([email, isDeleted])
   @@index([securityLevel, isDeleted]) // Optimize row-level security queries
+  @@index([email, role]) // For role-based queries
+  @@index([isActive, isDeleted]) // For active user filtering
+  @@index([createdAt]) // For user analytics
   @@map("users")
 }
 
@@ -144,7 +147,7 @@ model Expense {
   originalAmount  Decimal?          @db.Decimal(10,2)
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt
-  partitionKey    String           @default(dbgenerated("TO_CHAR(date, 'YYYY_MM')")) // For table partitioning
+  partitionKey    String?           // Format: YYYY_MM (handled by service)
   auditLog        Json?            // Track changes
   securityLevel   Int              @default(1)
 
@@ -153,6 +156,10 @@ model Expense {
   @@index([categoryId, date])     // Optimize category-based reporting
   @@index([userId, partitionKey]) // Optimize partitioned queries
   @@index([paymentMethodId, date]) // Optimize payment method analytics
+  @@index([userId, categoryId, date]) // For category summaries
+  @@index([date, amount]) // For financial reporting
+  @@index([userId, date, amount]) // For user summaries
+  @@index([userId, isVoid, date]) // For active expenses queries
 
   // Partition by date range
   @@index([partitionKey])
@@ -178,7 +185,7 @@ model Income {
   originalAmount  Decimal?          @db.Decimal(10,2)
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt
-  partitionKey    String           @default(dbgenerated("TO_CHAR(date, 'YYYY_MM')"))
+  partitionKey    String?           // Format: YYYY_MM (handled by service)
   auditLog        Json?
   securityLevel   Int              @default(1)
 
@@ -187,6 +194,10 @@ model Income {
   @@index([categoryId, date])
   @@index([userId, partitionKey])
   @@index([paymentMethodId, date])
+  @@index([userId, categoryId, date]) // For category summaries
+  @@index([date, amount]) // For financial reporting
+  @@index([userId, date, amount]) // For user summaries
+  @@index([userId, isVoid, date]) // For active income queries
 
   // Partition by date range
   @@index([partitionKey])
@@ -262,7 +273,7 @@ model PaymentMethod {
   name      PaymentMethodEnum @unique
   icon      String?
   expenses  Expense[]
-  incomes   Income[]         // Add this line
+  incomes   Income[]
   createdAt DateTime          @default(now())
   updatedAt DateTime          @default(now())
 
@@ -279,6 +290,8 @@ model Session {
   updatedAt    DateTime @updatedAt
 
   @@index([userId])
+  @@index([expires]) // For session cleanup
+  @@index([userId, expires]) // For user session management
   @@map("sessions")
 }
 
@@ -304,7 +317,7 @@ model Category {
   type          CategoryType @relation(fields: [typeId], references: [id])
   user          User         @relation(fields: [userId], references: [id])
   expenses      Expense[]
-  incomes       Income[]     // Add this line
+  incomes       Income[]
   isDefault     Boolean      @default(false)
   isSystem      Boolean      @default(false)
   createdAt     DateTime     @default(now())
@@ -314,6 +327,8 @@ model Category {
   @@index([userId])
   @@index([typeId])
   @@index([userId, isDefault])
+  @@index([userId, typeId, isDefault]) // For category filtering
+  @@index([userId, isSystem]) // For system category queries
   @@map("categories")
 }
 
@@ -329,6 +344,7 @@ model RecurringPattern {
   createdAt      DateTime          @default(now())
   updatedAt      DateTime          @updatedAt
 
+  @@index([type, frequency]) // For recurring transaction processing
   @@map("recurring_patterns")
 }
 
@@ -377,6 +393,8 @@ model UserPreference {
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @default(now())
 
+  @@index([userId, currencyId]) // For currency-based queries
+  @@index([userId, languageId]) // For language-based queries
   @@map("user_preferences")
 }
 

@@ -40,13 +40,19 @@ export class ExpensesController {
   @ApiResponse({ status: 201, description: 'Expense created successfully.' })
   @ApiResponse({ status: 400, description: 'Bad request.' })
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
-  async create(@CurrentUser() user: IUser, @Body() createExpenseDto: CreateExpenseDto) {
+  async create(
+    @CurrentUser() user: IUser,
+    @Body() createExpenseDto: CreateExpenseDto,
+  ) {
     return this.expensesService.create(user.id, createExpenseDto);
   }
 
   @Get()
   @ApiOperation({ summary: 'Get all expenses with pagination and filters' })
-  @ApiResponse({ status: 200, description: 'Returns expenses with pagination.' })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns expenses with pagination.',
+  })
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
   async findAll(@CurrentUser() user: IUser, @Query() query: QueryExpenseDto) {
     return this.expensesService.findAll(user.id, query);
@@ -67,7 +73,10 @@ export class ExpensesController {
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
   @ApiResponse({ status: 403, description: 'Forbidden.' })
   @ApiResponse({ status: 404, description: 'Expense not found.' })
-  async update(@CurrentUser() user: IUser, @Body() updateExpenseDto: UpdateExpenseDto) {
+  async update(
+    @CurrentUser() user: IUser,
+    @Body() updateExpenseDto: UpdateExpenseDto,
+  ) {
     return this.expensesService.update(user.id, updateExpenseDto);
   }
 
@@ -77,13 +86,19 @@ export class ExpensesController {
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
   @ApiResponse({ status: 403, description: 'Forbidden.' })
   @ApiResponse({ status: 404, description: 'Expense not found.' })
-  async void(@CurrentUser() user: IUser, @Query() voidExpenseDto: VoidExpenseDto) {
+  async void(
+    @CurrentUser() user: IUser,
+    @Query() voidExpenseDto: VoidExpenseDto,
+  ) {
     return this.expensesService.void(user.id, voidExpenseDto);
   }
 
   @Get('stats/by-category')
   @ApiOperation({ summary: 'Get expense totals by category' })
-  @ApiResponse({ status: 200, description: 'Returns expense totals by category.' })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns expense totals by category.',
+  })
   async getExpenseTotalsByCategory(
     @Query() query: QueryExpenseDto,
     @CurrentUser() user: IUser,
@@ -97,4 +112,4 @@ export class ExpensesController {
       new Date(query.endDate),
     );
   }
-} 
+}

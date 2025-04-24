@@ -12,4 +12,4 @@ export interface IUser {
   lastLoginAt?: Date;
   createdAt: Date;
   updatedAt: Date;
-} 
+}

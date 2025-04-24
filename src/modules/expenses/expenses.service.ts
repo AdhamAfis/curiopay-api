@@ -1,14 +1,24 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateExpenseDto } from './dto/create-expense.dto';
 import { UpdateExpenseDto } from './dto/update-expense.dto';
 import { QueryExpenseDto } from './dto/query-expense.dto';
 import { VoidExpenseDto } from './dto/void-expense.dto';
 import { calculateNextProcessDate } from '../../common/utils/dates.util';
+import { Expense, Prisma } from '@prisma/client';
+import { format } from 'date-fns';
 
 @Injectable()
 export class ExpensesService {
   constructor(private readonly prisma: PrismaService) {}
+
+  private generatePartitionKey(date: Date): string {
+    return format(date, 'yyyy_MM');
+  }
 
   async findAll(userId: string, query: QueryExpenseDto) {
     try {
@@ -29,12 +39,13 @@ export class ExpensesService {
           userId,
           ...(categoryId && { categoryId }),
           ...(paymentMethodId && { paymentMethodId }),
-          ...(startDate && endDate && {
-            date: {
-              gte: new Date(startDate),
-              lte: new Date(endDate),
-            },
-          }),
+          ...(startDate &&
+            endDate && {
+              date: {
+                gte: new Date(startDate),
+                lte: new Date(endDate),
+              },
+            }),
           ...(searchTerm && {
             description: {
               contains: searchTerm,
@@ -80,11 +91,13 @@ export class ExpensesService {
     const { categoryId, paymentMethodId, recurring, ...expenseData } = createExpenseDto;
 
     try {
-      const expenseCreate = {
+      const date = new Date(expenseData.date);
+      const expenseCreate: Prisma.ExpenseUncheckedCreateInput = {
         ...expenseData,
         userId,
         categoryId,
         paymentMethodId,
+        partitionKey: this.generatePartitionKey(date),
         ...(recurring && {
           recurring: {
             create: {
@@ -92,13 +105,19 @@ export class ExpensesService {
                 create: {
                   type: recurring.pattern.type,
                   frequency: recurring.pattern.frequency,
-                  dayOfWeek: recurring.pattern.type === 'WEEKLY' ? new Date(expenseData.date).getDay() : null,
-                  dayOfMonth: ['MONTHLY', 'YEARLY'].includes(recurring.pattern.type) 
-                    ? new Date(expenseData.date).getDate() 
+                  dayOfWeek:
+                    recurring.pattern.type === 'WEEKLY'
+                      ? new Date(expenseData.date).getDay()
+                      : null,
+                  dayOfMonth: ['MONTHLY', 'YEARLY'].includes(
+                    recurring.pattern.type,
+                  )
+                    ? new Date(expenseData.date).getDate()
                     : null,
-                  monthOfYear: recurring.pattern.type === 'YEARLY' 
-                    ? new Date(expenseData.date).getMonth() + 1 
-                    : null,
+                  monthOfYear:
+                    recurring.pattern.type === 'YEARLY'
+                      ? new Date(expenseData.date).getMonth() + 1
+                      : null,
                 },
               },
               startDate: new Date(expenseData.date),
@@ -108,14 +127,14 @@ export class ExpensesService {
                 new Date(expenseData.date),
                 recurring.pattern.type,
                 recurring.pattern.frequency,
-                ['MONTHLY', 'YEARLY'].includes(recurring.pattern.type) 
-                  ? new Date(expenseData.date).getDate() 
+                ['MONTHLY', 'YEARLY'].includes(recurring.pattern.type)
+                  ? new Date(expenseData.date).getDate()
                   : null,
-                recurring.pattern.type === 'WEEKLY' 
-                  ? new Date(expenseData.date).getDay() 
+                recurring.pattern.type === 'WEEKLY'
+                  ? new Date(expenseData.date).getDay()
                   : null,
-                recurring.pattern.type === 'YEARLY' 
-                  ? new Date(expenseData.date).getMonth() + 1 
+                recurring.pattern.type === 'YEARLY'
+                  ? new Date(expenseData.date).getMonth() + 1
                   : null,
               ),
             },
@@ -152,9 +171,16 @@ export class ExpensesService {
         throw new NotFoundException('Expense record not found');
       }
 
+      const updateInput: Prisma.ExpenseUncheckedUpdateInput = {
+        ...updateData,
+        ...(updateData.date && {
+          partitionKey: this.generatePartitionKey(new Date(updateData.date)),
+        }),
+      };
+
       return await this.prisma.expense.update({
         where: { id },
-        data: updateData,
+        data: updateInput,
         include: {
           category: {
             select: { name: true, icon: true },
@@ -249,9 +275,13 @@ export class ExpensesService {
     }
   }
 
-  async getExpenseTotalsByCategory(userId: string, startDate: Date, endDate: Date) {
+  async getExpenseTotalsByCategory(
+    userId: string,
+    startDate: Date,
+    endDate: Date,
+  ) {
     try {
-      const totals = await this.prisma.expense.groupBy({
+      return await this.prisma.expense.groupBy({
         by: ['categoryId'],
         where: {
           userId,
@@ -265,26 +295,8 @@ export class ExpensesService {
           amount: true,
         },
       });
-
-      const categories = await this.prisma.category.findMany({
-        where: {
-          id: {
-            in: totals.map(t => t.categoryId),
-          },
-        },
-        select: {
-          id: true,
-          name: true,
-          icon: true,
-        },
-      });
-
-      return totals.map(total => ({
-        category: categories.find(c => c.id === total.categoryId),
-        total: total._sum.amount,
-      }));
     } catch (error) {
-      throw new BadRequestException('Failed to fetch expense totals by category');
+      throw new BadRequestException('Failed to fetch expense totals');
     }
   }
-} 
+}

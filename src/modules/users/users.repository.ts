@@ -63,7 +63,7 @@ export class UsersRepository {
     // Implement soft delete
     return this.prisma.user.update({
       where: { id },
-      data: { 
+      data: {
         isDeleted: true,
         email: `deleted_${new Date().getTime()}_${Math.random().toString(36).substring(2, 15)}`,
       },
@@ -80,15 +80,20 @@ export class UsersRepository {
     return this.prisma.userAuth.create({ data });
   }
 
-  async updateUserAuth(userId: string, data: Prisma.UserAuthUpdateInput): Promise<UserAuth> {
+  async updateUserAuth(
+    userId: string,
+    data: Prisma.UserAuthUpdateInput,
+  ): Promise<UserAuth> {
     return this.prisma.userAuth.update({
       where: { userId },
       data,
     });
   }
-  
+
   // Expose transaction method for services
-  async executeTransaction<T>(callback: (prisma: Prisma.TransactionClient) => Promise<T>): Promise<T> {
+  async executeTransaction<T>(
+    callback: (prisma: Prisma.TransactionClient) => Promise<T>,
+  ): Promise<T> {
     return this.prisma.executeInTransaction(callback);
   }
-} 
+}

@@ -8,4 +8,4 @@ export const ROLE_HIERARCHY = {
   [UserRole.SUPER_ADMIN]: [UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.USER],
   [UserRole.ADMIN]: [UserRole.ADMIN, UserRole.USER],
   [UserRole.USER]: [UserRole.USER],
-}; 
+};

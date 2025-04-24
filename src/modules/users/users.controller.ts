@@ -36,7 +36,10 @@ export class UsersController {
   @Post()
   @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
   @ApiOperation({ summary: 'Create a new user' })
-  @ApiResponse({ status: 201, description: 'User has been created successfully.' })
+  @ApiResponse({
+    status: 201,
+    description: 'User has been created successfully.',
+  })
   @ApiResponse({ status: 400, description: 'Invalid input data.' })
   @ApiResponse({ status: 409, description: 'Email already exists.' })
   async create(@Body() createUserDto: CreateUserDto) {
@@ -48,7 +51,7 @@ export class UsersController {
   @ApiOperation({ summary: 'Get all users' })
   @ApiResponse({ status: 200, description: 'Returns all users.' })
   async findAll(@CurrentUser() user: IUser) {
-    return this.usersService.findAll(user.role as UserRole);
+    return this.usersService.findAll(user.role);
   }
 
   @Get(':id')
@@ -58,9 +61,11 @@ export class UsersController {
   @ApiResponse({ status: 404, description: 'User not found.' })
   async findOne(@CurrentUser() currentUser: IUser, @Param('id') id: string) {
     // Users can only view their own profile unless they are admin/super_admin
-    const userRoleHierarchy = ROLE_HIERARCHY[currentUser.role as UserRole] || [];
+    const userRoleHierarchy = ROLE_HIERARCHY[currentUser.role] || [];
     if (currentUser.id !== id && !userRoleHierarchy.includes(UserRole.ADMIN)) {
-      throw new ForbiddenException('You do not have permission to view this user');
+      throw new ForbiddenException(
+        'You do not have permission to view this user',
+      );
     }
     return this.usersService.findOne(id);
   }
@@ -69,22 +74,35 @@ export class UsersController {
   @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
   @ApiOperation({ summary: 'Update user role' })
   @ApiParam({ name: 'id', description: 'User ID' })
-  @ApiResponse({ status: 200, description: 'Role has been updated successfully.' })
-  @ApiResponse({ status: 400, description: 'Invalid role or insufficient permissions.' })
+  @ApiResponse({
+    status: 200,
+    description: 'Role has been updated successfully.',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid role or insufficient permissions.',
+  })
   @ApiResponse({ status: 404, description: 'User not found.' })
   async updateRole(
     @CurrentUser() currentUser: IUser,
     @Param('id') id: string,
     @Body() updateUserRoleDto: UpdateUserRoleDto,
   ) {
-    return this.usersService.updateRole(id, updateUserRoleDto, currentUser.role as UserRole);
+    return this.usersService.updateRole(
+      id,
+      updateUserRoleDto,
+      currentUser.role,
+    );
   }
 
   @Patch(':id/toggle-active')
   @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
   @ApiOperation({ summary: 'Toggle user active status' })
   @ApiParam({ name: 'id', description: 'User ID' })
-  @ApiResponse({ status: 200, description: 'User status has been toggled successfully.' })
+  @ApiResponse({
+    status: 200,
+    description: 'User status has been toggled successfully.',
+  })
   @ApiResponse({ status: 404, description: 'User not found.' })
   async toggleActive(@Param('id') id: string) {
     return this.usersService.toggleActive(id);
@@ -92,8 +110,11 @@ export class UsersController {
 
   @Get('me/profile')
   @ApiOperation({ summary: 'Get current user profile' })
-  @ApiResponse({ status: 200, description: 'Returns the current user profile.' })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns the current user profile.',
+  })
   async getProfile(@CurrentUser() user: IUser) {
     return this.usersService.findOne(user.id);
   }
-} 
+}

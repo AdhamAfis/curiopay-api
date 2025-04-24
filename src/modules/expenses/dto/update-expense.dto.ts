@@ -1,5 +1,12 @@
 import { Type } from 'class-transformer';
-import { IsDate, IsNumber, IsOptional, IsString, Min, Max } from 'class-validator';
+import {
+  IsDate,
+  IsNumber,
+  IsOptional,
+  IsString,
+  Min,
+  Max,
+} from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 
 export class UpdateExpenseDto {
@@ -56,4 +63,4 @@ export class UpdateExpenseDto {
   @IsString()
   @IsOptional()
   notes?: string;
-} 
+}

@@ -1,5 +1,13 @@
 import { Type } from 'class-transformer';
-import { IsDate, IsNumber, IsOptional, IsString, IsUUID, Min, Max } from 'class-validator';
+import {
+  IsDate,
+  IsNumber,
+  IsOptional,
+  IsString,
+  IsUUID,
+  Min,
+  Max,
+} from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 
 export class UpdateIncomeDto {
@@ -56,4 +64,4 @@ export class UpdateIncomeDto {
   @IsString()
   @IsOptional()
   notes?: string;
-} 
+}

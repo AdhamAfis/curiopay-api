@@ -35,4 +35,4 @@ export class QueryCategoryDto {
   @IsBoolean()
   @IsOptional()
   isSystem?: boolean;
-} 
+}

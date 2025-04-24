@@ -1,4 +1,12 @@
-import { IsString, IsEmail, IsNotEmpty, IsEnum, IsOptional, MinLength, Matches } from 'class-validator';
+import {
+  IsString,
+  IsEmail,
+  IsNotEmpty,
+  IsEnum,
+  IsOptional,
+  MinLength,
+  Matches,
+} from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { UserRole } from '../interfaces/role.enum';
 
@@ -18,7 +26,8 @@ export class CreateUserDto {
   @IsString()
   @IsNotEmpty()
   @Matches(/^[a-zA-Z]{2,}$/, {
-    message: 'First name must contain only letters and be at least 2 characters long',
+    message:
+      'First name must contain only letters and be at least 2 characters long',
   })
   firstName: string;
 
@@ -29,7 +38,8 @@ export class CreateUserDto {
   @IsString()
   @IsOptional()
   @Matches(/^[a-zA-Z]{2,}$/, {
-    message: 'Last name must contain only letters and be at least 2 characters long',
+    message:
+      'Last name must contain only letters and be at least 2 characters long',
   })
   lastName?: string;
 
@@ -41,7 +51,8 @@ export class CreateUserDto {
   @IsNotEmpty()
   @MinLength(8)
   @Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/, {
-    message: 'Password must contain at least one uppercase letter, one lowercase letter, one number and one special character',
+    message:
+      'Password must contain at least one uppercase letter, one lowercase letter, one number and one special character',
   })
   password: string;
 
@@ -89,4 +100,4 @@ export class CreateUserDto {
   @IsString()
   @IsOptional()
   themeId?: string;
-} 
+}

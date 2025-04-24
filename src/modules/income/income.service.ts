@@ -1,5 +1,11 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { Income, Prisma } from '@prisma/client';
+import { format } from 'date-fns';
 import { CreateIncomeDto } from './dto/create-income.dto';
 import { UpdateIncomeDto } from './dto/update-income.dto';
 import { QueryIncomeDto } from './dto/query-income.dto';
@@ -10,18 +16,23 @@ import { calculateNextProcessDate } from '../../common/utils/dates.util';
 export class IncomeService {
   constructor(private readonly prisma: PrismaService) {}
 
+  private generatePartitionKey(date: Date): string {
+    return format(date, 'yyyy_MM');
+  }
+
   async findAll(userId: string, query: QueryIncomeDto) {
     try {
       return await this.prisma.income.findMany({
         where: {
           userId,
           ...(query.categoryId && { categoryId: query.categoryId }),
-          ...(query.startDate && query.endDate && {
-            date: {
-              gte: new Date(query.startDate),
-              lte: new Date(query.endDate),
-            },
-          }),
+          ...(query.startDate &&
+            query.endDate && {
+              date: {
+                gte: new Date(query.startDate),
+                lte: new Date(query.endDate),
+              },
+            }),
           isVoid: false,
         },
         include: {
@@ -54,14 +65,17 @@ export class IncomeService {
   }
 
   async create(userId: string, createIncomeDto: CreateIncomeDto) {
-    const { categoryId, paymentMethodId, recurring, ...incomeData } = createIncomeDto;
+    const { categoryId, paymentMethodId, recurring, ...incomeData } =
+      createIncomeDto;
 
     try {
-      const incomeCreate = {
+      const date = new Date(incomeData.date);
+      const incomeCreate: Prisma.IncomeUncheckedCreateInput = {
         ...incomeData,
         userId,
         categoryId,
         paymentMethodId,
+        partitionKey: this.generatePartitionKey(date),
         ...(recurring && {
           recurring: {
             create: {
@@ -69,13 +83,19 @@ export class IncomeService {
                 create: {
                   type: recurring.pattern.type,
                   frequency: recurring.pattern.frequency,
-                  dayOfWeek: recurring.pattern.type === 'WEEKLY' ? new Date(incomeData.date).getDay() : null,
-                  dayOfMonth: ['MONTHLY', 'YEARLY'].includes(recurring.pattern.type) 
-                    ? new Date(incomeData.date).getDate() 
+                  dayOfWeek:
+                    recurring.pattern.type === 'WEEKLY'
+                      ? new Date(incomeData.date).getDay()
+                      : null,
+                  dayOfMonth: ['MONTHLY', 'YEARLY'].includes(
+                    recurring.pattern.type,
+                  )
+                    ? new Date(incomeData.date).getDate()
                     : null,
-                  monthOfYear: recurring.pattern.type === 'YEARLY' 
-                    ? new Date(incomeData.date).getMonth() + 1 
-                    : null,
+                  monthOfYear:
+                    recurring.pattern.type === 'YEARLY'
+                      ? new Date(incomeData.date).getMonth() + 1
+                      : null,
                 },
               },
               startDate: new Date(incomeData.date),
@@ -85,14 +105,14 @@ export class IncomeService {
                 new Date(incomeData.date),
                 recurring.pattern.type,
                 recurring.pattern.frequency,
-                ['MONTHLY', 'YEARLY'].includes(recurring.pattern.type) 
-                  ? new Date(incomeData.date).getDate() 
+                ['MONTHLY', 'YEARLY'].includes(recurring.pattern.type)
+                  ? new Date(incomeData.date).getDate()
                   : null,
-                recurring.pattern.type === 'WEEKLY' 
-                  ? new Date(incomeData.date).getDay() 
+                recurring.pattern.type === 'WEEKLY'
+                  ? new Date(incomeData.date).getDay()
                   : null,
-                recurring.pattern.type === 'YEARLY' 
-                  ? new Date(incomeData.date).getMonth() + 1 
+                recurring.pattern.type === 'YEARLY'
+                  ? new Date(incomeData.date).getMonth() + 1
                   : null,
               ),
             },
@@ -129,28 +149,22 @@ export class IncomeService {
         throw new NotFoundException('Income record not found');
       }
 
+      const updateInput: Prisma.IncomeUncheckedUpdateInput = {
+        ...updateData,
+        ...(updateData.date && {
+          partitionKey: this.generatePartitionKey(new Date(updateData.date)),
+        }),
+      };
+
       return await this.prisma.income.update({
         where: { id },
-        data: updateData,
+        data: updateInput,
         include: {
-          category: {
-            select: { name: true, icon: true },
-          },
-          paymentMethod: {
-            select: { name: true },
-          },
+          category: true,
+          paymentMethod: true,
           recurring: {
-            select: {
-              id: true,
-              pattern: {
-                select: {
-                  type: true,
-                  frequency: true,
-                },
-              },
-              startDate: true,
-              endDate: true,
-              nextProcessDate: true,
+            include: {
+              pattern: true,
             },
           },
         },
@@ -184,4 +198,4 @@ export class IncomeService {
       throw new BadRequestException('Failed to void income record');
     }
   }
-} 
+}

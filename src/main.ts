@@ -7,14 +7,14 @@ import * as compression from 'compression';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  
+
   // Security
   app.use(helmet());
   app.enableCors();
-  
+
   // Compression
   app.use(compression());
-  
+
   // Validation
   app.useGlobalPipes(
     new ValidationPipe({
@@ -26,10 +26,10 @@ async function bootstrap() {
       },
     }),
   );
-  
+
   // Global prefix
   app.setGlobalPrefix('api/v1');
-  
+
   // Swagger API documentation
   const config = new DocumentBuilder()
     .setTitle('CurioPay API')
@@ -39,7 +39,7 @@ async function bootstrap() {
     .build();
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('docs', app, document);
-  
+
   await app.listen(process.env.PORT || 3000);
   console.log(`Application is running on: ${await app.getUrl()}`);
   console.log('Swagger documentation is available at /docs');

@@ -26,16 +26,25 @@ export function calculateNextProcessDate(
         if (daysUntilNext === 0) {
           daysUntilNext = 7;
         }
-        nextDate.setDate(nextDate.getDate() + (daysUntilNext + (7 * (frequency - 1))));
+        nextDate.setDate(
+          nextDate.getDate() + (daysUntilNext + 7 * (frequency - 1)),
+        );
       } else {
-        nextDate.setDate(nextDate.getDate() + (7 * frequency));
+        nextDate.setDate(nextDate.getDate() + 7 * frequency);
       }
       break;
 
     case 'MONTHLY':
-      if (typeof dayOfMonth === 'number' && dayOfMonth >= 1 && dayOfMonth <= 31) {
+      if (
+        typeof dayOfMonth === 'number' &&
+        dayOfMonth >= 1 &&
+        dayOfMonth <= 31
+      ) {
         nextDate.setMonth(nextDate.getMonth() + frequency);
-        const maxDays = getDaysInMonth(nextDate.getFullYear(), nextDate.getMonth());
+        const maxDays = getDaysInMonth(
+          nextDate.getFullYear(),
+          nextDate.getMonth(),
+        );
         nextDate.setDate(Math.min(dayOfMonth, maxDays));
       } else {
         nextDate.setMonth(nextDate.getMonth() + frequency);
@@ -43,7 +52,12 @@ export function calculateNextProcessDate(
       break;
 
     case 'YEARLY':
-      if (typeof monthOfYear === 'number' && monthOfYear >= 1 && monthOfYear <= 12 && typeof dayOfMonth === 'number') {
+      if (
+        typeof monthOfYear === 'number' &&
+        monthOfYear >= 1 &&
+        monthOfYear <= 12 &&
+        typeof dayOfMonth === 'number'
+      ) {
         nextDate.setFullYear(nextDate.getFullYear() + frequency);
         nextDate.setMonth(monthOfYear - 1);
         const maxDays = getDaysInMonth(nextDate.getFullYear(), monthOfYear - 1);
@@ -58,4 +72,4 @@ export function calculateNextProcessDate(
   }
 
   return nextDate;
-} 
+}

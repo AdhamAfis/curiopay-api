@@ -39,8 +39,14 @@ export class CategoriesController {
     description: 'The category has been successfully created.',
   })
   @ApiResponse({ status: 400, description: 'Invalid input data.' })
-  @ApiResponse({ status: 409, description: 'Category with this name already exists.' })
-  create(@CurrentUser() user: IUser, @Body() createCategoryDto: CreateCategoryDto) {
+  @ApiResponse({
+    status: 409,
+    description: 'Category with this name already exists.',
+  })
+  create(
+    @CurrentUser() user: IUser,
+    @Body() createCategoryDto: CreateCategoryDto,
+  ) {
     return this.categoriesService.create(user.id, createCategoryDto);
   }
 
@@ -50,10 +56,26 @@ export class CategoriesController {
     status: 200,
     description: 'Returns a list of categories.',
   })
-  @ApiQuery({ name: 'search', required: false, description: 'Search categories by name' })
-  @ApiQuery({ name: 'type', required: false, description: 'Filter by category type' })
-  @ApiQuery({ name: 'isDefault', required: false, description: 'Filter default categories' })
-  @ApiQuery({ name: 'isSystem', required: false, description: 'Filter system categories' })
+  @ApiQuery({
+    name: 'search',
+    required: false,
+    description: 'Search categories by name',
+  })
+  @ApiQuery({
+    name: 'type',
+    required: false,
+    description: 'Filter by category type',
+  })
+  @ApiQuery({
+    name: 'isDefault',
+    required: false,
+    description: 'Filter default categories',
+  })
+  @ApiQuery({
+    name: 'isSystem',
+    required: false,
+    description: 'Filter system categories',
+  })
   findAll(@CurrentUser() user: IUser, @Query() query: QueryCategoryDto) {
     return this.categoriesService.findAll(user.id, query);
   }
@@ -77,9 +99,15 @@ export class CategoriesController {
     status: 200,
     description: 'The category has been successfully updated.',
   })
-  @ApiResponse({ status: 400, description: 'Invalid input data or system category.' })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid input data or system category.',
+  })
   @ApiResponse({ status: 404, description: 'Category not found.' })
-  @ApiResponse({ status: 409, description: 'Category with this name already exists.' })
+  @ApiResponse({
+    status: 409,
+    description: 'Category with this name already exists.',
+  })
   update(
     @CurrentUser() user: IUser,
     @Param('id') id: string,
@@ -97,7 +125,8 @@ export class CategoriesController {
   })
   @ApiResponse({
     status: 400,
-    description: 'Cannot delete: system category, default category, or has transactions.',
+    description:
+      'Cannot delete: system category, default category, or has transactions.',
   })
   @ApiResponse({ status: 404, description: 'Category not found.' })
   remove(@CurrentUser() user: IUser, @Param('id') id: string) {

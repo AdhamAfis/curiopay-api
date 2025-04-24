@@ -1,4 +1,12 @@
-import { IsString, IsNotEmpty, IsEnum, IsOptional, IsBoolean, Length, Matches } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsEnum,
+  IsOptional,
+  IsBoolean,
+  Length,
+  Matches,
+} from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export enum CategoryTypeEnum {
@@ -17,7 +25,8 @@ export class CreateCategoryDto {
   @IsNotEmpty()
   @Length(2, 50)
   @Matches(/^[a-zA-Z0-9\s\-_]+$/, {
-    message: 'Name can only contain letters, numbers, spaces, hyphens, and underscores',
+    message:
+      'Name can only contain letters, numbers, spaces, hyphens, and underscores',
   })
   name: string;
 
@@ -67,4 +76,4 @@ export class CreateCategoryDto {
   @IsBoolean()
   @IsOptional()
   isSystem?: boolean;
-} 
+}

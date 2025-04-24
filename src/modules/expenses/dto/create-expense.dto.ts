@@ -1,5 +1,15 @@
 import { Type } from 'class-transformer';
-import { IsDate, IsNotEmpty, IsNumber, IsOptional, IsString, IsObject, ValidateNested, Min, Max } from 'class-validator';
+import {
+  IsDate,
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  IsString,
+  IsObject,
+  ValidateNested,
+  Min,
+  Max,
+} from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { RecurringPatternDto } from './recurring-pattern.dto';
 
@@ -62,4 +72,4 @@ export class CreateExpenseDto {
     };
     endDate?: Date;
   };
-} 
+}

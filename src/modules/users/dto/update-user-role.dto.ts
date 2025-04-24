@@ -11,4 +11,4 @@ export class UpdateUserRoleDto {
   @IsEnum(UserRole)
   @IsNotEmpty()
   role: UserRole;
-} 
+}

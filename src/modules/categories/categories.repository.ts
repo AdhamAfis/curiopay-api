@@ -22,7 +22,7 @@ export class CategoriesRepository {
     typeId?: string;
   }): Promise<{ categories: Category[]; total: number }> {
     const { skip, take, userId, typeId } = params;
-    
+
     const where: Prisma.CategoryWhereInput = {
       userId,
       ...(typeId && { typeId }),
@@ -63,7 +63,10 @@ export class CategoriesRepository {
     });
   }
 
-  async update(id: string, data: Prisma.CategoryUpdateInput): Promise<Category> {
+  async update(
+    id: string,
+    data: Prisma.CategoryUpdateInput,
+  ): Promise<Category> {
     return this.prisma.category.update({
       where: { id },
       data,
@@ -107,4 +110,4 @@ export class CategoriesRepository {
       },
     });
   }
-} 
+}

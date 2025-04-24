@@ -17,22 +17,27 @@ export class AuthService {
 
   async login(loginDto: LoginDto) {
     // Find user by email
-    const user = await this.usersService.findByEmail(loginDto.email).catch(() => null);
-    
+    const user = await this.usersService
+      .findByEmail(loginDto.email)
+      .catch(() => null);
+
     if (!user) {
       throw new UnauthorizedException('Invalid credentials');
     }
 
     // Get user auth details
     const userAuth = await this.usersRepository.findUserAuthById(user.id);
-    
+
     if (!userAuth) {
       throw new UnauthorizedException('Invalid credentials');
     }
 
     // Compare password
-    const isPasswordValid = await bcrypt.compare(loginDto.password, userAuth.password);
-    
+    const isPasswordValid = await bcrypt.compare(
+      loginDto.password,
+      userAuth.password,
+    );
+
     if (!isPasswordValid) {
       // Handle failed login attempt
       await this.handleFailedLoginAttempt(userAuth);
@@ -90,4 +95,4 @@ export class AuthService {
 
     await this.usersRepository.updateUserAuth(userAuth.userId, updateData);
   }
-} 
+}

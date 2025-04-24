@@ -1,4 +1,11 @@
-import { IsString, IsNumber, IsEnum, IsOptional, Min, Max } from 'class-validator';
+import {
+  IsString,
+  IsNumber,
+  IsEnum,
+  IsOptional,
+  Min,
+  Max,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 
 export enum RecurringPatternType {
@@ -20,4 +27,4 @@ export class RecurringPatternDto {
   @IsOptional()
   @Type(() => Date)
   endDate?: Date;
-} 
+}

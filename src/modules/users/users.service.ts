@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserRoleDto } from './dto/update-user-role.dto';
@@ -19,7 +24,10 @@ export class UsersService {
     }
 
     const passwordSalt = await bcrypt.genSalt();
-    const hashedPassword = await bcrypt.hash(createUserDto.password, passwordSalt);
+    const hashedPassword = await bcrypt.hash(
+      createUserDto.password,
+      passwordSalt,
+    );
 
     return this.prisma.user.create({
       data: {
@@ -42,13 +50,18 @@ export class UsersService {
             phone: createUserDto.phone,
           },
         },
-        preferences: createUserDto.currencyId || createUserDto.languageId || createUserDto.themeId ? {
-          create: {
-            currencyId: createUserDto.currencyId || 'usd',
-            languageId: createUserDto.languageId || 'en',
-            themeId: createUserDto.themeId || 'light',
-          },
-        } : undefined,
+        preferences:
+          createUserDto.currencyId ||
+          createUserDto.languageId ||
+          createUserDto.themeId
+            ? {
+                create: {
+                  currencyId: createUserDto.currencyId || 'usd',
+                  languageId: createUserDto.languageId || 'en',
+                  themeId: createUserDto.themeId || 'light',
+                },
+              }
+            : undefined,
       },
       select: {
         id: true,
@@ -65,7 +78,7 @@ export class UsersService {
 
   async findAll(currentUserRole: UserRole) {
     const allowedRoles = ROLE_HIERARCHY[currentUserRole];
-    
+
     return this.prisma.user.findMany({
       where: {
         role: { in: allowedRoles },
@@ -88,7 +101,7 @@ export class UsersService {
 
   async findOne(id: string) {
     const user = await this.prisma.user.findFirst({
-      where: { 
+      where: {
         id,
         isDeleted: false,
       },
@@ -124,13 +137,19 @@ export class UsersService {
     return user;
   }
 
-  async updateRole(id: string, updateUserRoleDto: UpdateUserRoleDto, currentUserRole: UserRole) {
+  async updateRole(
+    id: string,
+    updateUserRoleDto: UpdateUserRoleDto,
+    currentUserRole: UserRole,
+  ) {
     const user = await this.findOne(id);
 
     // Check if current user has permission to update to the new role
     const currentUserHierarchy = ROLE_HIERARCHY[currentUserRole];
     if (!currentUserHierarchy.includes(updateUserRoleDto.role)) {
-      throw new BadRequestException('You do not have permission to assign this role');
+      throw new BadRequestException(
+        'You do not have permission to assign this role',
+      );
     }
 
     return this.prisma.user.update({
@@ -176,7 +195,7 @@ export class UsersService {
 
   async findByEmail(email: string) {
     return this.prisma.user.findFirst({
-      where: { 
+      where: {
         email,
         isDeleted: false,
       },
@@ -187,4 +206,4 @@ export class UsersService {
       },
     });
   }
-} 
+}

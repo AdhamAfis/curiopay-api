@@ -1,6 +1,13 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsDate, IsNumber, IsOptional, IsString, IsUUID, Min } from 'class-validator';
+import {
+  IsDate,
+  IsNumber,
+  IsOptional,
+  IsString,
+  IsUUID,
+  Min,
+} from 'class-validator';
 
 export class QueryIncomeDto {
   @ApiPropertyOptional({
@@ -82,4 +89,4 @@ export class QueryIncomeDto {
   @Type(() => Number)
   @IsOptional()
   limit?: number = 20;
-} 
+}

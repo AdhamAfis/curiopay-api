@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  ConflictException,
+} from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateCategoryDto, CategoryTypeEnum } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
@@ -21,7 +26,9 @@ export class CategoriesService {
       });
 
       if (existingCategory) {
-        throw new ConflictException(`Category with name '${createCategoryDto.name}' already exists`);
+        throw new ConflictException(
+          `Category with name '${createCategoryDto.name}' already exists`,
+        );
       }
 
       // Get or create category type
@@ -30,7 +37,8 @@ export class CategoriesService {
         update: {},
         create: {
           name: createCategoryDto.type,
-          icon: createCategoryDto.type === CategoryTypeEnum.INCOME ? '💰' : '💸',
+          icon:
+            createCategoryDto.type === CategoryTypeEnum.INCOME ? '💰' : '💸',
         },
       });
 
@@ -90,13 +98,10 @@ export class CategoriesService {
             },
           },
         },
-        orderBy: [
-          { isDefault: 'desc' },
-          { name: 'asc' },
-        ],
+        orderBy: [{ isDefault: 'desc' }, { name: 'asc' }],
       });
 
-      return categories.map(category => ({
+      return categories.map((category) => ({
         ...category,
         transactionCount: category._count.expenses + category._count.incomes,
         _count: undefined,
@@ -142,7 +147,11 @@ export class CategoriesService {
     }
   }
 
-  async update(userId: string, id: string, updateCategoryDto: UpdateCategoryDto) {
+  async update(
+    userId: string,
+    id: string,
+    updateCategoryDto: UpdateCategoryDto,
+  ) {
     try {
       const category = await this.prisma.category.findFirst({
         where: { id, userId },
@@ -166,7 +175,9 @@ export class CategoriesService {
         });
 
         if (existingCategory) {
-          throw new ConflictException(`Category with name '${updateCategoryDto.name}' already exists`);
+          throw new ConflictException(
+            `Category with name '${updateCategoryDto.name}' already exists`,
+          );
         }
       }
 
@@ -177,7 +188,8 @@ export class CategoriesService {
           update: {},
           create: {
             name: updateCategoryDto.type,
-            icon: updateCategoryDto.type === CategoryTypeEnum.INCOME ? '💰' : '💸',
+            icon:
+              updateCategoryDto.type === CategoryTypeEnum.INCOME ? '💰' : '💸',
           },
         });
         typeId = categoryType.id;
@@ -197,7 +209,11 @@ export class CategoriesService {
         },
       });
     } catch (error) {
-      if (error instanceof NotFoundException || error instanceof ConflictException || error instanceof BadRequestException) {
+      if (
+        error instanceof NotFoundException ||
+        error instanceof ConflictException ||
+        error instanceof BadRequestException
+      ) {
         throw error;
       }
       throw new BadRequestException('Failed to update category');
@@ -231,14 +247,19 @@ export class CategoriesService {
       }
 
       if (category._count.expenses > 0 || category._count.incomes > 0) {
-        throw new BadRequestException('Categories with transactions cannot be deleted');
+        throw new BadRequestException(
+          'Categories with transactions cannot be deleted',
+        );
       }
 
       return await this.prisma.category.delete({
         where: { id },
       });
     } catch (error) {
-      if (error instanceof NotFoundException || error instanceof BadRequestException) {
+      if (
+        error instanceof NotFoundException ||
+        error instanceof BadRequestException
+      ) {
         throw error;
       }
       throw new BadRequestException('Failed to delete category');
@@ -265,4 +286,4 @@ export class CategoriesService {
       },
     });
   }
-} 
+}
