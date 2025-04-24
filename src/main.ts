@@ -27,6 +27,9 @@ async function bootstrap() {
     }),
   );
   
+  // Global prefix
+  app.setGlobalPrefix('api/v1');
+  
   // Swagger API documentation
   const config = new DocumentBuilder()
     .setTitle('CurioPay API')
@@ -35,12 +38,10 @@ async function bootstrap() {
     .addBearerAuth()
     .build();
   const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api/docs', app, document);
-  
-  // Global prefix
-  app.setGlobalPrefix('api/v1');
+  SwaggerModule.setup('docs', app, document);
   
   await app.listen(process.env.PORT || 3000);
   console.log(`Application is running on: ${await app.getUrl()}`);
+  console.log('Swagger documentation is available at /docs');
 }
 bootstrap();
