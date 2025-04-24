@@ -1,32 +1,70 @@
-import { IsString, IsOptional, IsNumber, IsBoolean } from 'class-validator';
+import { IsString, IsNotEmpty, IsEnum, IsOptional, IsBoolean, Length, Matches } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
+export enum CategoryTypeEnum {
+  INCOME = 'INCOME',
+  EXPENSE = 'EXPENSE',
+}
+
 export class CreateCategoryDto {
-  @ApiProperty({ example: 'Groceries', description: 'Category name' })
+  @ApiProperty({
+    example: 'Groceries',
+    description: 'Name of the category',
+    minLength: 2,
+    maxLength: 50,
+  })
   @IsString()
+  @IsNotEmpty()
+  @Length(2, 50)
+  @Matches(/^[a-zA-Z0-9\s\-_]+$/, {
+    message: 'Name can only contain letters, numbers, spaces, hyphens, and underscores',
+  })
   name: string;
 
-  @ApiProperty({ example: 'category-type-id', description: 'Category type ID' })
+  @ApiProperty({
+    example: '🛒',
+    description: 'Emoji icon for the category',
+  })
   @IsString()
-  typeId: string;
+  @IsNotEmpty()
+  @Length(1, 2)
+  icon: string;
 
-  @ApiPropertyOptional({ example: 'shopping-cart', description: 'Icon name' })
+  @ApiProperty({
+    enum: CategoryTypeEnum,
+    example: CategoryTypeEnum.EXPENSE,
+    description: 'Type of the category (INCOME or EXPENSE)',
+  })
+  @IsEnum(CategoryTypeEnum)
+  type: CategoryTypeEnum;
+
+  @ApiPropertyOptional({
+    example: '#FF5733',
+    description: 'Color code for the category (hex format)',
+    pattern: '^#[0-9A-Fa-f]{6}$',
+  })
   @IsString()
   @IsOptional()
-  icon?: string;
-
-  @ApiPropertyOptional({ example: '#ff5722', description: 'Color in hex format' })
-  @IsString()
-  @IsOptional()
+  @Matches(/^#[0-9A-Fa-f]{6}$/, {
+    message: 'Color must be a valid hex color code (e.g., #FF5733)',
+  })
   color?: string;
 
-  @ApiPropertyOptional({ example: 500, description: 'Monthly budget for this category' })
-  @IsNumber()
-  @IsOptional()
-  budget?: number;
-
-  @ApiPropertyOptional({ example: true, description: 'Whether this is a default category' })
+  @ApiPropertyOptional({
+    example: false,
+    description: 'Whether this is a default category',
+    default: false,
+  })
   @IsBoolean()
   @IsOptional()
-  isDefault?: boolean = false;
+  isDefault?: boolean;
+
+  @ApiPropertyOptional({
+    example: false,
+    description: 'Whether this is a system category',
+    default: false,
+  })
+  @IsBoolean()
+  @IsOptional()
+  isSystem?: boolean;
 } 

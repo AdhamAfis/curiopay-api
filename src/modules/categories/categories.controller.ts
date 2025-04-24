@@ -3,109 +3,134 @@ import {
   Get,
   Post,
   Body,
+  Patch,
   Param,
-  Put,
   Delete,
-  UseGuards,
   Query,
-  Req,
+  UseGuards,
 } from '@nestjs/common';
 import { CategoriesService } from './categories.service';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 import { QueryCategoryDto } from './dto/query-category.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { IUser } from '../users/interfaces/user.interface';
 import {
   ApiTags,
   ApiOperation,
   ApiResponse,
   ApiBearerAuth,
   ApiParam,
+  ApiQuery,
 } from '@nestjs/swagger';
 
 @ApiTags('categories')
-@Controller('categories')
-@UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
+@UseGuards(JwtAuthGuard)
+@Controller('categories')
 export class CategoriesController {
   constructor(private readonly categoriesService: CategoriesService) {}
 
   @Post()
   @ApiOperation({ summary: 'Create a new category' })
-  @ApiResponse({ status: 201, description: 'Category created successfully.' })
-  @ApiResponse({ status: 400, description: 'Bad request.' })
-  @ApiResponse({ status: 401, description: 'Unauthorized.' })
-  @ApiResponse({ status: 409, description: 'Category already exists.' })
-  async create(@Req() req, @Body() createCategoryDto: CreateCategoryDto) {
-    return this.categoriesService.create(req.user.id, createCategoryDto);
+  @ApiResponse({
+    status: 201,
+    description: 'The category has been successfully created.',
+  })
+  @ApiResponse({ status: 400, description: 'Invalid input data.' })
+  @ApiResponse({ status: 409, description: 'Category with this name already exists.' })
+  create(@CurrentUser() user: IUser, @Body() createCategoryDto: CreateCategoryDto) {
+    return this.categoriesService.create(user.id, createCategoryDto);
   }
 
   @Get()
   @ApiOperation({ summary: 'Get all categories' })
-  @ApiResponse({ status: 200, description: 'Returns categories with pagination.' })
-  @ApiResponse({ status: 401, description: 'Unauthorized.' })
-  async findAll(@Req() req, @Query() query: QueryCategoryDto) {
-    return this.categoriesService.findAll(req.user.id, query);
-  }
-
-  @Get('types')
-  @ApiOperation({ summary: 'Get all category types' })
-  @ApiResponse({ status: 200, description: 'Returns all category types.' })
-  @ApiResponse({ status: 401, description: 'Unauthorized.' })
-  async findAllTypes() {
-    return this.categoriesService.findAllTypes();
-  }
-
-  @Get('default')
-  @ApiOperation({ summary: 'Get default categories for the user' })
-  @ApiResponse({ status: 200, description: 'Returns default categories.' })
-  @ApiResponse({ status: 401, description: 'Unauthorized.' })
-  async findDefaultCategories(@Req() req) {
-    return this.categoriesService.findDefaultCategories(req.user.id);
-  }
-
-  @Get('system')
-  @ApiOperation({ summary: 'Get system categories' })
-  @ApiResponse({ status: 200, description: 'Returns system categories.' })
-  @ApiResponse({ status: 401, description: 'Unauthorized.' })
-  async findSystemCategories() {
-    return this.categoriesService.findSystemCategories();
+  @ApiResponse({
+    status: 200,
+    description: 'Returns a list of categories.',
+  })
+  @ApiQuery({ name: 'search', required: false, description: 'Search categories by name' })
+  @ApiQuery({ name: 'type', required: false, description: 'Filter by category type' })
+  @ApiQuery({ name: 'isDefault', required: false, description: 'Filter default categories' })
+  @ApiQuery({ name: 'isSystem', required: false, description: 'Filter system categories' })
+  findAll(@CurrentUser() user: IUser, @Query() query: QueryCategoryDto) {
+    return this.categoriesService.findAll(user.id, query);
   }
 
   @Get(':id')
-  @ApiOperation({ summary: 'Get a specific category by ID' })
+  @ApiOperation({ summary: 'Get a category by ID' })
   @ApiParam({ name: 'id', description: 'Category ID' })
-  @ApiResponse({ status: 200, description: 'Returns the category.' })
-  @ApiResponse({ status: 401, description: 'Unauthorized.' })
-  @ApiResponse({ status: 403, description: 'Forbidden.' })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns the category.',
+  })
   @ApiResponse({ status: 404, description: 'Category not found.' })
-  async findOne(@Req() req, @Param('id') id: string) {
-    return this.categoriesService.findOne(id, req.user.id);
+  findOne(@CurrentUser() user: IUser, @Param('id') id: string) {
+    return this.categoriesService.findOne(user.id, id);
   }
 
-  @Put(':id')
+  @Patch(':id')
   @ApiOperation({ summary: 'Update a category' })
   @ApiParam({ name: 'id', description: 'Category ID' })
-  @ApiResponse({ status: 200, description: 'Category updated successfully.' })
-  @ApiResponse({ status: 401, description: 'Unauthorized.' })
-  @ApiResponse({ status: 403, description: 'Forbidden.' })
+  @ApiResponse({
+    status: 200,
+    description: 'The category has been successfully updated.',
+  })
+  @ApiResponse({ status: 400, description: 'Invalid input data or system category.' })
   @ApiResponse({ status: 404, description: 'Category not found.' })
-  async update(
-    @Req() req,
+  @ApiResponse({ status: 409, description: 'Category with this name already exists.' })
+  update(
+    @CurrentUser() user: IUser,
     @Param('id') id: string,
     @Body() updateCategoryDto: UpdateCategoryDto,
   ) {
-    return this.categoriesService.update(id, req.user.id, updateCategoryDto);
+    return this.categoriesService.update(user.id, id, updateCategoryDto);
   }
 
   @Delete(':id')
   @ApiOperation({ summary: 'Delete a category' })
   @ApiParam({ name: 'id', description: 'Category ID' })
-  @ApiResponse({ status: 200, description: 'Category deleted successfully.' })
-  @ApiResponse({ status: 401, description: 'Unauthorized.' })
-  @ApiResponse({ status: 403, description: 'Forbidden.' })
+  @ApiResponse({
+    status: 200,
+    description: 'The category has been successfully deleted.',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Cannot delete: system category, default category, or has transactions.',
+  })
   @ApiResponse({ status: 404, description: 'Category not found.' })
-  async remove(@Req() req, @Param('id') id: string) {
-    return this.categoriesService.remove(id, req.user.id);
+  remove(@CurrentUser() user: IUser, @Param('id') id: string) {
+    return this.categoriesService.remove(user.id, id);
+  }
+
+  @Get('types/all')
+  @ApiOperation({ summary: 'Get all category types' })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns a list of category types.',
+  })
+  findAllTypes() {
+    return this.categoriesService.findAllTypes();
+  }
+
+  @Get('default/all')
+  @ApiOperation({ summary: 'Get all default categories' })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns a list of default categories.',
+  })
+  findDefaultCategories(@CurrentUser() user: IUser) {
+    return this.categoriesService.findDefaultCategories(user.id);
+  }
+
+  @Get('system/all')
+  @ApiOperation({ summary: 'Get all system categories' })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns a list of system categories.',
+  })
+  findSystemCategories() {
+    return this.categoriesService.findSystemCategories();
   }
 }

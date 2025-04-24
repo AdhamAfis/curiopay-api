@@ -1,102 +1,165 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
-import { UsersRepository } from './users.repository';
+import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
+import { PrismaService } from '../../prisma/prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
+import { UpdateUserRoleDto } from './dto/update-user-role.dto';
+import { UserRole, ROLE_HIERARCHY } from './interfaces/role.enum';
 import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class UsersService {
-  constructor(private usersRepository: UsersRepository) {}
-
-  async findById(id: string) {
-    const user = await this.usersRepository.findById(id);
-    if (!user || user.isDeleted) {
-      throw new NotFoundException('User not found');
-    }
-    return user;
-  }
-
-  async findByEmail(email: string) {
-    const user = await this.usersRepository.findByEmail(email);
-    if (!user || user.isDeleted) {
-      throw new NotFoundException('User not found');
-    }
-    return user;
-  }
+  constructor(private readonly prisma: PrismaService) {}
 
   async create(createUserDto: CreateUserDto) {
-    const existingUser = await this.usersRepository.findByEmail(createUserDto.email);
+    const existingUser = await this.prisma.user.findUnique({
+      where: { email: createUserDto.email },
+    });
+
     if (existingUser) {
-      throw new ConflictException('Email already registered');
+      throw new ConflictException('Email already exists');
     }
 
-    // Hash password
     const passwordSalt = await bcrypt.genSalt();
     const hashedPassword = await bcrypt.hash(createUserDto.password, passwordSalt);
 
-    try {
-      // Create user with transaction
-      return await this.usersRepository.executeTransaction(async (prisma) => {
-        // Create user
-        const user = await prisma.user.create({
-          data: {
-            email: createUserDto.email,
-            firstName: createUserDto.firstName,
-            lastName: createUserDto.lastName,
-            role: 'USER',
-            auth: {
-              create: {
-                password: hashedPassword,
-                passwordSalt,
-                passwordHashVersion: 1,
-              },
-            },
-            contactInfo: {
-              create: {
-                firstName: createUserDto.firstName,
-                lastName: createUserDto.lastName,
-                phone: createUserDto.phone,
-              },
-            },
+    return this.prisma.user.create({
+      data: {
+        email: createUserDto.email,
+        firstName: createUserDto.name.split(' ')[0],
+        lastName: createUserDto.name.split(' ').slice(1).join(' ') || null,
+        role: createUserDto.role || 'USER',
+        isActive: true,
+        auth: {
+          create: {
+            password: hashedPassword,
+            passwordSalt,
+            passwordHashVersion: 1,
           },
-        });
-
-        // Create default preferences
-        await prisma.userPreference.create({
-          data: {
-            userId: user.id,
-            currencyId: createUserDto.currencyId || 'usd', // default currency
-            languageId: createUserDto.languageId || 'en', // default language
-            themeId: createUserDto.themeId || 'light', // default theme
-          },
-        });
-
-        return user;
-      });
-    } catch (error) {
-      // Handle specific database errors
-      throw error;
-    }
-  }
-
-  async update(id: string, updateUserDto: UpdateUserDto) {
-    await this.findById(id); // Check if user exists
-
-    return this.usersRepository.update(id, {
-      firstName: updateUserDto.firstName,
-      lastName: updateUserDto.lastName,
-      contactInfo: {
-        update: {
-          firstName: updateUserDto.firstName,
-          lastName: updateUserDto.lastName,
-          phone: updateUserDto.phone,
         },
+        contactInfo: {
+          create: {
+            firstName: createUserDto.name.split(' ')[0],
+            lastName: createUserDto.name.split(' ').slice(1).join(' ') || null,
+          },
+        },
+      },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        role: true,
+        isActive: true,
+        createdAt: true,
+        updatedAt: true,
       },
     });
   }
 
-  async delete(id: string) {
-    await this.findById(id); // Check if user exists
-    return this.usersRepository.delete(id);
+  async findAll(currentUserRole: UserRole) {
+    const allowedRoles = ROLE_HIERARCHY[currentUserRole];
+    
+    return this.prisma.user.findMany({
+      where: {
+        role: { in: allowedRoles },
+        isDeleted: false,
+      },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        role: true,
+        isActive: true,
+        lastLoginAt: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async findOne(id: string) {
+    const user = await this.prisma.user.findFirst({
+      where: { 
+        id,
+        isDeleted: false,
+      },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        role: true,
+        isActive: true,
+        lastLoginAt: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    return user;
+  }
+
+  async updateRole(id: string, updateUserRoleDto: UpdateUserRoleDto, currentUserRole: UserRole) {
+    const user = await this.findOne(id);
+
+    // Check if current user has permission to update to the new role
+    const currentUserHierarchy = ROLE_HIERARCHY[currentUserRole];
+    if (!currentUserHierarchy.includes(updateUserRoleDto.role)) {
+      throw new BadRequestException('You do not have permission to assign this role');
+    }
+
+    return this.prisma.user.update({
+      where: { id },
+      data: { role: updateUserRoleDto.role },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        role: true,
+        isActive: true,
+        lastLoginAt: true,
+        updatedAt: true,
+      },
+    });
+  }
+
+  async toggleActive(id: string) {
+    const user = await this.findOne(id);
+
+    return this.prisma.user.update({
+      where: { id },
+      data: { isActive: !user.isActive },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        role: true,
+        isActive: true,
+        updatedAt: true,
+      },
+    });
+  }
+
+  async updateLastLogin(id: string) {
+    return this.prisma.user.update({
+      where: { id },
+      data: { lastLoginAt: new Date() },
+    });
+  }
+
+  async findByEmail(email: string) {
+    return this.prisma.user.findFirst({
+      where: { 
+        email,
+        isDeleted: false,
+      },
+    });
   }
 } 

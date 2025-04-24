@@ -1,112 +1,265 @@
-import { Injectable, NotFoundException, ForbiddenException, ConflictException } from '@nestjs/common';
-import { CategoriesRepository } from './categories.repository';
-import { CreateCategoryDto } from './dto/create-category.dto';
+import { Injectable, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
+import { PrismaService } from '../../prisma/prisma.service';
+import { CreateCategoryDto, CategoryTypeEnum } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 import { QueryCategoryDto } from './dto/query-category.dto';
 
 @Injectable()
 export class CategoriesService {
-  constructor(private categoriesRepository: CategoriesRepository) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   async create(userId: string, createCategoryDto: CreateCategoryDto) {
-    // Check for duplicate category name for this user
-    const { categories } = await this.categoriesRepository.findAll({
-      userId,
-      take: 1,
-      where: {
-        name: createCategoryDto.name,
-      },
-    });
+    try {
+      // Check if category with same name exists for user
+      const existingCategory = await this.prisma.category.findUnique({
+        where: {
+          userId_name: {
+            userId,
+            name: createCategoryDto.name,
+          },
+        },
+      });
 
-    if (categories.length > 0) {
-      throw new ConflictException(`Category with name '${createCategoryDto.name}' already exists`);
+      if (existingCategory) {
+        throw new ConflictException(`Category with name '${createCategoryDto.name}' already exists`);
+      }
+
+      // Get or create category type
+      const categoryType = await this.prisma.categoryType.upsert({
+        where: { name: createCategoryDto.type },
+        update: {},
+        create: {
+          name: createCategoryDto.type,
+          icon: createCategoryDto.type === CategoryTypeEnum.INCOME ? '💰' : '💸',
+        },
+      });
+
+      return await this.prisma.category.create({
+        data: {
+          name: createCategoryDto.name,
+          icon: createCategoryDto.icon,
+          color: createCategoryDto.color,
+          isDefault: createCategoryDto.isDefault ?? false,
+          isSystem: createCategoryDto.isSystem ?? false,
+          typeId: categoryType.id,
+          userId,
+        },
+        include: {
+          type: true,
+        },
+      });
+    } catch (error) {
+      if (error instanceof ConflictException) {
+        throw error;
+      }
+      throw new BadRequestException('Failed to create category');
     }
-
-    return this.categoriesRepository.create({
-      name: createCategoryDto.name,
-      icon: createCategoryDto.icon,
-      color: createCategoryDto.color,
-      budget: createCategoryDto.budget,
-      isDefault: createCategoryDto.isDefault || false,
-      isSystem: false, // Users can't create system categories
-      type: {
-        connect: { id: createCategoryDto.typeId },
-      },
-      user: {
-        connect: { id: userId },
-      },
-    });
   }
 
-  async findAll(userId: string, queryDto: QueryCategoryDto) {
-    const { page = 1, limit = 10, typeId } = queryDto;
-    const skip = (page - 1) * limit;
-    
-    return this.categoriesRepository.findAll({
-      skip,
-      take: limit,
-      userId,
-      typeId,
-    });
+  async findAll(userId: string, query: QueryCategoryDto) {
+    try {
+      const { search, type, isDefault, isSystem } = query;
+
+      const categories = await this.prisma.category.findMany({
+        where: {
+          userId,
+          ...(search && {
+            name: {
+              contains: search,
+              mode: 'insensitive',
+            },
+          }),
+          ...(type && {
+            type: {
+              name: type,
+            },
+          }),
+          ...(isDefault !== undefined && { isDefault }),
+          ...(isSystem !== undefined && { isSystem }),
+        },
+        include: {
+          type: true,
+          _count: {
+            select: {
+              expenses: {
+                where: { isVoid: false },
+              },
+              incomes: {
+                where: { isVoid: false },
+              },
+            },
+          },
+        },
+        orderBy: [
+          { isDefault: 'desc' },
+          { name: 'asc' },
+        ],
+      });
+
+      return categories.map(category => ({
+        ...category,
+        transactionCount: category._count.expenses + category._count.incomes,
+        _count: undefined,
+      }));
+    } catch (error) {
+      throw new BadRequestException('Failed to fetch categories');
+    }
   }
 
-  async findOne(id: string, userId: string) {
-    const category = await this.categoriesRepository.findById(id);
-    
-    if (!category) {
-      throw new NotFoundException(`Category with ID ${id} not found`);
+  async findOne(userId: string, id: string) {
+    try {
+      const category = await this.prisma.category.findFirst({
+        where: { id, userId },
+        include: {
+          type: true,
+          _count: {
+            select: {
+              expenses: {
+                where: { isVoid: false },
+              },
+              incomes: {
+                where: { isVoid: false },
+              },
+            },
+          },
+        },
+      });
+
+      if (!category) {
+        throw new NotFoundException(`Category with ID '${id}' not found`);
+      }
+
+      return {
+        ...category,
+        transactionCount: category._count.expenses + category._count.incomes,
+        _count: undefined,
+      };
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new BadRequestException('Failed to fetch category');
     }
-    
-    // System categories are accessible to all users
-    if (!category.isSystem && category.userId !== userId) {
-      throw new ForbiddenException('You do not have permission to access this category');
-    }
-    
-    return category;
   }
 
-  async update(id: string, userId: string, updateCategoryDto: UpdateCategoryDto) {
-    // Verify the category exists and belongs to the user
-    const category = await this.findOne(id, userId);
-    
-    if (category.isSystem) {
-      throw new ForbiddenException('System categories cannot be modified');
+  async update(userId: string, id: string, updateCategoryDto: UpdateCategoryDto) {
+    try {
+      const category = await this.prisma.category.findFirst({
+        where: { id, userId },
+      });
+
+      if (!category) {
+        throw new NotFoundException(`Category with ID '${id}' not found`);
+      }
+
+      if (category.isSystem) {
+        throw new BadRequestException('System categories cannot be modified');
+      }
+
+      if (updateCategoryDto.name) {
+        const existingCategory = await this.prisma.category.findFirst({
+          where: {
+            userId,
+            name: updateCategoryDto.name,
+            id: { not: id },
+          },
+        });
+
+        if (existingCategory) {
+          throw new ConflictException(`Category with name '${updateCategoryDto.name}' already exists`);
+        }
+      }
+
+      let typeId = category.typeId;
+      if (updateCategoryDto.type) {
+        const categoryType = await this.prisma.categoryType.upsert({
+          where: { name: updateCategoryDto.type },
+          update: {},
+          create: {
+            name: updateCategoryDto.type,
+            icon: updateCategoryDto.type === CategoryTypeEnum.INCOME ? '💰' : '💸',
+          },
+        });
+        typeId = categoryType.id;
+      }
+
+      return await this.prisma.category.update({
+        where: { id },
+        data: {
+          ...updateCategoryDto,
+          typeId,
+        },
+        include: {
+          type: true,
+        },
+      });
+    } catch (error) {
+      if (error instanceof NotFoundException || error instanceof ConflictException || error instanceof BadRequestException) {
+        throw error;
+      }
+      throw new BadRequestException('Failed to update category');
     }
-    
-    const updateData: any = { ...updateCategoryDto };
-    
-    // Handle relations
-    if (updateCategoryDto.typeId) {
-      updateData.type = { connect: { id: updateCategoryDto.typeId } };
-      delete updateData.typeId;
-    }
-    
-    return this.categoriesRepository.update(id, updateData);
   }
 
-  async remove(id: string, userId: string) {
-    // Verify the category exists and belongs to the user
-    const category = await this.findOne(id, userId);
-    
-    if (category.isSystem) {
-      throw new ForbiddenException('System categories cannot be deleted');
+  async remove(userId: string, id: string) {
+    try {
+      const category = await this.prisma.category.findFirst({
+        where: { id, userId },
+        include: {
+          _count: {
+            select: {
+              expenses: true,
+              incomes: true,
+            },
+          },
+        },
+      });
+
+      if (!category) {
+        throw new NotFoundException(`Category with ID '${id}' not found`);
+      }
+
+      if (category.isSystem) {
+        throw new BadRequestException('System categories cannot be deleted');
+      }
+
+      if (category.isDefault) {
+        throw new BadRequestException('Default categories cannot be deleted');
+      }
+
+      if (category._count.expenses > 0 || category._count.incomes > 0) {
+        throw new BadRequestException('Categories with transactions cannot be deleted');
+      }
+
+      return await this.prisma.category.delete({
+        where: { id },
+      });
+    } catch (error) {
+      if (error instanceof NotFoundException || error instanceof BadRequestException) {
+        throw error;
+      }
+      throw new BadRequestException('Failed to delete category');
     }
-    
-    // TODO: Check if there are any expenses using this category
-    // If there are, we should either prevent deletion or implement a soft delete
-    
-    return this.categoriesRepository.delete(id);
   }
 
   async findAllTypes() {
-    return this.categoriesRepository.findAllTypes();
+    return this.prisma.categoryType.findMany();
   }
 
   async findDefaultCategories(userId: string) {
-    return this.categoriesRepository.findDefaultCategories(userId);
+    return this.prisma.category.findMany({
+      where: {
+        userId,
+        isDefault: true,
+      },
+    });
   }
 
   async findSystemCategories() {
-    return this.categoriesRepository.findSystemCategories();
+    return this.prisma.category.findMany({
+      where: {
+        isSystem: true,
+      },
+    });
   }
 } 
