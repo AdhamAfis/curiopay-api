@@ -9,6 +9,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UpdateUserRoleDto } from './dto/update-user-role.dto';
+import { UserProfileResponseDto } from './dto/user-profile.dto';
 import { UserRole, ROLE_HIERARCHY } from './interfaces/role.enum';
 import * as bcrypt from 'bcrypt';
 import { UsersRepository } from './users.repository';
@@ -175,6 +176,47 @@ export class UsersService {
         auth: true,
       },
     });
+  }
+
+  async getProfile(userId: string): Promise<UserProfileResponseDto> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        contactInfo: true,
+        preferences: true,
+      },
+    });
+
+    if (!user) {
+      throw new NotFoundException(`User with ID ${userId} not found`);
+    }
+
+    // Decrypt sensitive data
+    const decryptedFirstName = user.firstName 
+      ? await this.encryptionService.decrypt(user.firstName)
+      : '';
+    const decryptedLastName = user.lastName
+      ? await this.encryptionService.decrypt(user.lastName)
+      : '';
+    const decryptedPhone = user.contactInfo?.phone 
+      ? await this.encryptionService.decrypt(user.contactInfo.phone)
+      : undefined;
+
+    return {
+      id: user.id,
+      email: user.email,
+      firstName: decryptedFirstName,
+      lastName: decryptedLastName,
+      role: user.role,
+      isActive: user.isActive,
+      phone: decryptedPhone,
+      currencyId: user.preferences?.currencyId,
+      languageId: user.preferences?.languageId,
+      themeId: user.preferences?.themeId,
+      lastLoginAt: user.lastLoginAt || undefined,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+    };
   }
 
   async createUser(createUserDto: RegisterDto) {

@@ -12,6 +12,7 @@ import {
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserRoleDto } from './dto/update-user-role.dto';
+import { UserProfileResponseDto } from './dto/user-profile.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -108,9 +109,10 @@ export class UsersController {
   @ApiOperation({ summary: 'Get current user profile' })
   @ApiResponse({
     status: 200,
-    description: 'Returns the current user profile.',
+    description: 'Returns the current user profile with decrypted data.',
+    type: UserProfileResponseDto
   })
   async getProfile(@CurrentUser() user: IUser) {
-    return this.usersService.findOne(user.id);
+    return this.usersService.getProfile(user.id);
   }
 }
