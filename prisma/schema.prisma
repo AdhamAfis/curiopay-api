@@ -8,7 +8,7 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
-  directUrl = env("DATABASE_URL_UNPOOLED")
+  directUrl = env("DIRECT_URL")
 }
 
 // User-related enums and types
@@ -382,18 +382,19 @@ model Receipt {
 }
 
 model UserPreference {
-  id           String    @id @default(cuid())
-  userId       String    @unique
-  currencyId   String
-  languageId   String
-  themeId      String
-  monthlyBudget Float?    @default(0)
-  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  currency     Currency  @relation(fields: [currencyId], references: [id])
-  language     Language  @relation(fields: [languageId], references: [id])
-  theme        Theme     @relation(fields: [themeId], references: [id])
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @default(now())
+  id              String    @id @default(cuid())
+  userId          String    @unique
+  currencyId      String
+  languageId      String
+  themeId         String
+  monthlyBudget   Float?    @default(0)
+  enableAiFeatures Boolean   @default(true)
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  currency        Currency  @relation(fields: [currencyId], references: [id])
+  language        Language  @relation(fields: [languageId], references: [id])
+  theme           Theme     @relation(fields: [themeId], references: [id])
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @default(now())
 
   @@index([userId, currencyId]) // For currency-based queries
   @@index([userId, languageId]) // For language-based queries

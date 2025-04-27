@@ -85,6 +85,7 @@ async function bootstrap() {
     .addTag('categories', 'Category management for expenses and income')
     .addTag('export', 'Data export functionality')
     .addTag('newsletter', 'Newsletter subscription and preference management')
+    .addTag('user-preferences', 'User preferences management')
     .addBearerAuth()
     .addApiKey({ type: 'apiKey', name: 'X-API-Key', in: 'header' }, 'X-API-Key')
     .build();
