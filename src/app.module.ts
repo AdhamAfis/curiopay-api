@@ -9,7 +9,7 @@ import { UsersModule } from './modules/users/users.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { ExpensesModule } from './modules/expenses/expenses.module';
 import { CategoriesModule } from './modules/categories/categories.module';
-import { IncomesModule } from './modules/incomes/incomes.module';
+import { IncomeModule } from './modules/income/income.module';
 import { EncryptionModule } from './common/encryption.module';
 import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
 import { Reflector } from '@nestjs/core';
@@ -31,7 +31,7 @@ import { ExportModule } from './modules/export/export.module';
     AuthModule,
     ExpensesModule,
     CategoriesModule,
-    IncomesModule,
+    IncomeModule,
     EncryptionModule,
     NewsletterModule,
     ExportModule,

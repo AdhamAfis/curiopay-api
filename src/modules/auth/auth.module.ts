@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { AuthController } from './auth.controller';
@@ -24,7 +24,7 @@ import { CategoriesModule } from '../categories/categories.module';
         },
       }),
     }),
-    UsersModule,
+    forwardRef(() => UsersModule),
     CommonModule,
     CategoriesModule,
   ],
@@ -33,6 +33,6 @@ import { CategoriesModule } from '../categories/categories.module';
     AuthService,
     JwtStrategy,
   ],
-  exports: [AuthService],
+  exports: [AuthService, JwtModule],
 })
 export class AuthModule {}

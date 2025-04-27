@@ -9,7 +9,9 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   // Security
-  app.use(helmet());
+  app.use(helmet({
+    contentSecurityPolicy: process.env.NODE_ENV === 'production' ? undefined : false,
+  }));
   app.enableCors();
 
   // Compression
@@ -47,55 +49,28 @@ async function bootstrap() {
   // Swagger API documentation
   const config = new DocumentBuilder()
     .setTitle('CurioPay API')
-    .setDescription(`
-      The CurioPay API provides a comprehensive suite of endpoints for managing personal finances.
-      
-      ## Features
-      - User Authentication & Authorization
-      - Expense Management
-      - Income Tracking
-      - Category Management
-      - Multi-factor Authentication
-      - Data Export
-      - Newsletter Management
-      
-      ## Authentication
-      Most endpoints require JWT authentication. Include the JWT token in the Authorization header:
-      \`\`\`
-      Authorization: Bearer <your_jwt_token>
-      \`\`\`
-
-      ## Getting Started
-      1. Register a new account using POST /auth/register
-      2. Login using POST /auth/login to get your JWT token
-      3. Include the token in subsequent requests using the Authorization header
-      4. Token expires in 24 hours by default
-
-      ## Newsletter Operations
-      Some newsletter operations require an API key. Include it in the X-API-Key header:
-      \`\`\`
-      X-API-Key: your_api_key
-      \`\`\`
-    `)
+    .setDescription('The CurioPay API documentation')
     .setVersion('1.0')
-    .addTag('auth', 'Authentication endpoints including login, register, and password reset')
-    .addTag('users', 'User management and profile operations')
-    .addTag('expenses', 'Expense tracking and management')
-    .addTag('incomes', 'Income tracking and management')
-    .addTag('categories', 'Category management for expenses and income')
-    .addTag('export', 'Data export functionality')
-    .addTag('newsletter', 'Newsletter subscription and preference management')
-    .addTag('user-preferences', 'User preferences management')
+    .addTag('auth', 'Authentication endpoints')
+    .addTag('users', 'User operations')
+    .addTag('expenses', 'Expense management')
+    .addTag('income', 'Income management')
+    .addTag('categories', 'Category management')
+    .addTag('export', 'Data export')
+    .addTag('newsletter', 'Newsletter management')
+    .addTag('user-preferences', 'User preferences')
     .addBearerAuth()
     .addApiKey({ type: 'apiKey', name: 'X-API-Key', in: 'header' }, 'X-API-Key')
     .build();
   
   const document = SwaggerModule.createDocument(app, config, {
-    deepScanRoutes: true,
+    deepScanRoutes: false,
     operationIdFactory: (
       controllerKey: string,
       methodKey: string
-    ) => methodKey
+    ) => `${controllerKey}_${methodKey}`,
+    ignoreGlobalPrefix: false,
+    extraModels: []
   });
   
   // Customize Swagger UI
@@ -106,6 +81,8 @@ async function bootstrap() {
       filter: true,
       showRequestDuration: true,
       tryItOutEnabled: true,
+      displayRequestDuration: true,
+      maxDisplayedTags: 12
     },
     customSiteTitle: 'CurioPay API Documentation',
   });

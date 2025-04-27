@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { UsersController } from './users.controller';
 import { UsersService } from './users.service';
 import { UsersRepository } from './users.repository';
@@ -8,6 +8,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { UserPreferencesController } from './user-preferences.controller';
 import { UserPreferencesService } from './user-preferences.service';
 import { UserPreferencesRepository } from './users-preferences.repository';
+import { AuthModule } from '../auth/auth.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { UserPreferencesRepository } from './users-preferences.repository';
         signOptions: { expiresIn: configService.get<string>('JWT_EXPIRES_IN') || '1d' },
       }),
     }),
+    forwardRef(() => AuthModule),
   ],
   controllers: [UsersController, UserPreferencesController],
   providers: [
