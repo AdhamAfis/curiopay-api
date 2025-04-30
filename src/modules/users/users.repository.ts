@@ -104,6 +104,14 @@ export class UsersRepository {
     });
   }
 
+  async findUserAuthByVerificationToken(token: string): Promise<UserAuth | null> {
+    return this.prisma.userAuth.findFirst({
+      where: {
+        emailVerificationToken: token,
+      },
+    });
+  }
+
   // Expose transaction method for services
   async executeTransaction<T>(
     callback: (prisma: Prisma.TransactionClient) => Promise<T>,

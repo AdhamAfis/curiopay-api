@@ -4,6 +4,7 @@ import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { RequestPasswordResetDto, ResetPasswordDto } from './dto/reset-password.dto';
 import { EnableMfaDto, VerifyMfaDto, DisableMfaDto } from './dto/mfa.dto';
+import { VerifyEmailDto, RequestEmailVerificationDto } from './dto/verify-email.dto';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { CurrentUser } from './decorators/current-user.decorator';
@@ -148,5 +149,24 @@ export class AuthController extends BaseController {
   @ApiResponse({ status: 400, description: 'Invalid request' })
   async disableMfa(@CurrentUser() user: any, @Body() dto: DisableMfaDto) {
     return this.authService.disableMfa(user.id, dto);
+  }
+
+  @Public()
+  @Post('email/request-verification')
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Request email verification' })
+  @ApiResponse({ status: 200, description: 'Verification email sent' })
+  async requestEmailVerification(@Body() dto: RequestEmailVerificationDto) {
+    return this.authService.requestEmailVerification(dto);
+  }
+
+  @Public()
+  @Post('email/verify')
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Verify email with token' })
+  @ApiResponse({ status: 200, description: 'Email verified successfully' })
+  @ApiResponse({ status: 400, description: 'Invalid or expired token' })
+  async verifyEmail(@Body() dto: VerifyEmailDto) {
+    return this.authService.verifyEmail(dto);
   }
 }

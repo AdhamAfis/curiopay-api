@@ -185,4 +185,34 @@ export class EmailService {
     
     return info;
   }
+
+  async sendEmailVerificationLink(email: string, token: string): Promise<void> {
+    const verificationLink = `${this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000'}/verify-email?token=${token}`;
+    
+    const info = await this.transporter.sendMail({
+      from: this.configService.get<string>('SMTP_FROM') || 'noreply@curiopay.com',
+      to: email,
+      subject: 'Verify Your Email Address',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h1>Verify Your Email Address</h1>
+          <p>Thank you for signing up with CurioPay! Please click the link below to verify your email address:</p>
+          <div style="margin: 30px 0;">
+            <a href="${verificationLink}" 
+               style="background-color: #4CAF50; color: white; padding: 14px 20px; text-decoration: none; border-radius: 4px;">
+              Verify Your Email
+            </a>
+          </div>
+          <p>If you did not create an account, you can safely ignore this email.</p>
+          <p>This link will expire in 24 hours.</p>
+          <p>Best regards,<br>The CurioPay Team</p>
+        </div>
+      `,
+    });
+
+    // Log preview URL for ethereal emails
+    if (this.testAccount) {
+      this.logger.log(`Email verification preview URL: ${nodemailer.getTestMessageUrl(info)}`);
+    }
+  }
 } 

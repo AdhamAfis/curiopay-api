@@ -197,6 +197,20 @@ export class AuthService {
       // Seed default categories for the new user
       await this.categoriesService.seedUserDefaultCategories(user.id);
 
+      // Generate email verification token and send verification email
+      const token = crypto.randomBytes(32).toString('hex');
+      const expiration = new Date();
+      expiration.setHours(expiration.getHours() + 24); // Token expires in 24 hours
+
+      // Store token in database
+      await this.usersRepository.updateUserAuth(user.id, {
+        emailVerificationToken: token,
+        emailVerificationTokenExpiry: expiration,
+      });
+
+      // Send verification email
+      await this.emailService.sendEmailVerificationLink(user.email, token);
+
       const payload = {
         sub: user.id,
         email: user.email,
@@ -426,5 +440,80 @@ export class AuthService {
     }
     
     return false;
+  }
+
+  async requestEmailVerification(dto: { email: string }) {
+    const user = await this.usersService
+      .findByEmail(dto.email)
+      .catch(() => null);
+
+    if (!user) {
+      // Don't reveal that the email doesn't exist
+      return { success: true, message: 'If your email exists, a verification link has been sent' };
+    }
+
+    if (user.emailVerified) {
+      return { success: true, message: 'Email is already verified' };
+    }
+
+    // Generate token
+    const token = crypto.randomBytes(32).toString('hex');
+    const expiration = new Date();
+    expiration.setHours(expiration.getHours() + 24); // Token expires in 24 hours
+
+    // Store token in database
+    await this.usersRepository.updateUserAuth(user.id, {
+      emailVerificationToken: token,
+      emailVerificationTokenExpiry: expiration,
+    });
+
+    // Send verification email
+    await this.emailService.sendEmailVerificationLink(user.email, token);
+
+    return {
+      success: true,
+      message: 'Verification link has been sent to your email',
+    };
+  }
+
+  async verifyEmail(dto: { token: string }) {
+    // Find user with this verification token
+    const userAuth = await this.usersRepository.findUserAuthByVerificationToken(dto.token);
+
+    if (!userAuth) {
+      throw new BadRequestException('Invalid or expired verification token');
+    }
+
+    // Check if token is expired
+    if (!userAuth.emailVerificationTokenExpiry || userAuth.emailVerificationTokenExpiry < new Date()) {
+      throw new BadRequestException('Verification token has expired');
+    }
+
+    // Get the user
+    const user = await this.usersService.findById(userAuth.userId);
+    
+    if (!user) {
+      throw new BadRequestException('User not found');
+    }
+
+    if (user.emailVerified) {
+      return { success: true, message: 'Email is already verified' };
+    }
+
+    // Update user to mark email as verified
+    await this.usersRepository.update(user.id, {
+      emailVerified: new Date(),
+    });
+
+    // Clear verification token
+    await this.usersRepository.updateUserAuth(user.id, {
+      emailVerificationToken: null,
+      emailVerificationTokenExpiry: null,
+    });
+
+    return {
+      success: true,
+      message: 'Email verified successfully',
+    };
   }
 }

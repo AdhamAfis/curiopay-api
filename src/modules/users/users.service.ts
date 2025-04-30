@@ -179,6 +179,10 @@ export class UsersService {
     });
   }
 
+  async findById(id: string) {
+    return this.usersRepository.findById(id);
+  }
+
   async getProfile(userId: string): Promise<UserProfileResponseDto> {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },

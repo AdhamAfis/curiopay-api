@@ -87,27 +87,30 @@ model User {
 /// UserAuth model with enhanced security features
 /// Handles authentication and security-related data
 model UserAuth {
-  id                    String    @id @default(cuid())
-  userId                String    @unique
-  password              String    // Sensitive - should be encrypted at rest
-  passwordSalt          String    // Sensitive - should be encrypted at rest
-  passwordResetToken    String?   // Sensitive - should be encrypted at rest
-  passwordResetExpires  DateTime?
-  failedLoginAttempts   Int       @default(0)
-  lastFailedLoginAt     DateTime?
-  lockedUntil           DateTime?
-  passwordHashVersion   Int       @default(1)
-  mfaEnabled           Boolean    @default(false)
-  mfaSecret            String?    // Sensitive - should be encrypted at rest
-  backupCodes          String[]   @default([]) // Sensitive - should be encrypted at rest
-  lastPasswordChange   DateTime   @default(now())
-  isDeleted           Boolean     @default(false)
-  user                User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt           DateTime    @default(now())
-  updatedAt           DateTime    @updatedAt
-  securityAuditLog    Json?      // Store security-related events
+  id                       String    @id @default(cuid())
+  userId                   String    @unique
+  password                 String    // Sensitive - should be encrypted at rest
+  passwordSalt             String    // Sensitive - should be encrypted at rest
+  passwordResetToken       String?   // Sensitive - should be encrypted at rest
+  passwordResetExpires     DateTime?
+  emailVerificationToken   String?   // Sensitive - should be encrypted at rest
+  emailVerificationTokenExpiry DateTime?
+  failedLoginAttempts      Int       @default(0)
+  lastFailedLoginAt        DateTime?
+  lockedUntil              DateTime?
+  passwordHashVersion      Int       @default(1)
+  mfaEnabled               Boolean   @default(false)
+  mfaSecret                String?   // Sensitive - should be encrypted at rest
+  backupCodes              String[]  @default([]) // Sensitive - should be encrypted at rest
+  lastPasswordChange       DateTime  @default(now())
+  isDeleted                Boolean   @default(false)
+  user                     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt                DateTime  @default(now())
+  updatedAt                DateTime  @updatedAt
+  securityAuditLog         Json?     // Store security-related events
 
   @@index([passwordResetToken]) // Optimize password reset lookups
+  @@index([emailVerificationToken]) // Optimize email verification lookups
   @@index([userId, isDeleted])  // Optimize user auth lookups with soft delete
   @@map("user_auth")
 }
