@@ -6,7 +6,11 @@ import helmet from 'helmet';
 import * as compression from 'compression';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, {
+    logger: ['error', 'warn', 'log'],
+    // Optimize buffer encoding
+    bufferLogs: true,
+  });
 
   // Security
   app.use(helmet({
@@ -46,7 +50,7 @@ async function bootstrap() {
   // Global prefix
   app.setGlobalPrefix('api/v1');
 
-  // Swagger API documentation
+  // Swagger API documentation - optimize configuration
   const config = new DocumentBuilder()
     .setTitle('CurioPay API')
     .setDescription('The CurioPay API documentation')
@@ -59,7 +63,17 @@ async function bootstrap() {
     .addTag('export', 'Data export')
     .addTag('newsletter', 'Newsletter management')
     .addTag('user-preferences', 'User preferences')
-    .addBearerAuth()
+    .addBearerAuth(
+      {
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'JWT',
+        name: 'JWT',
+        description: 'Enter JWT token',
+        in: 'header',
+      },
+      'JWT-auth' // This name is used for reference in the controllers
+    )
     .addApiKey({ type: 'apiKey', name: 'X-API-Key', in: 'header' }, 'X-API-Key')
     .build();
   
@@ -73,7 +87,37 @@ async function bootstrap() {
     extraModels: []
   });
   
-  // Customize Swagger UI
+  // Add security requirement for all paths except auth endpoints
+  // This makes JWT auth required by default in Swagger UI
+  document.paths = Object.fromEntries(
+    Object.entries(document.paths).map(([path, pathItem]) => {
+      // Skip security for login, register, and password reset endpoints
+      if (
+        path.includes('/auth/login') || 
+        path.includes('/auth/register') || 
+        path.includes('/auth/password-reset')
+      ) {
+        return [path, pathItem];
+      }
+      
+      // Add security requirement to all operations in this path
+      const updatedPathItem = Object.fromEntries(
+        Object.entries(pathItem).map(([method, operation]) => {
+          return [
+            method,
+            {
+              ...operation,
+              security: [{ 'JWT-auth': [] }]
+            }
+          ];
+        })
+      );
+      
+      return [path, updatedPathItem];
+    })
+  );
+  
+  // Customize Swagger UI with optimized settings
   SwaggerModule.setup('docs', app, document, {
     swaggerOptions: {
       persistAuthorization: true,
@@ -82,7 +126,9 @@ async function bootstrap() {
       showRequestDuration: true,
       tryItOutEnabled: true,
       displayRequestDuration: true,
-      maxDisplayedTags: 12
+      maxDisplayedTags: 12,
+      defaultModelsExpandDepth: 0, // Don't expand models by default
+      defaultModelExpandDepth: 1,  // Only expand one level of models
     },
     customSiteTitle: 'CurioPay API Documentation',
   });

@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule } from '@nestjs/throttler';
+import { CacheModule } from '@nestjs/cache-manager';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PrismaModule } from './prisma/prisma.module';
@@ -21,6 +22,11 @@ import { ExportModule } from './modules/export/export.module';
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: ['.env', '.env.local'],
+    }),
+    CacheModule.register({
+      isGlobal: true,
+      ttl: 60000, // 1 minute cache TTL
+      max: 100,   // Maximum number of items in cache
     }),
     ThrottlerModule.forRoot([{
       ttl: 60000, // 1 minute

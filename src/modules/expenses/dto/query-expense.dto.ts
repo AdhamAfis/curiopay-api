@@ -95,4 +95,10 @@ export class QueryExpenseDto {
   @IsOptional()
   @Type(() => Boolean)
   includeVoid?: boolean = false;
+
+  @ApiPropertyOptional({ description: 'Include recurring expenses', example: false })
+  @IsBoolean()
+  @IsOptional()
+  @Type(() => Boolean)
+  includeRecurring?: boolean = false;
 }

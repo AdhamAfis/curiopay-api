@@ -3,7 +3,10 @@ import {
   NotFoundException,
   BadRequestException,
   ConflictException,
+  Inject,
 } from '@nestjs/common';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { Cache } from 'cache-manager';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateCategoryDto, CategoryTypeEnum } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
@@ -15,6 +18,7 @@ export class CategoriesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly categoriesSeeder: CategoriesSeeder,
+    @Inject(CACHE_MANAGER) private cacheManager: Cache,
   ) {}
 
   async create(userId: string, createCategoryDto: CreateCategoryDto) {
@@ -46,7 +50,7 @@ export class CategoriesService {
         },
       });
 
-      return await this.prisma.category.create({
+      const category = await this.prisma.category.create({
         data: {
           name: createCategoryDto.name,
           icon: createCategoryDto.icon,
@@ -60,6 +64,13 @@ export class CategoriesService {
           type: true,
         },
       });
+
+      // Invalidate cache after creating a new category
+      const cachePrefix = `categories:${userId}`;
+      // Clear all cache keys for this user's categories
+      await this.cacheManager.del(cachePrefix);
+      
+      return category;
     } catch (error) {
       if (error instanceof ConflictException) {
         throw error;
@@ -70,6 +81,15 @@ export class CategoriesService {
 
   async findAll(userId: string, query: QueryCategoryDto) {
     try {
+      // Create a cache key based on the userId and query parameters
+      const cacheKey = `categories:${userId}:${JSON.stringify(query)}`;
+      
+      // Try to get data from cache first
+      const cachedData = await this.cacheManager.get(cacheKey);
+      if (cachedData) {
+        return cachedData;
+      }
+      
       const { search, type, isDefault, isSystem } = query;
 
       const categories = await this.prisma.category.findMany({
@@ -105,11 +125,16 @@ export class CategoriesService {
         orderBy: [{ isDefault: 'desc' }, { name: 'asc' }],
       });
 
-      return categories.map((category) => ({
+      const result = categories.map((category) => ({
         ...category,
         transactionCount: category._count.expenses + category._count.incomes,
         _count: undefined,
       }));
+      
+      // Store in cache for future requests
+      await this.cacheManager.set(cacheKey, result);
+      
+      return result;
     } catch (error) {
       throw new BadRequestException('Failed to fetch categories');
     }
@@ -117,6 +142,15 @@ export class CategoriesService {
 
   async findOne(userId: string, id: string) {
     try {
+      // Create a cache key based on the userId and category id
+      const cacheKey = `category:${userId}:${id}`;
+      
+      // Try to get data from cache first
+      const cachedData = await this.cacheManager.get(cacheKey);
+      if (cachedData) {
+        return cachedData;
+      }
+      
       const category = await this.prisma.category.findFirst({
         where: { id, userId },
         include: {
@@ -138,11 +172,16 @@ export class CategoriesService {
         throw new NotFoundException(`Category with ID '${id}' not found`);
       }
 
-      return {
+      const result = {
         ...category,
         transactionCount: category._count.expenses + category._count.incomes,
         _count: undefined,
       };
+      
+      // Store in cache for future requests
+      await this.cacheManager.set(cacheKey, result);
+      
+      return result;
     } catch (error) {
       if (error instanceof NotFoundException) {
         throw error;
@@ -199,7 +238,7 @@ export class CategoriesService {
         typeId = categoryType.id;
       }
 
-      return await this.prisma.category.update({
+      const updatedCategory = await this.prisma.category.update({
         where: { id },
         data: {
           name: updateCategoryDto.name,
@@ -212,6 +251,12 @@ export class CategoriesService {
           type: true,
         },
       });
+      
+      // Invalidate cache for this category and the categories list
+      await this.cacheManager.del(`category:${userId}:${id}`);
+      await this.cacheManager.del(`categories:${userId}`);
+      
+      return updatedCategory;
     } catch (error) {
       if (
         error instanceof NotFoundException ||
@@ -256,9 +301,15 @@ export class CategoriesService {
         );
       }
 
-      return await this.prisma.category.delete({
+      await this.prisma.category.delete({
         where: { id },
       });
+      
+      // Invalidate cache for this category and the categories list
+      await this.cacheManager.del(`category:${userId}:${id}`);
+      await this.cacheManager.del(`categories:${userId}`);
+      
+      return { success: true, message: 'Category deleted successfully' };
     } catch (error) {
       if (
         error instanceof NotFoundException ||

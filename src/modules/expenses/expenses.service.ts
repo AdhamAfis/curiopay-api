@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  Inject,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateExpenseDto } from './dto/create-expense.dto';
@@ -13,34 +14,137 @@ import { Expense, Prisma } from '@prisma/client';
 import { format } from 'date-fns';
 import { EncryptionService } from '../../common/services/encryption.service';
 import { PaginationParams } from '../../common/interfaces/pagination.interface';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { Cache } from 'cache-manager';
 
 @Injectable()
 export class ExpensesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly encryptionService: EncryptionService,
+    @Inject(CACHE_MANAGER) private cacheManager: Cache,
   ) {}
 
   private generatePartitionKey(date: Date): string {
     return format(date, 'yyyy_MM');
   }
 
-  async findAll(userId: string, pagination: PaginationParams) {
-    const { page = 1, limit = 10 } = pagination;
-    const skip = (page - 1) * limit;
+  async findAll(userId: string, query: QueryExpenseDto) {
+    try {
+      // Create a cache key based on user ID and query parameters
+      const cacheKey = `expenses:${userId}:${JSON.stringify(query)}`;
+      
+      // Try to get data from cache first
+      const cachedData = await this.cacheManager.get(cacheKey);
+      if (cachedData) {
+        return cachedData;
+      }
 
-    return this.prisma.expense.findMany({
-      where: { userId, isVoid: false },
-      include: {
-        category: true,
-        paymentMethod: true,
-        recurring: {
-          include: { pattern: true },
-        },
-      },
-      skip,
-      take: limit,
-    });
+      const { 
+        page = 1, 
+        limit = 10, 
+        startDate, 
+        endDate,
+        categoryId,
+        minAmount,
+        maxAmount,
+        searchTerm,
+        paymentMethodId,
+        includeVoid = false
+      } = query;
+      
+      const skip = (page - 1) * limit;
+      
+      // Build filter conditions
+      const where: Prisma.ExpenseWhereInput = {
+        userId,
+        isVoid: includeVoid ? undefined : false,
+        ...(startDate && endDate 
+          ? { date: { gte: new Date(startDate), lte: new Date(endDate) } } 
+          : {}),
+        ...(categoryId ? { categoryId } : {}),
+        ...(paymentMethodId ? { paymentMethodId } : {}),
+        ...(minAmount || maxAmount ? {
+          amount: {
+            ...(minAmount ? { gte: parseFloat(minAmount.toString()) } : {}),
+            ...(maxAmount ? { lte: parseFloat(maxAmount.toString()) } : {})
+          }
+        } : {}),
+        ...(searchTerm ? {
+          description: {
+            contains: searchTerm,
+            mode: 'insensitive'
+          }
+        } : {})
+      };
+      
+      // Optimize data loading - only get what we need
+      const [expenses, total] = await Promise.all([
+        this.prisma.expense.findMany({
+          where,
+          select: {
+            id: true,
+            date: true,
+            description: true,
+            amount: true,
+            notes: true,
+            isVoid: true,
+            categoryId: true,
+            paymentMethodId: true,
+            createdAt: true,
+            category: {
+              select: {
+                name: true,
+                icon: true,
+                color: true,
+              }
+            },
+            paymentMethod: {
+              select: {
+                name: true,
+              }
+            },
+            // Only load recurring info if needed
+            recurring: query.includeRecurring ? {
+              select: {
+                id: true,
+                nextProcessDate: true,
+                pattern: {
+                  select: {
+                    type: true,
+                    frequency: true,
+                  },
+                },
+              }
+            } : undefined,
+          },
+          skip,
+          take: limit,
+          orderBy: { date: 'desc' },
+        }),
+        this.prisma.expense.count({ where }),
+      ]);
+      
+      // Calculate pagination metadata
+      const result = {
+        data: expenses,
+        meta: {
+          total,
+          page: Number(page),
+          limit: Number(limit),
+          totalPages: Math.ceil(total / Number(limit)),
+          hasNextPage: skip + expenses.length < total,
+          hasPreviousPage: page > 1,
+        }
+      };
+      
+      // Store in cache for future requests (1 minute TTL)
+      await this.cacheManager.set(cacheKey, result, 60000);
+      
+      return result;
+    } catch (error) {
+      throw new BadRequestException(`Failed to fetch expenses: ${error.message}`);
+    }
   }
 
   async findOne(id: string, userId: string) {
@@ -121,11 +225,19 @@ export class ExpensesService {
 
   async findById(id: string, userId: string) {
     try {
+      const cacheKey = `expense:${userId}:${id}`;
+      
+      // Try to get data from cache first
+      const cachedData = await this.cacheManager.get(cacheKey);
+      if (cachedData) {
+        return cachedData;
+      }
+      
       const expense = await this.prisma.expense.findFirst({
         where: { id, userId },
         include: {
           category: {
-            select: { name: true, icon: true },
+            select: { name: true, icon: true, color: true },
           },
           paymentMethod: {
             select: { name: true },
@@ -150,6 +262,9 @@ export class ExpensesService {
       if (!expense) {
         throw new NotFoundException('Expense record not found');
       }
+      
+      // Store in cache for future requests (5 minutes TTL)
+      await this.cacheManager.set(cacheKey, expense, 300000);
 
       return expense;
     } catch (error) {
