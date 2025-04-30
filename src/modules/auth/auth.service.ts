@@ -65,6 +65,28 @@ export class AuthService {
       });
     }
 
+    // Check if MFA is enabled
+    if (userAuth.mfaEnabled) {
+      // Generate a temporary login token valid for 5 minutes
+      const tempToken = this.jwtService.sign(
+        { 
+          sub: user.id,
+          email: user.email,
+          tempAuth: true,
+          exp: Math.floor(Date.now() / 1000) + 5 * 60 // 5 minutes
+        }
+      );
+
+      return {
+        requireMfa: true,
+        tempToken,
+        user: {
+          id: user.id,
+          email: user.email,
+        },
+      };
+    }
+
     // Update last login time
     await this.usersRepository.update(user.id, {
       lastLoginAt: new Date(),
@@ -78,7 +100,7 @@ export class AuthService {
     };
 
     return {
-      accessToken: this.jwtService.sign(payload),
+      accessToken: this.jwtService.sign(payload, { expiresIn: this.configService.get<string>('JWT_EXPIRES_IN') || '1d' }),
       user: {
         id: user.id,
         email: user.email,
@@ -87,6 +109,82 @@ export class AuthService {
         role: user.role,
       },
     };
+  }
+
+  async completeLoginWithMfa(dto: { tempToken: string; code: string }) {
+    try {
+      // Verify the temporary token
+      const payload = this.jwtService.verify(dto.tempToken);
+      
+      if (!payload.tempAuth) {
+        throw new UnauthorizedException('Invalid temporary token');
+      }
+
+      const userId = payload.sub;
+      
+      // Validate MFA code
+      const user = await this.usersService.findById(userId);
+      if (!user) {
+        throw new UnauthorizedException('User not found');
+      }
+
+      // Verify MFA code
+      const isValidMfa = await this.verifyMfaCode(userId, dto.code);
+      if (!isValidMfa) {
+        throw new UnauthorizedException('Invalid MFA code');
+      }
+      
+      // Update last login time
+      await this.usersRepository.update(userId, {
+        lastLoginAt: new Date(),
+      });
+
+      // Generate actual JWT token
+      const tokenPayload = {
+        sub: userId,
+        email: user.email,
+        role: user.role,
+      };
+
+      return {
+        accessToken: this.jwtService.sign(tokenPayload, { expiresIn: this.configService.get<string>('JWT_EXPIRES_IN') || '1d' }),
+        user: {
+          id: user.id,
+          email: user.email,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          role: user.role,
+        },
+      };
+    } catch (error) {
+      if (error.name === 'TokenExpiredError') {
+        throw new UnauthorizedException('MFA verification time expired, please login again');
+      }
+      throw error;
+    }
+  }
+
+  // Helper method to verify MFA code, including backup codes
+  private async verifyMfaCode(userId: string, code: string): Promise<boolean> {
+    const userAuth = await this.usersRepository.findUserAuthById(userId);
+    
+    if (!userAuth || !userAuth.mfaEnabled || !userAuth.mfaSecret) {
+      return false;
+    }
+
+    const secret = await this.encryptionService.decrypt(userAuth.mfaSecret);
+
+    const isValid = authenticator.verify({
+      token: code,
+      secret,
+    });
+
+    if (isValid) {
+      return true;
+    }
+
+    // Check if it's a valid backup code
+    return this.verifyAndConsumeBackupCode(userId, code);
   }
 
   private async handleFailedLoginAttempt(userAuth: any) {
@@ -152,7 +250,7 @@ export class AuthService {
       };
 
       return {
-        accessToken: this.jwtService.sign(payload),
+        accessToken: this.jwtService.sign(payload, { expiresIn: this.configService.get<string>('JWT_EXPIRES_IN') || '1d' }),
         user: {
           id: user.id,
           email: user.email,
@@ -218,7 +316,7 @@ export class AuthService {
       };
 
       return {
-        accessToken: this.jwtService.sign(payload),
+        accessToken: this.jwtService.sign(payload, { expiresIn: this.configService.get<string>('JWT_EXPIRES_IN') || '1d' }),
         user: {
           id: user.id,
           email: user.email,

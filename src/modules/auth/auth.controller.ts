@@ -3,7 +3,7 @@ import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { RequestPasswordResetDto, ResetPasswordDto } from './dto/reset-password.dto';
-import { EnableMfaDto, VerifyMfaDto, DisableMfaDto } from './dto/mfa.dto';
+import { EnableMfaDto, VerifyMfaDto, DisableMfaDto, CompleteLoginWithMfaDto } from './dto/mfa.dto';
 import { VerifyEmailDto, RequestEmailVerificationDto } from './dto/verify-email.dto';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
@@ -35,6 +35,16 @@ export class AuthController extends BaseController {
           example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
           description: 'JWT token to be used for authenticated requests',
         },
+        requireMfa: {
+          type: 'boolean',
+          example: 'false',
+          description: 'Whether MFA verification is required to complete login'
+        },
+        tempToken: {
+          type: 'string',
+          example: 'eyJhbGciOiJIUzI1...',
+          description: 'Temporary token to be used for MFA verification'
+        },
         user: {
           type: 'object',
           properties: {
@@ -50,6 +60,38 @@ export class AuthController extends BaseController {
   @ApiResponse({ status: 401, description: 'Invalid credentials' })
   async login(@Body() loginDto: LoginDto) {
     return this.authService.login(loginDto);
+  }
+
+  @Public()
+  @Post('login/mfa/complete')
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Complete login with MFA verification' })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'MFA verification successful and login completed',
+    schema: {
+      type: 'object',
+      properties: {
+        accessToken: {
+          type: 'string',
+          example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+          description: 'JWT token to be used for authenticated requests',
+        },
+        user: {
+          type: 'object',
+          properties: {
+            id: { type: 'string' },
+            email: { type: 'string' },
+            firstName: { type: 'string' },
+            lastName: { type: 'string' },
+          },
+        },
+      },
+    },
+  })
+  @ApiResponse({ status: 401, description: 'Invalid MFA code or token' })
+  async completeLoginWithMfa(@Body() dto: CompleteLoginWithMfaDto) {
+    return this.authService.completeLoginWithMfa(dto);
   }
 
   @Public()

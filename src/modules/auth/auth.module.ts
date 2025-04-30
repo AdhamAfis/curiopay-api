@@ -19,9 +19,6 @@ import { CategoriesModule } from '../categories/categories.module';
         secret:
           configService.get<string>('JWT_SECRET') ||
           'fallback-secret-key-not-for-production',
-        signOptions: {
-          expiresIn: configService.get<string>('JWT_EXPIRES_IN') || '1d',
-        },
       }),
     }),
     forwardRef(() => UsersModule),
