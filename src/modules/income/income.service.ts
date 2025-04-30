@@ -11,10 +11,14 @@ import { UpdateIncomeDto } from './dto/update-income.dto';
 import { QueryIncomeDto } from './dto/query-income.dto';
 import { VoidIncomeDto } from './dto/void-income.dto';
 import { calculateNextProcessDate } from '../../common/utils/dates.util';
+import { EncryptionService } from '../../common/services/encryption.service';
 
 @Injectable()
 export class IncomeService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly encryptionService: EncryptionService,
+  ) {}
 
   private generatePartitionKey(date: Date): string {
     return format(date, 'yyyy_MM');
@@ -62,6 +66,39 @@ export class IncomeService {
     } catch (error) {
       throw new BadRequestException('Failed to fetch income records');
     }
+  }
+
+  async findById(id: string, userId: string) {
+    const income = await this.prisma.income.findFirst({
+      where: {
+        id,
+        userId,
+        isVoid: false,
+      },
+      include: {
+        category: true,
+        paymentMethod: true,
+      },
+    });
+
+    if (!income) {
+      throw new NotFoundException(`Income with ID ${id} not found`);
+    }
+
+    // Decrypt sensitive data
+    const decryptedDescription = await this.encryptionService.decrypt(
+      income.description,
+    );
+    
+    const decryptedNotes = income.notes
+      ? await this.encryptionService.decrypt(income.notes)
+      : null;
+
+    return {
+      ...income,
+      description: decryptedDescription,
+      notes: decryptedNotes,
+    };
   }
 
   async create(userId: string, createIncomeDto: CreateIncomeDto) {
@@ -197,5 +234,54 @@ export class IncomeService {
       }
       throw new BadRequestException('Failed to void income record');
     }
+  }
+
+  async getIncomeTotalsByCategory(
+    userId: string,
+    startDate: Date,
+    endDate: Date,
+  ) {
+    // Get all categories for lookup
+    const categories = await this.prisma.category.findMany({
+      where: {
+        userId,
+      },
+      select: {
+        id: true,
+        name: true,
+      },
+    });
+
+    // Create a map of category IDs to names
+    const categoryMap = new Map(
+      categories.map((cat) => [cat.id, cat.name]),
+    );
+
+    // Get totals by category
+    const totals = await this.prisma.income.groupBy({
+      by: ['categoryId'],
+      where: {
+        userId,
+        date: {
+          gte: startDate,
+          lte: endDate,
+        },
+        isVoid: false,
+      },
+      _sum: {
+        amount: true,
+      },
+      _count: {
+        id: true,
+      },
+    });
+
+    // Format the results
+    return totals.map((item) => ({
+      categoryId: item.categoryId,
+      categoryName: categoryMap.get(item.categoryId) || 'Unknown',
+      total: Number(item._sum.amount),
+      count: item._count.id,
+    }));
   }
 }
