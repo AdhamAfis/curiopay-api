@@ -14,6 +14,7 @@ import { EmailService } from '../../common/services/email.service';
 import { authenticator } from 'otplib';
 import { toDataURL } from 'qrcode';
 import { CategoriesService } from '../categories/categories.service';
+import { PaymentMethodsService } from '../payment-methods/payment-methods.service';
 
 @Injectable()
 export class AuthService {
@@ -25,6 +26,7 @@ export class AuthService {
     private encryptionService: EncryptionService,
     private emailService: EmailService,
     private categoriesService: CategoriesService,
+    private paymentMethodsService: PaymentMethodsService,
   ) {}
 
   async login(loginDto: LoginDto) {
@@ -265,25 +267,23 @@ export class AuthService {
   }
 
   async register(registerDto: RegisterDto) {
-    // Check if user already exists
-    const existingUser = await this.usersService
-      .findByEmail(registerDto.email)
-      .catch(() => null);
-
-    if (existingUser) {
-      throw new ConflictException('User with this email already exists');
-    }
-
     try {
+      const existingUser = await this.usersService
+        .findByEmail(registerDto.email)
+        .catch(() => null);
+
+      if (existingUser) {
+        throw new ConflictException('Email already registered');
+      }
+
+      // Generate salt and hash the password
       const salt = await bcrypt.genSalt(10);
       const hashedPassword = await bcrypt.hash(registerDto.password, salt);
-      
+
       const user = await this.usersRepository.create({
         email: registerDto.email,
         firstName: await this.encryptionService.encrypt(registerDto.firstName),
         lastName: await this.encryptionService.encrypt(registerDto.lastName),
-        role: 'USER', // Restrict to USER role only
-        isActive: true,
         auth: {
           create: {
             password: hashedPassword,
@@ -294,6 +294,9 @@ export class AuthService {
 
       // Seed default categories for the new user
       await this.categoriesService.seedUserDefaultCategories(user.id);
+      
+      // Seed default payment methods for the new user
+      await this.paymentMethodsService.seedUserDefaultPaymentMethods(user.id);
 
       // Generate email verification token and send verification email
       const token = crypto.randomBytes(32).toString('hex');

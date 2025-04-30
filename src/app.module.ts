@@ -16,6 +16,7 @@ import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
 import { Reflector } from '@nestjs/core';
 import { NewsletterModule } from './modules/newsletter/newsletter.module';
 import { ExportModule } from './modules/export/export.module';
+import { PaymentMethodsModule } from './modules/payment-methods/payment-methods.module';
 
 @Module({
   imports: [
@@ -41,6 +42,7 @@ import { ExportModule } from './modules/export/export.module';
     EncryptionModule,
     NewsletterModule,
     ExportModule,
+    PaymentMethodsModule,
   ],
   controllers: [AppController],
   providers: [

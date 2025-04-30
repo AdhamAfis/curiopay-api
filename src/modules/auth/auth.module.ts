@@ -8,6 +8,7 @@ import { UsersModule } from '../users/users.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { CommonModule } from '../../common/common.module';
 import { CategoriesModule } from '../categories/categories.module';
+import { PaymentMethodsModule } from '../payment-methods/payment-methods.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { CategoriesModule } from '../categories/categories.module';
     forwardRef(() => UsersModule),
     CommonModule,
     CategoriesModule,
+    PaymentMethodsModule,
   ],
   controllers: [AuthController],
   providers: [

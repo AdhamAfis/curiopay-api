@@ -57,12 +57,13 @@ async function bootstrap() {
     .setVersion('1.0')
     .addTag('auth', 'Authentication endpoints')
     .addTag('users', 'User operations')
+    .addTag('user-preferences', 'User preferences')
+    .addTag('categories', 'Category management')
+    .addTag('payment-methods', 'Payment method management')
     .addTag('expenses', 'Expense management')
     .addTag('income', 'Income management')
-    .addTag('categories', 'Category management')
     .addTag('export', 'Data export')
     .addTag('newsletter', 'Newsletter management')
-    .addTag('user-preferences', 'User preferences')
     .addBearerAuth(
       {
         type: 'http',

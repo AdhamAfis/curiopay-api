@@ -6,8 +6,8 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
 }
 
@@ -50,31 +50,32 @@ enum DataEncryptionStatus {
 /// User model with enhanced security and privacy features
 /// @index([email, isDeleted]) - Optimizes user lookup by email while respecting soft delete status
 model User {
-  id              String         @id @default(cuid())
-  email           String         @unique
-  role            Role          @default(USER)
-  isActive        Boolean       @default(true)
-  emailVerified   DateTime?
-  lastLoginAt     DateTime?
-  auth            UserAuth?
-  contactInfo     UserContact?
-  sessions        Session[]
-  preferences     UserPreference?
-  expenses        Expense[]
-  categories      Category[]
-  provider        String?       // OAuth provider name
-  providerAccountId String?     // OAuth provider's user ID
-  firstName       String        // Sensitive data - should be encrypted at rest
-  lastName        String?       // Sensitive data - should be encrypted at rest
-  isDeleted       Boolean       @default(false)
-  notifications   NotificationSetting[]
-  incomes         Income[]
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
-  securityLevel   Int          @default(1) // For row-level security policies
-  dataRegion      String?      // For data residency compliance
+  id                     String                  @id @default(cuid())
+  email                  String                  @unique
+  role                   Role                    @default(USER)
+  isActive               Boolean                 @default(true)
+  emailVerified          DateTime?
+  lastLoginAt            DateTime?
+  auth                   UserAuth?
+  contactInfo            UserContact?
+  sessions               Session[]
+  preferences            UserPreference?
+  expenses               Expense[]
+  categories             Category[]
+  paymentMethods         PaymentMethod[]
+  provider               String? // OAuth provider name
+  providerAccountId      String? // OAuth provider's user ID
+  firstName              String // Sensitive data - should be encrypted at rest
+  lastName               String? // Sensitive data - should be encrypted at rest
+  isDeleted              Boolean                 @default(false)
+  notifications          NotificationSetting[]
+  incomes                Income[]
+  createdAt              DateTime                @default(now())
+  updatedAt              DateTime                @updatedAt
+  securityLevel          Int                     @default(1) // For row-level security policies
+  dataRegion             String? // For data residency compliance
   newsletterSubscription NewsletterSubscription?
-  auditLogs       AuditLog[]
+  auditLogs              AuditLog[]
 
   @@index([email, isDeleted])
   @@index([securityLevel, isDeleted]) // Optimize row-level security queries
@@ -87,45 +88,45 @@ model User {
 /// UserAuth model with enhanced security features
 /// Handles authentication and security-related data
 model UserAuth {
-  id                       String    @id @default(cuid())
-  userId                   String    @unique
-  password                 String    // Sensitive - should be encrypted at rest
-  passwordSalt             String    // Sensitive - should be encrypted at rest
-  passwordResetToken       String?   // Sensitive - should be encrypted at rest
-  passwordResetExpires     DateTime?
-  emailVerificationToken   String?   // Sensitive - should be encrypted at rest
+  id                           String    @id @default(cuid())
+  userId                       String    @unique
+  password                     String // Sensitive - should be encrypted at rest
+  passwordSalt                 String // Sensitive - should be encrypted at rest
+  passwordResetToken           String? // Sensitive - should be encrypted at rest
+  passwordResetExpires         DateTime?
+  emailVerificationToken       String? // Sensitive - should be encrypted at rest
   emailVerificationTokenExpiry DateTime?
-  failedLoginAttempts      Int       @default(0)
-  lastFailedLoginAt        DateTime?
-  lockedUntil              DateTime?
-  passwordHashVersion      Int       @default(1)
-  mfaEnabled               Boolean   @default(false)
-  mfaSecret                String?   // Sensitive - should be encrypted at rest
-  backupCodes              String[]  @default([]) // Sensitive - should be encrypted at rest
-  lastPasswordChange       DateTime  @default(now())
-  isDeleted                Boolean   @default(false)
-  user                     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt                DateTime  @default(now())
-  updatedAt                DateTime  @updatedAt
-  securityAuditLog         Json?     // Store security-related events
+  failedLoginAttempts          Int       @default(0)
+  lastFailedLoginAt            DateTime?
+  lockedUntil                  DateTime?
+  passwordHashVersion          Int       @default(1)
+  mfaEnabled                   Boolean   @default(false)
+  mfaSecret                    String? // Sensitive - should be encrypted at rest
+  backupCodes                  String[]  @default([]) // Sensitive - should be encrypted at rest
+  lastPasswordChange           DateTime  @default(now())
+  isDeleted                    Boolean   @default(false)
+  user                         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt                    DateTime  @default(now())
+  updatedAt                    DateTime  @updatedAt
+  securityAuditLog             Json? // Store security-related events
 
   @@index([passwordResetToken]) // Optimize password reset lookups
   @@index([emailVerificationToken]) // Optimize email verification lookups
-  @@index([userId, isDeleted])  // Optimize user auth lookups with soft delete
+  @@index([userId, isDeleted]) // Optimize user auth lookups with soft delete
   @@map("user_auth")
 }
 
 /// UserContact model with sensitive data handling
 model UserContact {
-  id        String    @id @default(cuid())
-  userId    String    @unique
-  firstName String    // Sensitive - should be encrypted at rest
-  lastName  String?   // Sensitive - should be encrypted at rest
-  phone     String?   @unique // Sensitive - should be encrypted at rest
-  avatarUrl String?
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @default(now())
+  id               String               @id @default(cuid())
+  userId           String               @unique
+  firstName        String // Sensitive - should be encrypted at rest
+  lastName         String? // Sensitive - should be encrypted at rest
+  phone            String?              @unique // Sensitive - should be encrypted at rest
+  avatarUrl        String?
+  user             User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @default(now())
   encryptionStatus DataEncryptionStatus @default(ENCRYPTED)
 
   @@map("user_contacts")
@@ -136,11 +137,11 @@ model UserContact {
 model Expense {
   id              String            @id @default(cuid())
   date            DateTime
-  description     String            // Sensitive - should be encrypted at rest
-  amount          Decimal          @db.Decimal(10,2)
+  description     String // Sensitive - should be encrypted at rest
+  amount          Decimal           @db.Decimal(10, 2)
   categoryId      String
   paymentMethodId String
-  notes           String?          // Sensitive - should be encrypted at rest
+  notes           String? // Sensitive - should be encrypted at rest
   userId          String
   category        Category          @relation(fields: [categoryId], references: [id])
   paymentMethod   PaymentMethod     @relation(fields: [paymentMethodId], references: [id])
@@ -148,24 +149,23 @@ model Expense {
   receipt         Receipt?
   recurring       RecurringExpense?
   isVoid          Boolean           @default(false)
-  voidReason      String?           // Sensitive - should be encrypted at rest
-  originalAmount  Decimal?          @db.Decimal(10,2)
+  voidReason      String? // Sensitive - should be encrypted at rest
+  originalAmount  Decimal?          @db.Decimal(10, 2)
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt
-  partitionKey    String?           // Format: YYYY_MM (handled by service)
-  auditLog        Json?            // Track changes
-  securityLevel   Int              @default(1)
+  partitionKey    String? // Format: YYYY_MM (handled by service)
+  auditLog        Json? // Track changes
+  securityLevel   Int               @default(1)
 
   // Composite indexes for common query patterns
   @@index([userId, date, isVoid, securityLevel]) // Optimize filtered queries
-  @@index([categoryId, date])     // Optimize category-based reporting
+  @@index([categoryId, date]) // Optimize category-based reporting
   @@index([userId, partitionKey]) // Optimize partitioned queries
   @@index([paymentMethodId, date]) // Optimize payment method analytics
   @@index([userId, categoryId, date]) // For category summaries
   @@index([date, amount]) // For financial reporting
   @@index([userId, date, amount]) // For user summaries
   @@index([userId, isVoid, date]) // For active expenses queries
-
   // Partition by date range
   @@index([partitionKey])
   @@map("expenses")
@@ -173,24 +173,24 @@ model Expense {
 
 /// Income model with partitioning and performance optimizations
 model Income {
-  id              String            @id @default(cuid())
+  id              String           @id @default(cuid())
   date            DateTime
-  description     String            // Sensitive - should be encrypted at rest
-  amount          Decimal          @db.Decimal(10,2)
+  description     String // Sensitive - should be encrypted at rest
+  amount          Decimal          @db.Decimal(10, 2)
   categoryId      String
   paymentMethodId String
-  notes           String?          // Sensitive - should be encrypted at rest
+  notes           String? // Sensitive - should be encrypted at rest
   userId          String
-  category        Category          @relation(fields: [categoryId], references: [id])
-  paymentMethod   PaymentMethod     @relation(fields: [paymentMethodId], references: [id])
-  user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category        Category         @relation(fields: [categoryId], references: [id])
+  paymentMethod   PaymentMethod    @relation(fields: [paymentMethodId], references: [id])
+  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   recurring       RecurringIncome?
-  isVoid          Boolean           @default(false)
-  voidReason      String?           // Sensitive - should be encrypted at rest
-  originalAmount  Decimal?          @db.Decimal(10,2)
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime          @updatedAt
-  partitionKey    String?           // Format: YYYY_MM (handled by service)
+  isVoid          Boolean          @default(false)
+  voidReason      String? // Sensitive - should be encrypted at rest
+  originalAmount  Decimal?         @db.Decimal(10, 2)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  partitionKey    String? // Format: YYYY_MM (handled by service)
   auditLog        Json?
   securityLevel   Int              @default(1)
 
@@ -203,7 +203,6 @@ model Income {
   @@index([date, amount]) // For financial reporting
   @@index([userId, date, amount]) // For user summaries
   @@index([userId, isVoid, date]) // For active income queries
-
   // Partition by date range
   @@index([partitionKey])
   @@map("incomes")
@@ -212,16 +211,16 @@ model Income {
 /// RecurringIncome model for handling recurring income patterns
 model RecurringIncome {
   id              String           @id @default(cuid())
-  incomeId        String          @unique
+  incomeId        String           @unique
   patternId       String
   startDate       DateTime
   endDate         DateTime?
   lastProcessed   DateTime
   nextProcessDate DateTime
   pattern         RecurringPattern @relation(fields: [patternId], references: [id])
-  income          Income          @relation(fields: [incomeId], references: [id], onDelete: Cascade)
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @default(now())
+  income          Income           @relation(fields: [incomeId], references: [id], onDelete: Cascade)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @default(now())
 
   @@index([nextProcessDate])
   @@map("recurring_incomes")
@@ -231,57 +230,65 @@ model NotificationSetting {
   id        String           @id @default(cuid())
   userId    String
   type      NotificationType
-  enabled   Boolean         @default(true)
-  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt DateTime        @default(now())
-  updatedAt DateTime        @default(now())
+  enabled   Boolean          @default(true)
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @default(now())
 
   @@unique([userId, type])
   @@map("notification_settings")
 }
 
 model Currency {
-  id           String           @id @default(cuid())
-  code         String           @unique // USD, EUR, etc.
-  symbol       String           // $, €, etc.
-  name         String
-  preferences  UserPreference[]
-  createdAt    DateTime         @default(now())
-  updatedAt    DateTime         @updatedAt
+  id          String           @id @default(cuid())
+  code        String           @unique // USD, EUR, etc.
+  symbol      String // $, €, etc.
+  name        String
+  preferences UserPreference[]
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
 
   @@map("currencies")
 }
 
 model Language {
-  id           String           @id @default(cuid())
-  code         String           @unique // en, es, etc.
-  name         String
-  preferences  UserPreference[]
-  createdAt    DateTime         @default(now())
-  updatedAt    DateTime         @default(now())
+  id          String           @id @default(cuid())
+  code        String           @unique // en, es, etc.
+  name        String
+  preferences UserPreference[]
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @default(now())
 
   @@map("languages")
 }
 
 model Theme {
-  id           String           @id @default(cuid())
-  name         String           @unique // light, dark
-  preferences  UserPreference[]
-  createdAt    DateTime         @default(now())
-  updatedAt    DateTime         @default(now())
+  id          String           @id @default(cuid())
+  name        String           @unique // light, dark
+  preferences UserPreference[]
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @default(now())
 
   @@map("themes")
 }
 
 model PaymentMethod {
   id        String            @id @default(cuid())
-  name      PaymentMethodEnum @unique
+  name      PaymentMethodEnum
   icon      String?
+  userId    String
+  user      User              @relation(fields: [userId], references: [id])
   expenses  Expense[]
   incomes   Income[]
+  isDefault Boolean           @default(false)
+  isSystem  Boolean           @default(false)
   createdAt DateTime          @default(now())
   updatedAt DateTime          @default(now())
 
+  @@unique([userId, name])
+  @@index([userId])
+  @@index([userId, isDefault])
+  @@index([userId, isSystem])
   @@map("payment_methods")
 }
 
@@ -301,32 +308,32 @@ model Session {
 }
 
 model CategoryType {
-  id          String     @id @default(cuid())
-  name        String     @unique
-  icon        String?
-  categories  Category[]
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @default(now())
+  id         String     @id @default(cuid())
+  name       String     @unique
+  icon       String?
+  categories Category[]
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @default(now())
 
   @@map("category_types")
 }
 
 model Category {
-  id            String       @id @default(cuid())
-  name          String
-  typeId        String
-  icon          String?
-  color         String?
-  userId        String
-  budget        Float?
-  type          CategoryType @relation(fields: [typeId], references: [id])
-  user          User         @relation(fields: [userId], references: [id])
-  expenses      Expense[]
-  incomes       Income[]
-  isDefault     Boolean      @default(false)
-  isSystem      Boolean      @default(false)
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @default(now())
+  id        String       @id @default(cuid())
+  name      String
+  typeId    String
+  icon      String?
+  color     String?
+  userId    String
+  budget    Float?
+  type      CategoryType @relation(fields: [typeId], references: [id])
+  user      User         @relation(fields: [userId], references: [id])
+  expenses  Expense[]
+  incomes   Income[]
+  isDefault Boolean      @default(false)
+  isSystem  Boolean      @default(false)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @default(now())
 
   @@unique([userId, name], name: "userId_name")
   @@index([userId])
@@ -338,16 +345,16 @@ model Category {
 }
 
 model RecurringPattern {
-  id              String            @id @default(cuid())
-  type            RecurringType
-  frequency       Int               // every X intervals
-  dayOfWeek      Int?              // 0-6 for weekly
-  dayOfMonth     Int?              // 1-31 for monthly
-  monthOfYear    Int?              // 1-12 for yearly
-  expenses       RecurringExpense[]
-  incomes        RecurringIncome[]
-  createdAt      DateTime          @default(now())
-  updatedAt      DateTime          @updatedAt
+  id          String             @id @default(cuid())
+  type        RecurringType
+  frequency   Int // every X intervals
+  dayOfWeek   Int? // 0-6 for weekly
+  dayOfMonth  Int? // 1-31 for monthly
+  monthOfYear Int? // 1-12 for yearly
+  expenses    RecurringExpense[]
+  incomes     RecurringIncome[]
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
 
   @@index([type, frequency]) // For recurring transaction processing
   @@map("recurring_patterns")
@@ -355,49 +362,49 @@ model RecurringPattern {
 
 model RecurringExpense {
   id              String           @id @default(cuid())
-  expenseId       String          @unique
+  expenseId       String           @unique
   patternId       String
   startDate       DateTime
   endDate         DateTime?
   lastProcessed   DateTime
   nextProcessDate DateTime
   pattern         RecurringPattern @relation(fields: [patternId], references: [id])
-  expense         Expense         @relation(fields: [expenseId], references: [id], onDelete: Cascade)
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @default(now())
+  expense         Expense          @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @default(now())
 
   @@index([nextProcessDate])
   @@map("recurring_expenses")
 }
 
 model Receipt {
-  id          String   @id @default(cuid())
-  expenseId   String   @unique
-  fileUrl     String
-  fileName    String
-  fileSize    Int
-  mimeType    String
-  expense     Expense  @relation(fields: [expenseId], references: [id], onDelete: Cascade)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @default(now())
+  id        String   @id @default(cuid())
+  expenseId String   @unique
+  fileUrl   String
+  fileName  String
+  fileSize  Int
+  mimeType  String
+  expense   Expense  @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now())
 
   @@map("receipts")
 }
 
 model UserPreference {
-  id              String    @id @default(cuid())
-  userId          String    @unique
-  currencyId      String
-  languageId      String
-  themeId         String
-  monthlyBudget   Float?    @default(0)
-  enableAiFeatures Boolean   @default(true)
-  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  currency        Currency  @relation(fields: [currencyId], references: [id])
-  language        Language  @relation(fields: [languageId], references: [id])
-  theme           Theme     @relation(fields: [themeId], references: [id])
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @default(now())
+  id               String   @id @default(cuid())
+  userId           String   @unique
+  currencyId       String
+  languageId       String
+  themeId          String
+  monthlyBudget    Float?   @default(0)
+  enableAiFeatures Boolean  @default(true)
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  currency         Currency @relation(fields: [currencyId], references: [id])
+  language         Language @relation(fields: [languageId], references: [id])
+  theme            Theme    @relation(fields: [themeId], references: [id])
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @default(now())
 
   @@index([userId, currencyId]) // For currency-based queries
   @@index([userId, languageId]) // For language-based queries
@@ -414,30 +421,30 @@ model VerificationToken {
 }
 
 model NewsletterSubscription {
-  id              String    @id @default(cuid())
-  userId          String    @unique
-  weeklyDigest    Boolean   @default(true)
-  promotionalEmails Boolean @default(true)
-  productUpdates  Boolean   @default(true)
-  unsubscribedAt  DateTime?
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                String    @id @default(cuid())
+  userId            String    @unique
+  weeklyDigest      Boolean   @default(true)
+  promotionalEmails Boolean   @default(true)
+  productUpdates    Boolean   @default(true)
+  unsubscribedAt    DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("newsletter_subscriptions")
 }
 
 model AuditLog {
-  id          String    @id @default(cuid())
-  userId      String
-  action      String
-  category    String
-  ipAddress   String
-  userAgent   String
-  status      String
-  details     Json?
-  timestamp   DateTime  @default(now())
-  user        User      @relation(fields: [userId], references: [id])
+  id        String   @id @default(cuid())
+  userId    String
+  action    String
+  category  String
+  ipAddress String
+  userAgent String
+  status    String
+  details   Json?
+  timestamp DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
 
   @@index([userId, category])
   @@index([timestamp])

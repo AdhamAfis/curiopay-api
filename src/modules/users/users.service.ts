@@ -196,16 +196,37 @@ export class UsersService {
       throw new NotFoundException(`User with ID ${userId} not found`);
     }
 
-    // Decrypt sensitive data
-    const decryptedFirstName = user.firstName 
-      ? await this.encryptionService.decrypt(user.firstName)
-      : '';
-    const decryptedLastName = user.lastName
-      ? await this.encryptionService.decrypt(user.lastName)
-      : '';
-    const decryptedPhone = user.contactInfo?.phone 
-      ? await this.encryptionService.decrypt(user.contactInfo.phone)
-      : undefined;
+    // Decrypt sensitive data with error handling
+    let decryptedFirstName = '';
+    let decryptedLastName = '';
+    let decryptedPhone: string | undefined = undefined;
+    
+    try {
+      if (user.firstName) {
+        decryptedFirstName = await this.encryptionService.decrypt(user.firstName);
+      }
+    } catch (error) {
+      console.warn(`Failed to decrypt firstName for user ${userId}: ${error.message}`);
+      decryptedFirstName = 'Data unavailable';
+    }
+    
+    try {
+      if (user.lastName) {
+        decryptedLastName = await this.encryptionService.decrypt(user.lastName);
+      }
+    } catch (error) {
+      console.warn(`Failed to decrypt lastName for user ${userId}: ${error.message}`);
+      decryptedLastName = 'Data unavailable';
+    }
+    
+    try {
+      if (user.contactInfo?.phone) {
+        decryptedPhone = await this.encryptionService.decrypt(user.contactInfo.phone);
+      }
+    } catch (error) {
+      console.warn(`Failed to decrypt phone for user ${userId}: ${error.message}`);
+      decryptedPhone = undefined;
+    }
 
     return {
       id: user.id,
