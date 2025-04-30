@@ -4,6 +4,7 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { ExportService } from './export.service';
 import { ExportOptionsDto } from './dto/export-options.dto';
 import { GetUser } from '../../common/decorators/get-user.decorator';
+import { EmailVerifiedGuard } from '../../common/guards/email-verified.guard';
 
 @ApiTags('export')
 @Controller('export')
@@ -13,30 +14,35 @@ export class ExportController {
   constructor(private readonly exportService: ExportService) {}
 
   @Post()
+  @UseGuards(EmailVerifiedGuard)
   @ApiOperation({ 
     summary: 'Generate user data export',
-    description: 'Generate a ZIP file containing user data based on specified options'
+    description: 'Generate a ZIP file containing user data based on specified options and send it via email'
   })
   @ApiResponse({ 
     status: 201, 
-    description: 'Export generated successfully',
+    description: 'Export generated and sent to user email',
     schema: {
       type: 'object',
       properties: {
-        filePath: {
+        success: {
+          type: 'boolean',
+          description: 'Whether the operation was successful'
+        },
+        message: {
           type: 'string',
-          description: 'Path to the generated export file'
+          description: 'Status message about the export'
         }
       }
     }
   })
   @ApiResponse({ status: 400, description: 'Invalid export options' })
+  @ApiResponse({ status: 401, description: 'Unauthorized or email not verified' })
   @ApiResponse({ status: 404, description: 'User not found' })
   async generateExport(
     @GetUser('id') userId: string,
     @Body() options: ExportOptionsDto,
-  ): Promise<{ filePath: string }> {
-    const filePath = await this.exportService.generateUserDataExport(userId, options);
-    return { filePath };
+  ) {
+    return this.exportService.generateUserDataExport(userId, options);
   }
 } 

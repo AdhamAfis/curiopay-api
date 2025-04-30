@@ -8,6 +8,10 @@ import * as handlebars from 'handlebars';
 import * as dayjs from 'dayjs';
 import { v4 as uuidv4 } from 'uuid';
 import { User, UserPreference, NewsletterSubscription, UserContact } from '@prisma/client';
+import { EmailService } from '../../common/services/email.service';
+import { PassThrough } from 'stream';
+import * as memfs from 'memfs';
+import { EncryptionService } from '../../common/services/encryption.service';
 
 interface UserWithRelations extends User {
   preferences?: UserPreference | null;
@@ -20,26 +24,33 @@ export class ExportService {
   private readonly logger = new Logger(ExportService.name);
   private readonly templatesDir = path.join(process.cwd(), 'src', 'modules', 'export', 'templates');
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly emailService: EmailService,
+    private readonly encryptionService: EncryptionService
+  ) {}
 
-  async generateUserDataExport(userId: string, options: ExportOptionsDto): Promise<string> {
+  async generateUserDataExport(userId: string, options: ExportOptionsDto): Promise<{ success: boolean; message: string }> {
     try {
       this.logger.log(`Generating data export for user ${userId}`);
       
-      // Create temp directory for export
-      const exportId = uuidv4();
-      const exportDir = path.join(process.cwd(), 'temp', exportId);
-      fs.mkdirSync(exportDir, { recursive: true });
-
-      // Copy static assets
-      await this.copyStaticAssets(exportDir);
-
+      // Create virtual file system for in-memory operations
+      const vol = memfs.Volume.fromJSON({});
+      const fs = memfs.createFsFromVolume(vol);
+      
       // Ensure userId is a string and not an object
       const userIdString = typeof userId === 'object' && userId !== null 
         ? (userId as any).id 
         : userId;
       
-      // Generate HTML files
+      // Create temp directory in virtual filesystem
+      const exportId = uuidv4();
+      const exportDir = `/temp/${exportId}`;
+      const assetsDir = `${exportDir}/assets`;
+      fs.mkdirSync(exportDir, { recursive: true });
+      fs.mkdirSync(assetsDir, { recursive: true });
+
+      // Get user data
       const user = await this.prisma.user.findUnique({
         where: { 
           id: userIdString
@@ -61,62 +72,69 @@ export class ExportService {
         throw new Error(`User not found with ID: ${userId}`);
       }
 
+      // Decrypt user's name if encrypted
+      let firstName = '';
+      try {
+        if (user.firstName) {
+          firstName = await this.encryptionService.decrypt(user.firstName);
+        }
+      } catch (error) {
+        this.logger.warn(`Could not decrypt user's first name: ${error.message}`);
+        firstName = 'User';
+      }
+
+      // Write CSS to virtual filesystem
+      const cssContent = this.generateCSS();
+      fs.writeFileSync(`${assetsDir}/styles.css`, cssContent);
+
       // Generate index page
-      await this.generateIndexPage(exportDir, user);
+      const indexTemplate = this.getTemplate('index');
+      const indexHtml = indexTemplate({
+        user,
+        exportDate: dayjs().format('MMMM D, YYYY'),
+        title: 'Data Export',
+      });
+      fs.writeFileSync(`${exportDir}/index.html`, indexHtml);
 
       // Generate data pages based on options
       if (options.includeExpenses) {
-        await this.generateExpensesPage(exportDir, userIdString);
+        await this.generateExpensesPage(fs, exportDir, userIdString);
       }
       if (options.includeIncome) {
-        await this.generateIncomePage(exportDir, userIdString);
+        await this.generateIncomePage(fs, exportDir, userIdString);
       }
       if (options.includeCategories) {
-        await this.generateCategoriesPage(exportDir, userIdString);
+        await this.generateCategoriesPage(fs, exportDir, userIdString);
       }
       if (options.includePreferences) {
-        await this.generatePreferencesPage(exportDir, user);
+        await this.generatePreferencesPage(fs, exportDir, user);
       }
       if (options.includeNewsletter) {
-        await this.generateNewsletterPage(exportDir, user);
+        await this.generateNewsletterPage(fs, exportDir, user);
       }
 
-      // Create zip file
-      const zipPath = path.join(process.cwd(), 'temp', `${exportId}.zip`);
-      await this.createZipArchive(exportDir, zipPath);
+      // Create zip buffer in memory
+      const zipBuffer = await this.createInMemoryZipArchive(fs, exportDir);
+      
+      // Send email with the zip file as attachment
+      await this.emailService.sendDataExportEmail(
+        user.email,
+        firstName,
+        zipBuffer
+      );
 
-      // Cleanup temp directory
-      fs.rmSync(exportDir, { recursive: true, force: true });
-
-      this.logger.log(`Export generated successfully: ${zipPath}`);
-      return zipPath;
+      this.logger.log(`Export generated and sent via email to ${user.email}`);
+      return { 
+        success: true, 
+        message: 'Export has been generated and sent to your email address'
+      };
     } catch (error) {
       this.logger.error(`Error generating export: ${error.message}`, error.stack);
       throw error;
     }
   }
 
-  private async copyStaticAssets(exportDir: string): Promise<void> {
-    const assetsDir = path.join(exportDir, 'assets');
-    fs.mkdirSync(assetsDir, { recursive: true });
-
-    // Copy CSS file
-    const cssContent = this.generateCSS();
-    fs.writeFileSync(path.join(assetsDir, 'styles.css'), cssContent);
-  }
-
-  private async generateIndexPage(exportDir: string, user: UserWithRelations): Promise<void> {
-    const template = this.getTemplate('index');
-    const html = template({
-      user,
-      exportDate: dayjs().format('MMMM D, YYYY'),
-      title: 'Data Export',
-    });
-
-    fs.writeFileSync(path.join(exportDir, 'index.html'), html);
-  }
-
-  private async generateExpensesPage(exportDir: string, userId: string): Promise<void> {
+  private async generateExpensesPage(fs: any, exportDir: string, userId: string): Promise<void> {
     const expenses = await this.prisma.expense.findMany({
       where: { userId },
       include: {
@@ -133,10 +151,10 @@ export class ExportService {
       totalAmount: expenses.reduce((sum, exp) => sum + Number(exp.amount), 0),
     });
 
-    fs.writeFileSync(path.join(exportDir, 'expenses.html'), html);
+    fs.writeFileSync(`${exportDir}/expenses.html`, html);
   }
 
-  private async generateIncomePage(exportDir: string, userId: string): Promise<void> {
+  private async generateIncomePage(fs: any, exportDir: string, userId: string): Promise<void> {
     const incomes = await this.prisma.income.findMany({
       where: { userId },
       include: {
@@ -153,10 +171,10 @@ export class ExportService {
       totalAmount: incomes.reduce((sum, inc) => sum + Number(inc.amount), 0),
     });
 
-    fs.writeFileSync(path.join(exportDir, 'income.html'), html);
+    fs.writeFileSync(`${exportDir}/income.html`, html);
   }
 
-  private async generateCategoriesPage(exportDir: string, userId: string): Promise<void> {
+  private async generateCategoriesPage(fs: any, exportDir: string, userId: string): Promise<void> {
     const categories = await this.prisma.category.findMany({
       where: { userId },
       include: {
@@ -170,27 +188,27 @@ export class ExportService {
       title: 'Categories',
     });
 
-    fs.writeFileSync(path.join(exportDir, 'categories.html'), html);
+    fs.writeFileSync(`${exportDir}/categories.html`, html);
   }
 
-  private async generatePreferencesPage(exportDir: string, user: UserWithRelations): Promise<void> {
+  private async generatePreferencesPage(fs: any, exportDir: string, user: UserWithRelations): Promise<void> {
     const template = this.getTemplate('preferences');
     const html = template({
       preferences: user.preferences,
       title: 'Preferences',
     });
 
-    fs.writeFileSync(path.join(exportDir, 'preferences.html'), html);
+    fs.writeFileSync(`${exportDir}/preferences.html`, html);
   }
 
-  private async generateNewsletterPage(exportDir: string, user: UserWithRelations): Promise<void> {
+  private async generateNewsletterPage(fs: any, exportDir: string, user: UserWithRelations): Promise<void> {
     const template = this.getTemplate('newsletter');
     const html = template({
       newsletter: user.newsletterSubscription,
       title: 'Newsletter Preferences',
     });
 
-    fs.writeFileSync(path.join(exportDir, 'newsletter.html'), html);
+    fs.writeFileSync(`${exportDir}/newsletter.html`, html);
   }
 
   private getTemplate(name: string): handlebars.TemplateDelegate {
@@ -320,19 +338,64 @@ export class ExportService {
     `;
   }
 
-  private async createZipArchive(sourceDir: string, outputPath: string): Promise<void> {
+  private async createInMemoryZipArchive(fs: any, sourceDir: string): Promise<Buffer> {
     return new Promise((resolve, reject) => {
-      const output = fs.createWriteStream(outputPath);
+      // Create a PassThrough stream to collect the data
+      const output = new PassThrough();
+      const chunks: Buffer[] = [];
+      
+      // Create the archive
       const archive = archiver('zip', {
-        zlib: { level: 9 },
+        zlib: { level: 9 }
       });
 
-      output.on('close', () => resolve());
+      // Listen for archive data
+      output.on('data', (chunk) => chunks.push(chunk as Buffer));
+      output.on('end', () => resolve(Buffer.concat(chunks)));
+      
+      // Handle errors
       archive.on('error', (err) => reject(err));
-
+      
+      // Pipe archive to the output stream
       archive.pipe(output);
-      archive.directory(sourceDir, false);
+      
+      // Add virtual directory to archive
+      const entries = this.getEntriesFromVirtualFs(fs, sourceDir);
+      
+      // Add each file to the archive
+      for (const entry of entries) {
+        const content = fs.readFileSync(entry.path);
+        archive.append(content, { name: entry.name });
+      }
+      
+      // Finalize the archive
       archive.finalize();
     });
+  }
+
+  private getEntriesFromVirtualFs(fs: any, dir: string): Array<{ path: string; name: string }> {
+    const entries: Array<{ path: string; name: string }> = [];
+    const baseDir = dir.replace(/^\//, ''); // Remove leading slash
+    
+    function processDir(currentDir: string, basePath: string) {
+      const files = fs.readdirSync(currentDir);
+      
+      for (const file of files) {
+        const filePath = path.join(currentDir, file);
+        const stat = fs.statSync(filePath);
+        
+        if (stat.isDirectory()) {
+          processDir(filePath, path.join(basePath, file));
+        } else {
+          entries.push({
+            path: filePath,
+            name: path.join(basePath, file)
+          });
+        }
+      }
+    }
+    
+    processDir(dir, '');
+    return entries;
   }
 } 

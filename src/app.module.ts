@@ -17,6 +17,7 @@ import { Reflector } from '@nestjs/core';
 import { NewsletterModule } from './modules/newsletter/newsletter.module';
 import { ExportModule } from './modules/export/export.module';
 import { PaymentMethodsModule } from './modules/payment-methods/payment-methods.module';
+import { GuardsModule } from './common/guards/guards.module';
 
 @Module({
   imports: [
@@ -43,6 +44,7 @@ import { PaymentMethodsModule } from './modules/payment-methods/payment-methods.
     NewsletterModule,
     ExportModule,
     PaymentMethodsModule,
+    GuardsModule,
   ],
   controllers: [AppController],
   providers: [

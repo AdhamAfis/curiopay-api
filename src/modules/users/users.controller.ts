@@ -31,6 +31,7 @@ import {
 } from '@nestjs/swagger';
 import { AdminGuard } from '../auth/guards/admin.guard';
 import { RegisterDto } from '../auth/dto/register.dto';
+import { EmailVerifiedGuard } from '../../common/guards/email-verified.guard';
 
 @ApiTags('users')
 @ApiBearerAuth('JWT-auth')
@@ -119,6 +120,7 @@ export class UsersController {
   }
 
   @Delete('me/delete-account')
+  @UseGuards(EmailVerifiedGuard)
   @ApiOperation({ summary: 'Delete current user account and all associated data' })
   @ApiResponse({
     status: 200,
@@ -130,7 +132,7 @@ export class UsersController {
   })
   @ApiResponse({
     status: 401,
-    description: 'Invalid password.',
+    description: 'Invalid password or email not verified.',
   })
   async deleteAccount(
     @CurrentUser() user: IUser,

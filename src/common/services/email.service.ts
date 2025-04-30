@@ -215,4 +215,33 @@ export class EmailService {
       this.logger.log(`Email verification preview URL: ${nodemailer.getTestMessageUrl(info)}`);
     }
   }
+
+  async sendDataExportEmail(email: string, firstName: string, attachmentBuffer: Buffer): Promise<void> {
+    const info = await this.transporter.sendMail({
+      from: this.configService.get<string>('SMTP_FROM') || 'noreply@curiopay.com',
+      to: email,
+      subject: 'Your CurioPay Data Export',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h1>Your Data Export is Ready</h1>
+          <p>Hello ${firstName},</p>
+          <p>As requested, we've prepared an export of your CurioPay data. You'll find it attached to this email.</p>
+          <p>The file is a ZIP archive containing HTML pages with your data, organized by category.</p>
+          <p>If you have any questions or need assistance, please don't hesitate to contact our support team.</p>
+          <p>Best regards,<br>The CurioPay Team</p>
+        </div>
+      `,
+      attachments: [
+        {
+          filename: 'curiopay-data-export.zip',
+          content: attachmentBuffer,
+        },
+      ],
+    });
+
+    // Log preview URL for ethereal emails
+    if (this.testAccount) {
+      this.logger.log(`Data export email preview URL: ${nodemailer.getTestMessageUrl(info)}`);
+    }
+  }
 } 
