@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{title}} - CurioPay</title>
+    <link rel="stylesheet" href="assets/styles.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>CurioPay Data Export - {{title}}</h1>
+        </header>
+
+        <nav class="nav">
+            <a href="index.html">Overview</a>
+            <a href="expenses.html">Expenses</a>
+            <a href="income.html">Income</a>
+            <a href="categories.html">Categories</a>
+            <a href="preferences.html">Preferences</a>
+            <a href="newsletter.html">Newsletter</a>
+        </nav>
+
+        <main>
+            <div class="card">
+                <h2>User Preferences</h2>
+                
+                {{#if preferences}}
+                <table class="table">
+                    <tbody>
+                        <tr>
+                            <th>Currency</th>
+                            <td>{{preferences.currency.code}} ({{preferences.currency.symbol}})</td>
+                        </tr>
+                        <tr>
+                            <th>Language</th>
+                            <td>{{preferences.language.name}} ({{preferences.language.code}})</td>
+                        </tr>
+                        <tr>
+                            <th>Theme</th>
+                            <td>{{preferences.theme.name}}</td>
+                        </tr>
+                        <tr>
+                            <th>Notification Emails</th>
+                            <td>{{#if preferences.notificationEmails}}Enabled{{else}}Disabled{{/if}}</td>
+                        </tr>
+                        <tr>
+                            <th>AI Features</th>
+                            <td>{{#if preferences.aiFeatures}}Enabled{{else}}Disabled{{/if}}</td>
+                        </tr>
+                    </tbody>
+                </table>
+                {{else}}
+                <p>No preferences found.</p>
+                {{/if}}
+            </div>
+        </main>
+    </div>
+</body>
+</html> 

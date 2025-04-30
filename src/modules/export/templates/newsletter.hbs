@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{title}} - CurioPay</title>
+    <link rel="stylesheet" href="assets/styles.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>CurioPay Data Export - {{title}}</h1>
+        </header>
+
+        <nav class="nav">
+            <a href="index.html">Overview</a>
+            <a href="expenses.html">Expenses</a>
+            <a href="income.html">Income</a>
+            <a href="categories.html">Categories</a>
+            <a href="preferences.html">Preferences</a>
+            <a href="newsletter.html">Newsletter</a>
+        </nav>
+
+        <main>
+            <div class="card">
+                <h2>Newsletter Subscription</h2>
+                
+                {{#if newsletter}}
+                <table class="table">
+                    <tbody>
+                        <tr>
+                            <th>Subscribed</th>
+                            <td>{{#if newsletter.subscribed}}Yes{{else}}No{{/if}}</td>
+                        </tr>
+                        <tr>
+                            <th>Frequency</th>
+                            <td>{{newsletter.frequency}}</td>
+                        </tr>
+                        <tr>
+                            <th>Subscribed On</th>
+                            <td>{{newsletter.subscribedAt}}</td>
+                        </tr>
+                        <tr>
+                            <th>Topics</th>
+                            <td>{{newsletter.topics}}</td>
+                        </tr>
+                    </tbody>
+                </table>
+                {{else}}
+                <p>No newsletter subscription found.</p>
+                {{/if}}
+            </div>
+        </main>
+    </div>
+</body>
+</html> 

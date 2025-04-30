@@ -18,12 +18,14 @@ interface UserWithRelations extends User {
 @Injectable()
 export class ExportService {
   private readonly logger = new Logger(ExportService.name);
-  private readonly templatesDir = path.join(__dirname, 'templates');
+  private readonly templatesDir = path.join(process.cwd(), 'src', 'modules', 'export', 'templates');
 
   constructor(private readonly prisma: PrismaService) {}
 
   async generateUserDataExport(userId: string, options: ExportOptionsDto): Promise<string> {
     try {
+      this.logger.log(`Generating data export for user ${userId}`);
+      
       // Create temp directory for export
       const exportId = uuidv4();
       const exportDir = path.join(process.cwd(), 'temp', exportId);
@@ -32,9 +34,16 @@ export class ExportService {
       // Copy static assets
       await this.copyStaticAssets(exportDir);
 
+      // Ensure userId is a string and not an object
+      const userIdString = typeof userId === 'object' && userId !== null 
+        ? (userId as any).id 
+        : userId;
+      
       // Generate HTML files
       const user = await this.prisma.user.findUnique({
-        where: { id: userId },
+        where: { 
+          id: userIdString
+        },
         include: {
           contactInfo: true,
           preferences: {
@@ -49,7 +58,7 @@ export class ExportService {
       });
 
       if (!user) {
-        throw new Error('User not found');
+        throw new Error(`User not found with ID: ${userId}`);
       }
 
       // Generate index page
@@ -57,13 +66,13 @@ export class ExportService {
 
       // Generate data pages based on options
       if (options.includeExpenses) {
-        await this.generateExpensesPage(exportDir, userId);
+        await this.generateExpensesPage(exportDir, userIdString);
       }
       if (options.includeIncome) {
-        await this.generateIncomePage(exportDir, userId);
+        await this.generateIncomePage(exportDir, userIdString);
       }
       if (options.includeCategories) {
-        await this.generateCategoriesPage(exportDir, userId);
+        await this.generateCategoriesPage(exportDir, userIdString);
       }
       if (options.includePreferences) {
         await this.generatePreferencesPage(exportDir, user);
@@ -79,9 +88,10 @@ export class ExportService {
       // Cleanup temp directory
       fs.rmSync(exportDir, { recursive: true, force: true });
 
+      this.logger.log(`Export generated successfully: ${zipPath}`);
       return zipPath;
     } catch (error) {
-      this.logger.error(`Error generating export: ${error.message}`);
+      this.logger.error(`Error generating export: ${error.message}`, error.stack);
       throw error;
     }
   }

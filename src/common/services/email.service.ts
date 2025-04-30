@@ -1,28 +1,71 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as nodemailer from 'nodemailer';
 
 @Injectable()
 export class EmailService {
   private transporter: nodemailer.Transporter;
+  private readonly logger = new Logger(EmailService.name);
+  private testAccount: any;
 
   constructor(private configService: ConfigService) {
-    this.transporter = nodemailer.createTransport({
-      host: this.configService.get('SMTP_HOST'),
-      port: this.configService.get('SMTP_PORT'),
-      secure: true,
-      auth: {
-        user: this.configService.get('SMTP_USER'),
-        pass: this.configService.get('SMTP_PASS'),
-      },
-    });
+    this.initializeTransporter();
+  }
+
+  private async initializeTransporter() {
+    const smtpHost = this.configService.get('SMTP_HOST');
+    const smtpPort = this.configService.get('SMTP_PORT');
+    const smtpUser = this.configService.get('SMTP_USER');
+    const smtpPass = this.configService.get('SMTP_PASS');
+
+    // Check if SMTP settings are configured
+    if (smtpHost && smtpPort && smtpUser && smtpPass) {
+      // Use real SMTP settings
+      this.transporter = nodemailer.createTransport({
+        host: smtpHost,
+        port: parseInt(smtpPort, 10),
+        secure: parseInt(smtpPort, 10) === 465,
+        auth: {
+          user: smtpUser,
+          pass: smtpPass,
+        },
+      });
+      this.logger.log('Email service initialized with real SMTP settings');
+    } else {
+      // Use ethereal email for testing/development
+      try {
+        this.logger.warn('SMTP settings not found, using ethereal email for testing');
+        this.testAccount = await nodemailer.createTestAccount();
+        
+        this.transporter = nodemailer.createTransport({
+          host: 'smtp.ethereal.email',
+          port: 587,
+          secure: false,
+          auth: {
+            user: this.testAccount.user,
+            pass: this.testAccount.pass,
+          },
+        });
+        
+        this.logger.log(`Test email account created: ${this.testAccount.user}`);
+      } catch (error) {
+        this.logger.error('Failed to create test email account', error);
+        // Create a fake transporter that logs instead of sending
+        this.transporter = {
+          sendMail: async (mailOptions) => {
+            this.logger.warn(`Email would be sent: ${JSON.stringify(mailOptions)}`);
+            return { messageId: 'fake-message-id' };
+          }
+        } as any;
+      }
+    }
   }
 
   async sendPasswordResetEmail(email: string, token: string): Promise<void> {
-    const resetLink = `${this.configService.get<string>('FRONTEND_URL')}/reset-password?token=${token}`;
+    const resetLink = `${this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000'}/reset-password?token=${token}`;
     
-    await this.transporter.sendMail({
-      from: this.configService.get<string>('SMTP_FROM'),
+    const info = await this.transporter.sendMail({
+      from: this.configService.get<string>('SMTP_FROM') || 'noreply@curiopay.com',
       to: email,
       subject: 'Password Reset Request',
       html: `
@@ -33,11 +76,16 @@ export class EmailService {
         <p>This link will expire in 1 hour.</p>
       `,
     });
+
+    // Log preview URL for ethereal emails
+    if (this.testAccount) {
+      this.logger.log(`Password reset email preview URL: ${nodemailer.getTestMessageUrl(info)}`);
+    }
   }
 
   async sendMfaSetupEmail(email: string, qrCodeUrl: string, secret: string): Promise<void> {
-    await this.transporter.sendMail({
-      from: this.configService.get<string>('SMTP_FROM'),
+    const info = await this.transporter.sendMail({
+      from: this.configService.get<string>('SMTP_FROM') || 'noreply@curiopay.com',
       to: email,
       subject: 'Multi-Factor Authentication Setup',
       html: `
@@ -50,6 +98,11 @@ export class EmailService {
         <p>Keep this information secure and do not share it with anyone.</p>
       `,
     });
+
+    // Log preview URL for ethereal emails
+    if (this.testAccount) {
+      this.logger.log(`MFA setup email preview URL: ${nodemailer.getTestMessageUrl(info)}`);
+    }
   }
 
   async sendMissYouEmail(email: string, firstName: string) {
@@ -66,7 +119,7 @@ export class EmailService {
         </ul>
         <p>We're here to help you stay on top of your financial journey!</p>
         <div style="margin: 30px 0;">
-          <a href="${this.configService.get('APP_URL')}/login" 
+          <a href="${this.configService.get('APP_URL') || 'http://localhost:3000'}/login" 
              style="background-color: #4CAF50; color: white; padding: 14px 20px; text-decoration: none; border-radius: 4px;">
             Log In to CurioPay
           </a>
@@ -75,12 +128,19 @@ export class EmailService {
       </div>
     `;
 
-    return this.transporter.sendMail({
-      from: this.configService.get('SMTP_FROM'),
+    const info = await this.transporter.sendMail({
+      from: this.configService.get('SMTP_FROM') || 'noreply@curiopay.com',
       to: email,
       subject,
       html,
     });
+
+    // Log preview URL for ethereal emails
+    if (this.testAccount) {
+      this.logger.log(`Miss you email preview URL: ${nodemailer.getTestMessageUrl(info)}`);
+    }
+    
+    return info;
   }
 
   async sendNewsletter(email: string, firstName: string) {
@@ -101,7 +161,7 @@ export class EmailService {
         <p>Using CurioPay's category tracking can help you save up to 20% on monthly expenses by identifying unnecessary spending!</p>
 
         <div style="margin: 30px 0;">
-          <a href="${this.configService.get('APP_URL')}/dashboard" 
+          <a href="${this.configService.get('APP_URL') || 'http://localhost:3000'}/dashboard" 
              style="background-color: #4CAF50; color: white; padding: 14px 20px; text-decoration: none; border-radius: 4px;">
             View Your Dashboard
           </a>
@@ -111,11 +171,18 @@ export class EmailService {
       </div>
     `;
 
-    return this.transporter.sendMail({
-      from: this.configService.get('SMTP_FROM'),
+    const info = await this.transporter.sendMail({
+      from: this.configService.get('SMTP_FROM') || 'noreply@curiopay.com',
       to: email,
       subject,
       html,
     });
+
+    // Log preview URL for ethereal emails
+    if (this.testAccount) {
+      this.logger.log(`Newsletter email preview URL: ${nodemailer.getTestMessageUrl(info)}`);
+    }
+    
+    return info;
   }
 } 

@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{title}} - CurioPay</title>
+    <link rel="stylesheet" href="assets/styles.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>CurioPay Data Export - {{title}}</h1>
+        </header>
+
+        <nav class="nav">
+            <a href="index.html">Overview</a>
+            <a href="expenses.html">Expenses</a>
+            <a href="income.html">Income</a>
+            <a href="categories.html">Categories</a>
+            <a href="preferences.html">Preferences</a>
+            <a href="newsletter.html">Newsletter</a>
+        </nav>
+
+        <main>
+            <div class="card">
+                <h2>Categories</h2>
+                
+                {{#if categories.length}}
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Description</th>
+                            <th>Type</th>
+                            <th>Color</th>
+                            <th>Icon</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {{#each categories}}
+                        <tr>
+                            <td>{{name}}</td>
+                            <td>{{description}}</td>
+                            <td>{{type.name}}</td>
+                            <td><span class="badge" style="background-color: {{color}}">{{color}}</span></td>
+                            <td>{{icon}}</td>
+                        </tr>
+                        {{/each}}
+                    </tbody>
+                </table>
+                {{else}}
+                <p>No categories found.</p>
+                {{/if}}
+            </div>
+        </main>
+    </div>
+</body>
+</html> 
