@@ -435,16 +435,18 @@ model NewsletterSubscription {
 }
 
 model AuditLog {
-  id        String   @id @default(cuid())
-  userId    String
-  action    String
-  category  String
-  ipAddress String
-  userAgent String
-  status    String
-  details   Json?
-  timestamp DateTime @default(now())
-  user      User     @relation(fields: [userId], references: [id])
+  id            String   @id @default(cuid())
+  userId        String
+  action        String
+  category      String
+  ipAddress     String
+  userAgent     String
+  status        String
+  details       Json?
+  timestamp     DateTime @default(now())
+  logIntegrityHash String?
+  isCritical    Boolean  @default(false)
+  user          User     @relation(fields: [userId], references: [id])
 
   @@index([userId, category])
   @@index([timestamp])
