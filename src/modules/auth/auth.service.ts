@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException, BadRequestException, ConflictException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, BadRequestException, ConflictException, InternalServerErrorException, NotFoundException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service';
 import { LoginDto } from './dto/login.dto';
@@ -1181,6 +1181,61 @@ export class AuthService {
         id: updatedUser.id,
         email: updatedUser.email,
       }
+    };
+  }
+
+  /**
+   * Generic OAuth login handler for all providers
+   */
+  async oauthLogin(user: User, ipAddress = 'unknown', userAgent = 'unknown') {
+    if (!user) {
+      // Log the failed OAuth login
+      await this.auditService.logAuth({
+        userId: 'unknown',
+        action: 'OAUTH_LOGIN',
+        status: 'FAILURE',
+        ipAddress,
+        userAgent,
+        details: {
+          reason: 'User object is null or undefined'
+        }
+      });
+      
+      throw new UnauthorizedException('OAuth authentication failed');
+    }
+
+    // Generate JWT token
+    const payload = {
+      sub: user.id,
+      email: user.email,
+      role: user.role || 'USER',
+    };
+    
+    // Log the successful OAuth login
+    await this.auditService.logAuth({
+      userId: user.id,
+      action: `${user.provider?.toUpperCase() || 'OAUTH'}_LOGIN`,
+      status: 'SUCCESS',
+      ipAddress,
+      userAgent,
+      details: {
+        email: user.email,
+        provider: user.provider,
+        loginAt: new Date()
+      }
+    });
+
+    return {
+      accessToken: this.jwtService.sign(payload, { 
+        expiresIn: this.configService.get<string>('JWT_EXPIRES_IN') || '1d' 
+      }),
+      user: {
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName || '',
+        lastName: user.lastName || '',
+        role: user.role || 'USER',
+      },
     };
   }
 }

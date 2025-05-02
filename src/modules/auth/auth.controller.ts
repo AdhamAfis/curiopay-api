@@ -261,14 +261,14 @@ export class AuthController extends BaseController {
     }
   })
   async googleAuthCallback(@Req() req, @Res() res) {
-    const ipAddress = req.ip || 'unknown';
-    const userAgent = req.headers['user-agent'] || 'unknown';
-    const { accessToken, user } = await this.authService.googleLogin(req.user as User, ipAddress, userAgent);
-    
-    // Redirect to frontend with token
-    // You can customize this URL and how the token is passed based on your frontend setup
     const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
-    return res.redirect(`${frontendUrl}/auth/google/success?token=${accessToken}&user=${JSON.stringify(user)}`);
+    try {
+      const { accessToken, user } = await this.authService.oauthLogin(req.user, req.ip, req.headers['user-agent']);
+      // Redirect to frontend with token
+      return res.redirect(`${frontendUrl}/auth/callback?token=${accessToken}&userId=${user.id}`);
+    } catch (error) {
+      return res.redirect(`${frontendUrl}/auth/callback?error=${encodeURIComponent(error.message)}`);
+    }
   }
 
   @Post('link-account')
@@ -296,4 +296,103 @@ export class AuthController extends BaseController {
     const userAgent = req.headers['user-agent'] || 'unknown';
     return this.authService.unlinkProvider(user.id, provider, ipAddress, userAgent);
   }
+
+  @Public()
+  @Get('github')
+  @UseGuards(AuthGuard('github'))
+  @ApiOperation({ summary: 'GitHub OAuth login' })
+  @ApiResponse({ status: 200, description: 'Redirects to GitHub login' })
+  githubAuth() {
+    // This route will redirect to GitHub
+    return;
+  }
+
+  @Public()
+  @Get('github/callback')
+  @UseGuards(AuthGuard('github'))
+  @ApiOperation({ summary: 'GitHub OAuth callback' })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'GitHub login successful',
+    schema: {
+      type: 'object',
+      properties: {
+        accessToken: {
+          type: 'string',
+          example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+          description: 'JWT token to be used for authenticated requests',
+        },
+        user: {
+          type: 'object',
+          properties: {
+            id: { type: 'string' },
+            email: { type: 'string' },
+            firstName: { type: 'string' },
+            lastName: { type: 'string' },
+          },
+        },
+      },
+    },
+  })
+  async githubAuthCallback(@Req() req, @Res() res) {
+    const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
+    try {
+      const { accessToken, user } = await this.authService.oauthLogin(req.user, req.ip, req.headers['user-agent']);
+      // Redirect to frontend with token
+      return res.redirect(`${frontendUrl}/auth/callback?token=${accessToken}&userId=${user.id}`);
+    } catch (error) {
+      return res.redirect(`${frontendUrl}/auth/callback?error=${encodeURIComponent(error.message)}`);
+    }
+  }
+
+  /*
+  // Microsoft OAuth routes - Commented out
+  @Public()
+  @Get('microsoft')
+  @UseGuards(AuthGuard('microsoft'))
+  @ApiOperation({ summary: 'Microsoft OAuth login' })
+  @ApiResponse({ status: 200, description: 'Redirects to Microsoft login' })
+  microsoftAuth() {
+    // This route will redirect to Microsoft
+    return;
+  }
+
+  @Public()
+  @Get('microsoft/callback')
+  @UseGuards(AuthGuard('microsoft'))
+  @ApiOperation({ summary: 'Microsoft OAuth callback' })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Microsoft login successful',
+    schema: {
+      type: 'object',
+      properties: {
+        accessToken: {
+          type: 'string',
+          example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+          description: 'JWT token to be used for authenticated requests',
+        },
+        user: {
+          type: 'object',
+          properties: {
+            id: { type: 'string' },
+            email: { type: 'string' },
+            firstName: { type: 'string' },
+            lastName: { type: 'string' },
+          },
+        },
+      },
+    },
+  })
+  async microsoftAuthCallback(@Req() req, @Res() res) {
+    const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
+    try {
+      const { accessToken, user } = await this.authService.oauthLogin(req.user, req.ip, req.headers['user-agent']);
+      // Redirect to frontend with token
+      return res.redirect(`${frontendUrl}/auth/callback?token=${accessToken}&userId=${user.id}`);
+    } catch (error) {
+      return res.redirect(`${frontendUrl}/auth/callback?error=${encodeURIComponent(error.message)}`);
+    }
+  }
+  */
 }
