@@ -1,4 +1,4 @@
-import { Controller, Post, Body, HttpCode, UseGuards, Get, UseInterceptors } from '@nestjs/common';
+import { Controller, Post, Body, HttpCode, UseGuards, Get, UseInterceptors, Req, Res } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
@@ -11,12 +11,18 @@ import { CurrentUser } from './decorators/current-user.decorator';
 import { Public } from './decorators/public.decorator';
 import { EncryptionInterceptor } from '../../common/interceptors/encryption.interceptor';
 import { BaseController } from '../../common/base.controller';
+import { AuthGuard } from '@nestjs/passport';
+import { ConfigService } from '@nestjs/config';
+import { User } from './interfaces/user.interface';
 
 @ApiTags('auth')
 @Controller('auth')
 @UseInterceptors(EncryptionInterceptor)
 export class AuthController extends BaseController {
-  constructor(private readonly authService: AuthService) {
+  constructor(
+    private readonly authService: AuthService,
+    private readonly configService: ConfigService,
+  ) {
     super();
   }
 
@@ -210,5 +216,51 @@ export class AuthController extends BaseController {
   @ApiResponse({ status: 400, description: 'Invalid or expired token' })
   async verifyEmail(@Body() dto: VerifyEmailDto) {
     return this.authService.verifyEmail(dto);
+  }
+
+  @Public()
+  @Get('google')
+  @UseGuards(AuthGuard('google'))
+  @ApiOperation({ summary: 'Google OAuth login' })
+  @ApiResponse({ status: 200, description: 'Redirects to Google login' })
+  googleAuth() {
+    // This route will redirect to Google
+    return;
+  }
+
+  @Public()
+  @Get('google/callback')
+  @UseGuards(AuthGuard('google'))
+  @ApiOperation({ summary: 'Google OAuth callback' })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Google login successful',
+    schema: {
+      type: 'object',
+      properties: {
+        accessToken: {
+          type: 'string',
+          example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+          description: 'JWT token to be used for authenticated requests',
+        },
+        user: {
+          type: 'object',
+          properties: {
+            id: { type: 'string' },
+            email: { type: 'string' },
+            firstName: { type: 'string' },
+            lastName: { type: 'string' },
+          },
+        },
+      },
+    }
+  })
+  async googleAuthCallback(@Req() req, @Res() res) {
+    const { accessToken, user } = await this.authService.googleLogin(req.user as User);
+    
+    // Redirect to frontend with token
+    // You can customize this URL and how the token is passed based on your frontend setup
+    const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
+    return res.redirect(`${frontendUrl}/auth/google/success?token=${accessToken}&user=${JSON.stringify(user)}`);
   }
 }

@@ -5,6 +5,8 @@ import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { RequestPasswordResetDto, ResetPasswordDto } from './dto/reset-password.dto';
 import { EnableMfaDto, VerifyMfaDto, DisableMfaDto } from './dto/mfa.dto';
+import { OAuthUserDto } from './dto/oauth-user.dto';
+import { User } from './interfaces/user.interface';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 import { ConfigService } from '@nestjs/config';
@@ -627,6 +629,107 @@ export class AuthService {
     return {
       success: true,
       message: 'Email verified successfully',
+    };
+  }
+
+  async validateOAuthUser(oauthUserDto: OAuthUserDto): Promise<User | null> {
+    try {
+      // Check if user exists with this email
+      let user = await this.usersService
+        .findByEmail(oauthUserDto.email)
+        .catch(() => null);
+
+      if (user) {
+        // If user exists but was not created with this OAuth provider
+        if (user.provider !== oauthUserDto.provider) {
+          // We could throw an error here or handle account linking
+          // For now, we'll just return the existing user
+          return user as User;
+        }
+
+        // Update user profile if needed
+        if (user.providerAccountId !== oauthUserDto.providerAccountId) {
+          const updatedUser = await this.usersRepository.update(user.id, {
+            providerAccountId: oauthUserDto.providerAccountId,
+          });
+          
+          if (updatedUser) {
+            user = updatedUser as any; // Type assertion to resolve circular type reference
+          }
+        }
+      } else {
+        // Create a random password for OAuth users
+        const randomPassword = crypto.randomBytes(16).toString('hex');
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(randomPassword, salt);
+
+        // Create new user with OAuth info
+        const newUser = await this.usersRepository.create({
+          email: oauthUserDto.email,
+          firstName: await this.encryptionService.encrypt(oauthUserDto.firstName),
+          lastName: oauthUserDto.lastName 
+            ? await this.encryptionService.encrypt(oauthUserDto.lastName) 
+            : null,
+          provider: oauthUserDto.provider,
+          providerAccountId: oauthUserDto.providerAccountId,
+          emailVerified: new Date(), // OAuth emails are considered verified
+          role: 'USER',
+          isActive: true,
+          auth: {
+            create: {
+              password: hashedPassword,
+              passwordSalt: salt,
+            },
+          },
+        });
+        
+        if (newUser) {
+          user = newUser as any; // Type assertion to resolve circular type reference
+          
+          // Seed default categories for the new user
+          await this.categoriesService.seedUserDefaultCategories(newUser.id);
+          
+          // Seed default payment methods for the new user
+          await this.paymentMethodsService.seedUserDefaultPaymentMethods(newUser.id);
+        }
+      }
+
+      // Update last login time
+      if (user) {
+        await this.usersRepository.update(user.id, {
+          lastLoginAt: new Date(),
+        });
+      }
+
+      return user as User;
+    } catch (error) {
+      throw new Error(`Failed to validate OAuth user: ${error.message}`);
+    }
+  }
+
+  async googleLogin(user: User) {
+    if (!user) {
+      throw new UnauthorizedException('Google authentication failed');
+    }
+
+    // Generate JWT token
+    const payload = {
+      sub: user.id,
+      email: user.email,
+      role: user.role || 'USER',
+    };
+
+    return {
+      accessToken: this.jwtService.sign(payload, { 
+        expiresIn: this.configService.get<string>('JWT_EXPIRES_IN') || '1d' 
+      }),
+      user: {
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName || '',
+        lastName: user.lastName || '',
+        role: user.role || 'USER',
+      },
     };
   }
 }
