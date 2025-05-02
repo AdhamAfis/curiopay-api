@@ -1,4 +1,4 @@
-import { Controller, Post, Body, HttpCode, UseGuards, Get, UseInterceptors, Req, Res } from '@nestjs/common';
+import { Controller, Post, Body, HttpCode, UseGuards, Get, UseInterceptors, Req, Res, Param } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
@@ -14,6 +14,7 @@ import { BaseController } from '../../common/base.controller';
 import { AuthGuard } from '@nestjs/passport';
 import { ConfigService } from '@nestjs/config';
 import { User } from './interfaces/user.interface';
+import { LinkAccountDto } from './dto/link-account.dto';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -64,8 +65,10 @@ export class AuthController extends BaseController {
     },
   })
   @ApiResponse({ status: 401, description: 'Invalid credentials' })
-  async login(@Body() loginDto: LoginDto) {
-    return this.authService.login(loginDto);
+  async login(@Body() loginDto: LoginDto, @Req() req) {
+    const ipAddress = req.ip || 'unknown';
+    const userAgent = req.headers['user-agent'] || 'unknown';
+    return this.authService.login(loginDto, ipAddress, userAgent);
   }
 
   @Public()
@@ -96,8 +99,10 @@ export class AuthController extends BaseController {
     },
   })
   @ApiResponse({ status: 401, description: 'Invalid MFA code or token' })
-  async completeLoginWithMfa(@Body() dto: CompleteLoginWithMfaDto) {
-    return this.authService.completeLoginWithMfa(dto);
+  async completeLoginWithMfa(@Body() dto: CompleteLoginWithMfaDto, @Req() req) {
+    const ipAddress = req.ip || 'unknown';
+    const userAgent = req.headers['user-agent'] || 'unknown';
+    return this.authService.completeLoginWithMfa(dto, ipAddress, userAgent);
   }
 
   @Public()
@@ -256,11 +261,39 @@ export class AuthController extends BaseController {
     }
   })
   async googleAuthCallback(@Req() req, @Res() res) {
-    const { accessToken, user } = await this.authService.googleLogin(req.user as User);
+    const ipAddress = req.ip || 'unknown';
+    const userAgent = req.headers['user-agent'] || 'unknown';
+    const { accessToken, user } = await this.authService.googleLogin(req.user as User, ipAddress, userAgent);
     
     // Redirect to frontend with token
     // You can customize this URL and how the token is passed based on your frontend setup
     const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
     return res.redirect(`${frontendUrl}/auth/google/success?token=${accessToken}&user=${JSON.stringify(user)}`);
+  }
+
+  @Post('link-account')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Link current account with OAuth provider' })
+  @ApiResponse({ status: 200, description: 'Account linked successfully' })
+  @ApiResponse({ status: 400, description: 'Invalid request or provider' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  async linkAccount(@CurrentUser() user: User, @Body() linkAccountDto: LinkAccountDto, @Req() req) {
+    const ipAddress = req.ip || 'unknown';
+    const userAgent = req.headers['user-agent'] || 'unknown';
+    return this.authService.linkAccount(user.id, linkAccountDto, ipAddress, userAgent);
+  }
+
+  @Post('unlink-provider/:provider')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Unlink an OAuth provider from current account' })
+  @ApiResponse({ status: 200, description: 'Provider unlinked successfully' })
+  @ApiResponse({ status: 400, description: 'Invalid request or cannot unlink last login method' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  async unlinkProvider(@CurrentUser() user: User, @Param('provider') provider: string, @Req() req) {
+    const ipAddress = req.ip || 'unknown';
+    const userAgent = req.headers['user-agent'] || 'unknown';
+    return this.authService.unlinkProvider(user.id, provider, ipAddress, userAgent);
   }
 }

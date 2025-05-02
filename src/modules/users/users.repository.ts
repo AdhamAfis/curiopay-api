@@ -112,6 +112,27 @@ export class UsersRepository {
     });
   }
 
+  /**
+   * Find a user by their OAuth provider details
+   * Used for account linking and preventing duplicate OAuth connections
+   */
+  async findByProviderAccount(provider: string, providerAccountId?: string): Promise<User | null> {
+    const whereClause: any = {
+      provider,
+    };
+    
+    if (providerAccountId) {
+      whereClause.providerAccountId = providerAccountId;
+    }
+    
+    return this.prisma.user.findFirst({
+      where: whereClause,
+      include: {
+        auth: true,
+      },
+    });
+  }
+
   // Expose transaction method for services
   async executeTransaction<T>(
     callback: (prisma: Prisma.TransactionClient) => Promise<T>,
