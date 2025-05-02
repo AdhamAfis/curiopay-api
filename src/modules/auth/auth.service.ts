@@ -75,6 +75,7 @@ export class AuthService {
           sub: user.id,
           email: user.email,
           tempAuth: true,
+          rememberMe: (loginDto as any).rememberMe || false,
           exp: Math.floor(Date.now() / 1000) + 5 * 60 // 5 minutes
         }
       );
@@ -101,8 +102,13 @@ export class AuthService {
       role: user.role,
     };
 
+    // Determine token expiration based on rememberMe flag
+    const expiresIn = (loginDto as any).rememberMe
+      ? this.configService.get<string>('JWT_EXTENDED_EXPIRES_IN') || '30d'
+      : this.configService.get<string>('JWT_EXPIRES_IN') || '1d';
+
     return {
-      accessToken: this.jwtService.sign(payload, { expiresIn: this.configService.get<string>('JWT_EXPIRES_IN') || '1d' }),
+      accessToken: this.jwtService.sign(payload, { expiresIn }),
       user: {
         id: user.id,
         email: user.email,
@@ -123,6 +129,7 @@ export class AuthService {
       }
 
       const userId = payload.sub;
+      const rememberMe = payload.rememberMe || false;
       
       // Validate MFA code
       const user = await this.usersService.findById(userId);
@@ -148,8 +155,13 @@ export class AuthService {
         role: user.role,
       };
 
+      // Determine token expiration based on rememberMe flag
+      const expiresIn = rememberMe
+        ? this.configService.get<string>('JWT_EXTENDED_EXPIRES_IN') || '30d'
+        : this.configService.get<string>('JWT_EXPIRES_IN') || '1d';
+
       return {
-        accessToken: this.jwtService.sign(tokenPayload, { expiresIn: this.configService.get<string>('JWT_EXPIRES_IN') || '1d' }),
+        accessToken: this.jwtService.sign(tokenPayload, { expiresIn }),
         user: {
           id: user.id,
           email: user.email,

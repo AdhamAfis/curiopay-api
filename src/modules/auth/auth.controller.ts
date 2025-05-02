@@ -33,7 +33,7 @@ export class AuthController extends BaseController {
         accessToken: {
           type: 'string',
           example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
-          description: 'JWT token to be used for authenticated requests',
+          description: 'JWT token to be used for authenticated requests. Extended expiration if rememberMe is true.',
         },
         requireMfa: {
           type: 'boolean',
