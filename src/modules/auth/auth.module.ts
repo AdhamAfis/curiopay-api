@@ -4,6 +4,9 @@ import { PassportModule } from '@nestjs/passport';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
+import { GoogleStrategy } from './strategies/google.strategy';
+import { GitHubStrategy } from './strategies/github.strategy';
+import { MicrosoftStrategy } from './strategies/microsoft.strategy';
 import { UsersModule } from '../users/users.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { CommonModule } from '../../common/common.module';
@@ -31,6 +34,9 @@ import { PaymentMethodsModule } from '../payment-methods/payment-methods.module'
   providers: [
     AuthService,
     JwtStrategy,
+    GoogleStrategy,
+    GitHubStrategy,
+    // MicrosoftStrategy, // Commented out
   ],
   exports: [AuthService, JwtModule],
 })

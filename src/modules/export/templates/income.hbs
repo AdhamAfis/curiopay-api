@@ -25,24 +25,26 @@
         <main>
             <div class="card">
                 <h2>Summary</h2>
-                <table class="table">
-                    <tr>
-                        <th>Total Income</th>
-                        <td>{{summary.total}}</td>
-                    </tr>
-                    <tr>
-                        <th>Average per Month</th>
-                        <td>{{summary.monthlyAverage}}</td>
-                    </tr>
-                    <tr>
-                        <th>Highest Month</th>
-                        <td>{{summary.highestMonth.amount}} ({{summary.highestMonth.date}})</td>
-                    </tr>
-                    <tr>
-                        <th>Lowest Month</th>
-                        <td>{{summary.lowestMonth.amount}} ({{summary.lowestMonth.date}})</td>
-                    </tr>
-                </table>
+                <div class="summary">
+                    <div class="summary-item">
+                        <div class="label">Total Income</div>
+                        <div class="value">{{summary.total}}</div>
+                    </div>
+                    <div class="summary-item">
+                        <div class="label">Average per Month</div>
+                        <div class="value">{{summary.monthlyAverage}}</div>
+                    </div>
+                    <div class="summary-item">
+                        <div class="label">{{summary.highestMonth.label}}</div>
+                        <div class="value">{{summary.highestMonth.value}}</div>
+                        <div class="date">{{summary.highestMonth.date}}</div>
+                    </div>
+                    <div class="summary-item">
+                        <div class="label">{{summary.lowestMonth.label}}</div>
+                        <div class="value">{{summary.lowestMonth.value}}</div>
+                        <div class="date">{{summary.lowestMonth.date}}</div>
+                    </div>
+                </div>
             </div>
 
             <div class="card">
@@ -113,7 +115,7 @@
                             <td>{{this.source}}</td>
                             <td>{{this.amount}}</td>
                             <td>
-                                <span class="badge {{this.status}}">
+                                <span class="badge badge-{{this.status}}">
                                     {{this.status}}
                                 </span>
                             </td>
@@ -123,6 +125,10 @@
                 </table>
             </div>
         </main>
+        
+        <footer class="footer">
+            <p>CurioPay Data Export - User Data</p>
+        </footer>
     </div>
 </body>
 </html> 

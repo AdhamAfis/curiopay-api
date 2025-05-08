@@ -30,21 +30,57 @@ export class UserPreferencesRepository {
   }
 
   async getDefaultCurrency() {
-    return this.prisma.currency.findFirst({
+    const defaultCurrency = await this.prisma.currency.findFirst({
       where: { code: 'USD' },
     });
+    
+    if (!defaultCurrency) {
+      // Create default currency if it doesn't exist
+      return this.prisma.currency.create({
+        data: {
+          code: 'USD',
+          symbol: '$',
+          name: 'US Dollar',
+        },
+      });
+    }
+    
+    return defaultCurrency;
   }
 
   async getDefaultLanguage() {
-    return this.prisma.language.findFirst({
+    const defaultLanguage = await this.prisma.language.findFirst({
       where: { code: 'en' },
     });
+    
+    if (!defaultLanguage) {
+      // Create default language if it doesn't exist
+      return this.prisma.language.create({
+        data: {
+          code: 'en',
+          name: 'English',
+        },
+      });
+    }
+    
+    return defaultLanguage;
   }
 
   async getDefaultTheme() {
-    return this.prisma.theme.findFirst({
+    const defaultTheme = await this.prisma.theme.findFirst({
       where: { name: 'light' },
     });
+    
+    if (!defaultTheme) {
+      // Create default theme if it doesn't exist
+      return this.prisma.theme.create({
+        data: {
+          name: 'light',
+        },
+      });
+    }
+    
+    return defaultTheme;
   }
 
   async create(userId: string, data: UpdateUserPreferencesDto) {
@@ -85,13 +121,13 @@ export class UserPreferencesRepository {
       return existingPreferences;
     }
 
+    // Ensure default preferences exist in the database
+    await this.ensureDefaultsExist();
+
+    // Now get the defaults that we're sure exist
     const defaultCurrency = await this.getDefaultCurrency();
     const defaultLanguage = await this.getDefaultLanguage();
     const defaultTheme = await this.getDefaultTheme();
-
-    if (!defaultCurrency || !defaultLanguage || !defaultTheme) {
-      throw new Error('Default preferences not found');
-    }
 
     const createData: any = {
       userId,
@@ -128,5 +164,73 @@ export class UserPreferencesRepository {
     return this.prisma.theme.findMany({
       orderBy: { name: 'asc' },
     });
+  }
+
+  async ensureDefaultsExist() {
+    try {
+      // Ensure default currency exists
+      let defaultCurrency = await this.prisma.currency.findFirst({
+        where: { code: 'USD' },
+      });
+      
+      if (!defaultCurrency) {
+        defaultCurrency = await this.prisma.currency.create({
+          data: {
+            code: 'USD',
+            symbol: '$',
+            name: 'US Dollar',
+          },
+        });
+        console.log('Created default currency');
+      }
+
+      // Ensure default language exists
+      let defaultLanguage = await this.prisma.language.findFirst({
+        where: { code: 'en' },
+      });
+      
+      if (!defaultLanguage) {
+        defaultLanguage = await this.prisma.language.create({
+          data: {
+            code: 'en',
+            name: 'English',
+          },
+        });
+        console.log('Created default language');
+      }
+
+      // Ensure default theme exists
+      let defaultTheme = await this.prisma.theme.findFirst({
+        where: { name: 'light' },
+      });
+      
+      if (!defaultTheme) {
+        defaultTheme = await this.prisma.theme.create({
+          data: {
+            name: 'light',
+          },
+        });
+        console.log('Created default theme');
+      }
+      
+      // Add dark theme as well
+      let darkTheme = await this.prisma.theme.findFirst({
+        where: { name: 'dark' },
+      });
+      
+      if (!darkTheme) {
+        darkTheme = await this.prisma.theme.create({
+          data: {
+            name: 'dark',
+          },
+        });
+        console.log('Created dark theme');
+      }
+      
+      return { defaultCurrency, defaultLanguage, defaultTheme, darkTheme };
+    } catch (error) {
+      console.error('Error creating default preferences:', error);
+      throw error;
+    }
   }
 } 

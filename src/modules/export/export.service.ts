@@ -34,14 +34,33 @@ export class ExportService {
     try {
       this.logger.log(`Generating data export for user ${userId}`);
       
-      // Create virtual file system for in-memory operations
-      const vol = memfs.Volume.fromJSON({});
-      const fs = memfs.createFsFromVolume(vol);
-      
       // Ensure userId is a string and not an object
       const userIdString = typeof userId === 'object' && userId !== null 
         ? (userId as any).id 
         : userId;
+      
+      // Check if user has already requested an export in the last 24 hours
+      const lastDayExports = await this.prisma.auditLog.findMany({
+        where: {
+          userId: userIdString,
+          action: 'DATA_EXPORT',
+          timestamp: {
+            gte: dayjs().subtract(24, 'hours').toDate()
+          }
+        }
+      });
+
+      if (lastDayExports.length > 0) {
+        const nextAvailableTime = dayjs(lastDayExports[0].timestamp).add(24, 'hours').format('YYYY-MM-DD HH:mm:ss');
+        return {
+          success: false,
+          message: `Rate limit reached. You can request another export after ${nextAvailableTime}`
+        };
+      }
+      
+      // Create virtual file system for in-memory operations
+      const vol = memfs.Volume.fromJSON({});
+      const fs = memfs.createFsFromVolume(vol);
       
       // Create temp directory in virtual filesystem
       const exportId = uuidv4();
@@ -123,6 +142,24 @@ export class ExportService {
         zipBuffer
       );
 
+      // Log this export in audit logs
+      await this.prisma.auditLog.create({
+        data: {
+          userId: userIdString,
+          action: 'DATA_EXPORT',
+          category: 'DATA_ACCESS',
+          ipAddress: '0.0.0.0', // This should be replaced with actual IP if available
+          userAgent: 'API Client', // This should be replaced with actual user agent if available
+          status: 'SUCCESS',
+          details: {
+            exportType: 'USER_DATA',
+            exportOptions: JSON.parse(JSON.stringify(options)),
+            exportId
+          },
+          isCritical: false
+        }
+      });
+
       this.logger.log(`Export generated and sent via email to ${user.email}`);
       return { 
         success: true, 
@@ -144,11 +181,104 @@ export class ExportService {
       orderBy: { date: 'desc' },
     });
 
+    // Process expenses for display with decryption
+    const formattedExpenses = await Promise.all(expenses.map(async exp => {
+      // Decrypt description
+      let decryptedDescription = '';
+      try {
+        if (exp.description) {
+          decryptedDescription = await this.encryptionService.decrypt(exp.description);
+        }
+      } catch (error) {
+        this.logger.warn(`Could not decrypt expense description: ${error.message}`);
+        decryptedDescription = 'Data unavailable';
+      }
+
+      return {
+        ...exp,
+        date: dayjs(exp.date).format('YYYY-MM-DD'),
+        amount: Number(exp.amount).toFixed(2),
+        status: exp.isVoid ? 'voided' : 'active',
+        description: decryptedDescription
+      };
+    }));
+
+    // Calculate summary data
+    const totalAmount = expenses.reduce((sum, exp) => sum + Number(exp.amount), 0);
+    
+    // Create monthly aggregates for summary stats
+    const monthlyAggregates = expenses.reduce((acc, exp) => {
+      const month = dayjs(exp.date).format('YYYY-MM');
+      if (!acc[month]) {
+        acc[month] = { amount: 0, date: month };
+      }
+      acc[month].amount += Number(exp.amount);
+      return acc;
+    }, {} as Record<string, { amount: number; date: string }>);
+
+    const monthlyValues = Object.values(monthlyAggregates);
+    const monthlyAverage = monthlyValues.length > 0 
+      ? (totalAmount / monthlyValues.length).toFixed(2) 
+      : '0.00';
+    
+    // Find highest and lowest months
+    let highestMonth = { amount: '0.00', date: 'N/A' };
+    let lowestMonth = { amount: '999999999.99', date: 'N/A' };
+    
+    if (monthlyValues.length > 0) {
+      highestMonth = monthlyValues.reduce((max, month) => 
+        month.amount > Number(max.amount) ? { amount: month.amount.toString(), date: month.date } : max, 
+        { amount: '0', date: '' });
+      
+      lowestMonth = monthlyValues.reduce((min, month) => 
+        month.amount < Number(min.amount) ? { amount: month.amount.toString(), date: month.date } : min, 
+        { amount: '999999999.99', date: '' });
+      
+      // Convert amounts to formatted strings
+      highestMonth.amount = Number(highestMonth.amount).toFixed(2);
+      lowestMonth.amount = Number(lowestMonth.amount).toFixed(2);
+    }
+
+    // Calculate category totals with percentages
+    const categoryTotals = Object.values(
+      expenses.reduce<Record<string, { name: string; amount: number; percentage: number }>>((acc, exp) => {
+        const categoryId = exp.category.id;
+        if (!acc[categoryId]) {
+          acc[categoryId] = { 
+            name: exp.category.name, 
+            amount: 0,
+            percentage: 0
+          };
+        }
+        acc[categoryId].amount += Number(exp.amount);
+        return acc;
+      }, {})
+    ).map(cat => ({
+      ...cat,
+      amount: cat.amount.toFixed(2),
+      percentage: (cat.amount / totalAmount * 100).toFixed(1)
+    }));
+
     const template = this.getTemplate('expenses');
     const html = template({
-      expenses,
+      expenses: formattedExpenses,
       title: 'Expenses',
-      totalAmount: expenses.reduce((sum, exp) => sum + Number(exp.amount), 0),
+      exportDate: dayjs().format('MMMM D, YYYY'),
+      summary: {
+        total: totalAmount.toFixed(2),
+        monthlyAverage,
+        highestMonth: {
+          label: 'Highest Month',
+          value: highestMonth.amount,
+          date: highestMonth.date
+        },
+        lowestMonth: {
+          label: 'Lowest Month',
+          value: lowestMonth.amount,
+          date: lowestMonth.date
+        }
+      },
+      categoryTotals
     });
 
     fs.writeFileSync(`${exportDir}/expenses.html`, html);
@@ -164,11 +294,129 @@ export class ExportService {
       orderBy: { date: 'desc' },
     });
 
+    // Process income for display with decryption
+    const formattedIncomes = await Promise.all(incomes.map(async inc => {
+      // Decrypt description
+      let decryptedDescription = '';
+      try {
+        if (inc.description) {
+          decryptedDescription = await this.encryptionService.decrypt(inc.description);
+        }
+      } catch (error) {
+        this.logger.warn(`Could not decrypt income description: ${error.message}`);
+        decryptedDescription = 'Data unavailable';
+      }
+
+      return {
+        ...inc,
+        date: dayjs(inc.date).format('YYYY-MM-DD'),
+        amount: Number(inc.amount).toFixed(2),
+        status: inc.isVoid ? 'voided' : 'active',
+        source: decryptedDescription, // Using decrypted description as source
+        description: decryptedDescription
+      };
+    }));
+
+    // Calculate summary data
+    const totalAmount = incomes.reduce((sum, inc) => sum + Number(inc.amount), 0);
+    
+    // Calculate category totals with percentages
+    const categoryTotals = Object.values(
+      incomes.reduce<Record<string, { name: string; amount: number; percentage: number }>>((acc, inc) => {
+        const categoryId = inc.category.id;
+        if (!acc[categoryId]) {
+          acc[categoryId] = { 
+            name: inc.category.name, 
+            amount: 0,
+            percentage: 0
+          };
+        }
+        acc[categoryId].amount += Number(inc.amount);
+        return acc;
+      }, {})
+    ).map(cat => ({
+      ...cat,
+      amount: cat.amount.toFixed(2),
+      percentage: (cat.amount / totalAmount * 100).toFixed(1)
+    }));
+
+    // Calculate source totals with percentages
+    const sourceTotals = Object.values(
+      incomes.reduce<Record<string, { name: string; amount: number; percentage: number; frequency: number }>>((acc, inc) => {
+        const source = inc.description;
+        if (!acc[source]) {
+          acc[source] = { 
+            name: source, 
+            amount: 0,
+            percentage: 0,
+            frequency: 1
+          };
+        } else {
+          acc[source].frequency += 1;
+        }
+        acc[source].amount += Number(inc.amount);
+        return acc;
+      }, {})
+    ).map(src => ({
+      ...src,
+      amount: src.amount.toFixed(2),
+      percentage: (src.amount / totalAmount * 100).toFixed(1)
+    }));
+
+    // Create monthly aggregates for summary stats
+    const monthlyAggregates = incomes.reduce((acc, inc) => {
+      const month = dayjs(inc.date).format('YYYY-MM');
+      if (!acc[month]) {
+        acc[month] = { amount: 0, date: month };
+      }
+      acc[month].amount += Number(inc.amount);
+      return acc;
+    }, {} as Record<string, { amount: number; date: string }>);
+
+    const monthlyValues = Object.values(monthlyAggregates);
+    const monthlyAverage = monthlyValues.length > 0 
+      ? (totalAmount / monthlyValues.length).toFixed(2) 
+      : '0.00';
+    
+    // Find highest and lowest months
+    let highestMonth = { amount: '0.00', date: 'N/A' };
+    let lowestMonth = { amount: '999999999.99', date: 'N/A' };
+    
+    if (monthlyValues.length > 0) {
+      highestMonth = monthlyValues.reduce((max, month) => 
+        month.amount > Number(max.amount) ? { amount: month.amount.toString(), date: month.date } : max, 
+        { amount: '0', date: '' });
+      
+      lowestMonth = monthlyValues.reduce((min, month) => 
+        month.amount < Number(min.amount) ? { amount: month.amount.toString(), date: month.date } : min, 
+        { amount: '999999999.99', date: '' });
+      
+      // Convert amounts to formatted strings
+      highestMonth.amount = Number(highestMonth.amount).toFixed(2);
+      lowestMonth.amount = Number(lowestMonth.amount).toFixed(2);
+    }
+
     const template = this.getTemplate('income');
     const html = template({
-      incomes,
+      incomes: formattedIncomes,
       title: 'Income',
-      totalAmount: incomes.reduce((sum, inc) => sum + Number(inc.amount), 0),
+      exportDate: dayjs().format('MMMM D, YYYY'),
+      summary: {
+        total: totalAmount.toFixed(2),
+        monthlyAverage,
+        highestMonth: {
+          label: 'Highest Month',
+          value: highestMonth.amount,
+          date: highestMonth.date
+        },
+        lowestMonth: {
+          label: 'Lowest Month',
+          value: lowestMonth.amount,
+          date: lowestMonth.date
+        }
+      },
+      categoryTotals,
+      sourceTotals
     });
 
     fs.writeFileSync(`${exportDir}/income.html`, html);
@@ -182,6 +430,7 @@ export class ExportService {
       },
     });
 
+    // No need to decrypt descriptions since Category model doesn't have a description field
     const template = this.getTemplate('categories');
     const html = template({
       categories,
@@ -225,6 +474,14 @@ export class ExportService {
         --text-color: #1f2937;
         --bg-color: #ffffff;
         --accent-color: #dbeafe;
+        --card-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        --success-color: #10b981;
+        --warning-color: #f59e0b;
+        --error-color: #ef4444;
+        --border-radius: 8px;
+        --spacing-sm: 0.5rem;
+        --spacing-md: 1rem;
+        --spacing-lg: 2rem;
       }
 
       * {
@@ -237,102 +494,205 @@ export class ExportService {
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
         line-height: 1.6;
         color: var(--text-color);
-        background: var(--bg-color);
-        padding: 2rem;
+        background: #f8fafc;
+        padding: var(--spacing-lg);
       }
 
       .container {
         max-width: 1200px;
         margin: 0 auto;
+        background: var(--bg-color);
+        border-radius: var(--border-radius);
+        box-shadow: var(--card-shadow);
+        overflow: hidden;
       }
 
       .header {
         text-align: center;
-        margin-bottom: 3rem;
-        padding: 2rem;
-        background: var(--accent-color);
-        border-radius: 8px;
+        margin-bottom: var(--spacing-lg);
+        padding: var(--spacing-lg);
+        background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+        color: white;
+        border-radius: var(--border-radius) var(--border-radius) 0 0;
+      }
+
+      .header h1 {
+        margin-bottom: var(--spacing-sm);
+        font-size: 2.5rem;
       }
 
       .nav {
         display: flex;
         justify-content: center;
-        gap: 1rem;
-        margin-bottom: 2rem;
+        gap: var(--spacing-md);
+        margin-bottom: var(--spacing-lg);
+        padding: var(--spacing-md);
+        background: white;
+        border-bottom: 1px solid #e5e7eb;
         flex-wrap: wrap;
+        position: sticky;
+        top: 0;
+        z-index: 100;
       }
 
       .nav a {
-        padding: 0.5rem 1rem;
+        padding: var(--spacing-sm) var(--spacing-md);
         text-decoration: none;
         color: var(--primary-color);
+        font-weight: 500;
         border: 1px solid var(--primary-color);
-        border-radius: 4px;
+        border-radius: var(--border-radius);
         transition: all 0.2s;
       }
 
       .nav a:hover {
         background: var(--primary-color);
         color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
       }
 
       .card {
         background: white;
-        border-radius: 8px;
-        padding: 2rem;
-        margin-bottom: 2rem;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        border-radius: var(--border-radius);
+        padding: var(--spacing-lg);
+        margin-bottom: var(--spacing-lg);
+        box-shadow: var(--card-shadow);
+      }
+
+      .card h2 {
+        margin-bottom: var(--spacing-md);
+        color: var(--primary-color);
+        border-bottom: 2px solid var(--accent-color);
+        padding-bottom: var(--spacing-sm);
       }
 
       .table {
         width: 100%;
-        border-collapse: collapse;
-        margin: 1rem 0;
+        border-collapse: separate;
+        border-spacing: 0;
+        margin: var(--spacing-md) 0;
+        border-radius: var(--border-radius);
+        overflow: hidden;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
       }
 
       .table th,
       .table td {
-        padding: 0.75rem;
+        padding: 1rem;
         text-align: left;
-        border-bottom: 1px solid #e5e7eb;
       }
 
       .table th {
-        background: var(--accent-color);
+        background: var(--primary-color);
+        color: white;
         font-weight: 600;
+        position: sticky;
+        top: 0;
+      }
+
+      .table tr:nth-child(even) {
+        background: #f8fafc;
       }
 
       .table tr:hover {
-        background: #f9fafb;
+        background: var(--accent-color);
+        transition: background 0.2s;
       }
 
       .summary {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 1rem;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: var(--spacing-md);
+        padding: var(--spacing-md);
         background: var(--accent-color);
-        border-radius: 4px;
-        margin: 1rem 0;
+        border-radius: var(--border-radius);
+        margin: var(--spacing-md) 0;
+      }
+
+      .summary-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: var(--spacing-md);
+        background: white;
+        border-radius: var(--border-radius);
+        box-shadow: var(--card-shadow);
+      }
+
+      .summary-item .label {
+        color: var(--text-color);
+        font-size: 0.875rem;
+        margin-bottom: var(--spacing-sm);
+      }
+
+      .summary-item .value {
+        color: var(--primary-color);
+        font-size: 1.5rem;
+        font-weight: bold;
+      }
+
+      .summary-item .date {
+        font-size: 0.8rem;
+        color: #64748b;
+        margin-top: 0.25rem;
       }
 
       .badge {
         display: inline-block;
-        padding: 0.25rem 0.5rem;
-        background: var(--primary-color);
-        color: white;
+        padding: 0.25rem 0.75rem;
         border-radius: 9999px;
         font-size: 0.875rem;
+        font-weight: 500;
+        text-transform: uppercase;
+      }
+
+      .badge-active {
+        background: var(--success-color);
+        color: white;
+      }
+
+      .badge-voided {
+        background: var(--error-color);
+        color: white;
+      }
+
+      .chart-container {
+        height: 300px;
+        margin: var(--spacing-lg) 0;
+      }
+
+      .footer {
+        text-align: center;
+        padding: var(--spacing-lg);
+        color: #64748b;
+        border-top: 1px solid #e5e7eb;
+        margin-top: var(--spacing-lg);
+      }
+
+      .pie-container {
+        display: flex;
+        gap: var(--spacing-lg);
+        flex-wrap: wrap;
+      }
+
+      .pie-chart {
+        flex: 1;
+        min-width: 300px;
       }
 
       @media (max-width: 768px) {
         body {
-          padding: 1rem;
+          padding: var(--spacing-md);
         }
 
         .table {
           display: block;
           overflow-x: auto;
+        }
+
+        .summary {
+          grid-template-columns: 1fr;
         }
       }
     `;

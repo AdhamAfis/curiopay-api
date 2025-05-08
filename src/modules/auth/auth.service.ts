@@ -1,20 +1,25 @@
-import { Injectable, UnauthorizedException, BadRequestException, ConflictException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, BadRequestException, ConflictException, InternalServerErrorException, NotFoundException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { RequestPasswordResetDto, ResetPasswordDto } from './dto/reset-password.dto';
 import { EnableMfaDto, VerifyMfaDto, DisableMfaDto } from './dto/mfa.dto';
+import { OAuthUserDto } from './dto/oauth-user.dto';
+import { LinkAccountDto } from './dto/link-account.dto';
+import { User } from './interfaces/user.interface';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 import { ConfigService } from '@nestjs/config';
 import { UsersRepository } from '../users/users.repository';
 import { EncryptionService } from '../../common/services/encryption.service';
 import { EmailService } from '../../common/services/email.service';
+import { AuditService } from '../../common/services/audit.service';
 import { authenticator } from 'otplib';
 import { toDataURL } from 'qrcode';
 import { CategoriesService } from '../categories/categories.service';
 import { PaymentMethodsService } from '../payment-methods/payment-methods.service';
+import { PrismaService } from '../../prisma/prisma.service';
 
 @Injectable()
 export class AuthService {
@@ -27,15 +32,30 @@ export class AuthService {
     private emailService: EmailService,
     private categoriesService: CategoriesService,
     private paymentMethodsService: PaymentMethodsService,
+    private auditService: AuditService,
+    private prisma: PrismaService,
   ) {}
 
-  async login(loginDto: LoginDto) {
+  async login(loginDto: LoginDto, ipAddress = 'unknown', userAgent = 'unknown') {
     // Find user by email
     const user = await this.usersService
       .findByEmail(loginDto.email)
       .catch(() => null);
 
     if (!user) {
+      // Log failed login attempt
+      await this.auditService.logAuth({
+        userId: 'unknown',
+        action: 'LOGIN',
+        status: 'FAILURE',
+        ipAddress,
+        userAgent,
+        details: {
+          reason: 'User not found',
+          email: loginDto.email,
+        },
+      });
+      
       throw new UnauthorizedException('Invalid credentials');
     }
 
@@ -43,6 +63,18 @@ export class AuthService {
     const userAuth = await this.usersRepository.findUserAuthById(user.id);
 
     if (!userAuth) {
+      // Log failed login attempt
+      await this.auditService.logAuth({
+        userId: user.id,
+        action: 'LOGIN',
+        status: 'FAILURE',
+        ipAddress,
+        userAgent,
+        details: {
+          reason: 'User auth not found',
+        },
+      });
+      
       throw new UnauthorizedException('Invalid credentials');
     }
 
@@ -55,6 +87,19 @@ export class AuthService {
     if (!isPasswordValid) {
       // Handle failed login attempt
       await this.handleFailedLoginAttempt(userAuth);
+      
+      // Log failed login attempt
+      await this.auditService.logAuth({
+        userId: user.id,
+        action: 'LOGIN',
+        status: 'FAILURE',
+        ipAddress,
+        userAgent,
+        details: {
+          reason: 'Invalid password',
+        },
+      });
+      
       throw new UnauthorizedException('Invalid credentials');
     }
 
@@ -79,6 +124,18 @@ export class AuthService {
           exp: Math.floor(Date.now() / 1000) + 5 * 60 // 5 minutes
         }
       );
+
+      // Log MFA required
+      await this.auditService.logAuth({
+        userId: user.id,
+        action: 'LOGIN_MFA_REQUIRED',
+        status: 'SUCCESS',
+        ipAddress,
+        userAgent,
+        details: {
+          rememberMe: (loginDto as any).rememberMe || false,
+        },
+      });
 
       return {
         requireMfa: true,
@@ -106,6 +163,18 @@ export class AuthService {
     const expiresIn = (loginDto as any).rememberMe
       ? this.configService.get<string>('JWT_EXTENDED_EXPIRES_IN') || '30d'
       : this.configService.get<string>('JWT_EXPIRES_IN') || '1d';
+    
+    // Log successful login
+    await this.auditService.logAuth({
+      userId: user.id,
+      action: 'LOGIN',
+      status: 'SUCCESS',
+      ipAddress,
+      userAgent,
+      details: {
+        rememberMe: (loginDto as any).rememberMe || false,
+      },
+    });
 
     return {
       accessToken: this.jwtService.sign(payload, { expiresIn }),
@@ -119,12 +188,24 @@ export class AuthService {
     };
   }
 
-  async completeLoginWithMfa(dto: { tempToken: string; code: string }) {
+  async completeLoginWithMfa(dto: { tempToken: string; code: string }, ipAddress = 'unknown', userAgent = 'unknown') {
     try {
       // Verify the temporary token
       const payload = this.jwtService.verify(dto.tempToken);
       
       if (!payload.tempAuth) {
+        // Log failed MFA attempt
+        await this.auditService.logAuth({
+          userId: 'unknown',
+          action: 'LOGIN_MFA_COMPLETE',
+          status: 'FAILURE',
+          ipAddress,
+          userAgent,
+          details: {
+            reason: 'Invalid temporary token',
+          },
+        });
+        
         throw new UnauthorizedException('Invalid temporary token');
       }
 
@@ -134,12 +215,36 @@ export class AuthService {
       // Validate MFA code
       const user = await this.usersService.findById(userId);
       if (!user) {
+        // Log failed MFA attempt
+        await this.auditService.logAuth({
+          userId,
+          action: 'LOGIN_MFA_COMPLETE',
+          status: 'FAILURE',
+          ipAddress,
+          userAgent,
+          details: {
+            reason: 'User not found',
+          },
+        });
+        
         throw new UnauthorizedException('User not found');
       }
 
       // Verify MFA code
       const isValidMfa = await this.verifyMfaCode(userId, dto.code);
       if (!isValidMfa) {
+        // Log failed MFA attempt
+        await this.auditService.logAuth({
+          userId,
+          action: 'LOGIN_MFA_COMPLETE',
+          status: 'FAILURE',
+          ipAddress,
+          userAgent,
+          details: {
+            reason: 'Invalid MFA code',
+          },
+        });
+        
         throw new UnauthorizedException('Invalid MFA code');
       }
       
@@ -159,6 +264,18 @@ export class AuthService {
       const expiresIn = rememberMe
         ? this.configService.get<string>('JWT_EXTENDED_EXPIRES_IN') || '30d'
         : this.configService.get<string>('JWT_EXPIRES_IN') || '1d';
+      
+      // Log successful MFA completion
+      await this.auditService.logAuth({
+        userId,
+        action: 'LOGIN_MFA_COMPLETE',
+        status: 'SUCCESS',
+        ipAddress,
+        userAgent,
+        details: {
+          rememberMe,
+        },
+      });
 
       return {
         accessToken: this.jwtService.sign(tokenPayload, { expiresIn }),
@@ -172,6 +289,18 @@ export class AuthService {
       };
     } catch (error) {
       if (error.name === 'TokenExpiredError') {
+        // Log token expired
+        await this.auditService.logAuth({
+          userId: 'unknown',
+          action: 'LOGIN_MFA_COMPLETE',
+          status: 'FAILURE',
+          ipAddress,
+          userAgent,
+          details: {
+            reason: 'Token expired',
+          },
+        });
+        
         throw new UnauthorizedException('MFA verification time expired, please login again');
       }
       throw error;
@@ -280,49 +409,60 @@ export class AuthService {
 
   async register(registerDto: RegisterDto) {
     try {
+      // Check if user with this email already exists
       const existingUser = await this.usersService
         .findByEmail(registerDto.email)
-        .catch(() => null);
+        .catch((error) => {
+          console.error(`Error checking existing user: ${error.message}`);
+          return null;
+        });
 
       if (existingUser) {
-        throw new ConflictException('Email already registered');
+        console.log(`Registration rejected: Email ${registerDto.email} already registered`);
+        throw new ConflictException(`Email ${registerDto.email} is already registered`);
       }
 
       // Generate salt and hash the password
       const salt = await bcrypt.genSalt(10);
       const hashedPassword = await bcrypt.hash(registerDto.password, salt);
 
-      const user = await this.usersRepository.create({
-        email: registerDto.email,
-        firstName: await this.encryptionService.encrypt(registerDto.firstName),
-        lastName: await this.encryptionService.encrypt(registerDto.lastName),
-        auth: {
-          create: {
-            password: hashedPassword,
-            passwordSalt: salt,
-          },
-        },
-      });
-
-      // Seed default categories for the new user
-      await this.categoriesService.seedUserDefaultCategories(user.id);
-      
-      // Seed default payment methods for the new user
-      await this.paymentMethodsService.seedUserDefaultPaymentMethods(user.id);
-
-      // Generate email verification token and send verification email
+      // Generate email verification token and set expiration
       const token = crypto.randomBytes(32).toString('hex');
       const expiration = new Date();
       expiration.setHours(expiration.getHours() + 24); // Token expires in 24 hours
 
-      // Store token in database
-      await this.usersRepository.updateUserAuth(user.id, {
-        emailVerificationToken: token,
-        emailVerificationTokenExpiry: expiration,
+      // Encrypt user data
+      const encryptedFirstName = await this.encryptionService.encrypt(registerDto.firstName);
+      const encryptedLastName = await this.encryptionService.encrypt(registerDto.lastName);
+
+      // Create user with all data in a single operation
+      const user = await this.usersRepository.create({
+        email: registerDto.email,
+        firstName: encryptedFirstName,
+        lastName: encryptedLastName,
+        auth: {
+          create: {
+            password: hashedPassword,
+            passwordSalt: salt,
+            emailVerificationToken: token,
+            emailVerificationTokenExpiry: expiration,
+          },
+        },
       });
 
-      // Send verification email
-      await this.emailService.sendEmailVerificationLink(user.email, token);
+      try {
+        // Seed default categories for the new user
+        await this.categoriesService.seedUserDefaultCategories(user.id);
+        
+        // Seed default payment methods for the new user
+        await this.paymentMethodsService.seedUserDefaultPaymentMethods(user.id);
+
+        // Send verification email
+        await this.emailService.sendEmailVerificationLink(user.email, token);
+      } catch (seedError) {
+        console.error('Error during post-registration setup:', seedError);
+        // We'll continue even if seeding fails, since the user was created
+      }
 
       const payload = {
         sub: user.id,
@@ -341,7 +481,20 @@ export class AuthService {
         },
       };
     } catch (error) {
-      throw new Error('Failed to create user');
+      // If the error is already a NestJS exception (like ConflictException),
+      // rethrow it so the proper HTTP status is returned
+      if (error.status) {
+        throw error;
+      }
+      
+      // Check if this is a database unique constraint error (likely email duplicate)
+      if (error.code === 'P2002' && error.meta?.target?.includes('email')) {
+        console.error(`Duplicate email error for ${registerDto.email}`);
+        throw new ConflictException(`Email ${registerDto.email} is already registered`);
+      }
+      
+      console.error('Registration error details:', error);
+      throw new Error(`Failed to create user: ${error.message}`);
     }
   }
 
@@ -555,18 +708,37 @@ export class AuthService {
     return false;
   }
 
-  async requestEmailVerification(dto: { email: string }) {
-    const user = await this.usersService
-      .findByEmail(dto.email)
-      .catch(() => null);
+  async requestEmailVerification(params: { email?: string; userId?: string }) {
+    let user;
 
-    if (!user) {
-      // Don't reveal that the email doesn't exist
-      return { success: true, message: 'If your email exists, a verification link has been sent' };
+    if (params.userId) {
+      // Find by ID for authenticated users
+      user = await this.usersService.findById(params.userId);
+      if (!user) {
+        throw new NotFoundException('User not found');
+      }
+    } else if (params.email) {
+      // Find by email for unauthenticated users
+      user = await this.usersService
+        .findByEmail(params.email)
+        .catch(() => null);
+
+      if (!user) {
+        // Don't reveal that the email doesn't exist
+        return { success: true, message: 'If your email exists, a verification link has been sent' };
+      }
+    } else {
+      throw new BadRequestException('Either email or userId must be provided');
     }
 
+    // Check if email is already verified
     if (user.emailVerified) {
-      return { success: true, message: 'Email is already verified' };
+      return { 
+        success: true, 
+        verified: true, 
+        message: 'Your email is already verified', 
+        verifiedAt: user.emailVerified 
+      };
     }
 
     // Generate token
@@ -585,6 +757,7 @@ export class AuthService {
 
     return {
       success: true,
+      verified: false,
       message: 'Verification link has been sent to your email',
     };
   }
@@ -627,6 +800,503 @@ export class AuthService {
     return {
       success: true,
       message: 'Email verified successfully',
+    };
+  }
+
+  async validateOAuthUser(oauthUserDto: OAuthUserDto, ipAddress = 'unknown', userAgent = 'unknown'): Promise<User | null> {
+    let user: any = null;
+    
+    try {
+      // Check if user exists with this email
+      user = await this.usersService
+        .findByEmail(oauthUserDto.email)
+        .catch(() => null);
+
+      if (user) {
+        // If user exists but was not created with this OAuth provider,
+        // we need to implement account linking
+        if (user.provider !== oauthUserDto.provider) {
+          // Link the OAuth account to the existing user
+          const updatedUser = await this.usersRepository.update(user.id, {
+            provider: oauthUserDto.provider,
+            providerAccountId: oauthUserDto.providerAccountId,
+            // We're not updating the password or other auth details
+            // as the user might still want to login with their password
+          });
+          
+          if (updatedUser) {
+            user = updatedUser as any;
+            
+            // Log the account linking event
+            const previousProvider = user?.provider || 'local';
+            
+            // Add to audit log
+            await this.auditService.logAccountChange({
+              userId: user.id,
+              action: 'ACCOUNT_LINKING',
+              status: 'SUCCESS',
+              ipAddress,
+              userAgent,
+              details: {
+                previousProvider,
+                newProvider: oauthUserDto.provider,
+                providerAccountId: oauthUserDto.providerAccountId,
+                email: oauthUserDto.email,
+                linkedAt: new Date()
+              }
+            });
+          }
+
+          return user as User;
+        }
+
+        // Update user profile if needed (for existing OAuth users)
+        if (user.providerAccountId !== oauthUserDto.providerAccountId) {
+          const updatedUser = await this.usersRepository.update(user.id, {
+            providerAccountId: oauthUserDto.providerAccountId,
+          });
+          
+          if (updatedUser) {
+            user = updatedUser as any; // Type assertion to resolve circular type reference
+            
+            // Log provider account ID update
+            await this.auditService.logAccountChange({
+              userId: user.id,
+              action: 'PROVIDER_ID_UPDATE',
+              status: 'SUCCESS',
+              ipAddress,
+              userAgent,
+              details: {
+                provider: oauthUserDto.provider,
+                oldProviderId: user.providerAccountId,
+                newProviderId: oauthUserDto.providerAccountId
+              }
+            });
+          }
+        }
+      } else {
+        // Only create a new user if one doesn't already exist
+        // Create a random password for OAuth users
+        const randomPassword = crypto.randomBytes(16).toString('hex');
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(randomPassword, salt);
+
+        // Create new user with OAuth info
+        const newUser = await this.usersRepository.create({
+          email: oauthUserDto.email,
+          firstName: await this.encryptionService.encrypt(oauthUserDto.firstName),
+          lastName: oauthUserDto.lastName 
+            ? await this.encryptionService.encrypt(oauthUserDto.lastName) 
+            : null,
+          provider: oauthUserDto.provider,
+          providerAccountId: oauthUserDto.providerAccountId,
+          emailVerified: new Date(), // OAuth emails are considered verified
+          role: 'USER',
+          isActive: true,
+          auth: {
+            create: {
+              password: hashedPassword,
+              passwordSalt: salt,
+            },
+          },
+        });
+        
+        if (newUser) {
+          user = newUser as any; // Type assertion to resolve circular type reference
+          
+          // Log the new user creation
+          await this.auditService.logAccountChange({
+            userId: newUser.id,
+            action: 'OAUTH_ACCOUNT_CREATION',
+            status: 'SUCCESS',
+            ipAddress,
+            userAgent,
+            details: {
+              provider: oauthUserDto.provider,
+              email: oauthUserDto.email,
+              createdAt: new Date()
+            }
+          });
+          
+          // Seed default categories for the new user
+          await this.categoriesService.seedUserDefaultCategories(newUser.id);
+          
+          // Seed default payment methods for the new user
+          await this.paymentMethodsService.seedUserDefaultPaymentMethods(newUser.id);
+        }
+      }
+
+      // Update last login time
+      if (user) {
+        await this.usersRepository.update(user.id, {
+          lastLoginAt: new Date(),
+        });
+        
+        // Log the OAuth login
+        await this.auditService.logAuth({
+          userId: user.id,
+          action: 'OAUTH_LOGIN',
+          status: 'SUCCESS',
+          ipAddress,
+          userAgent,
+          details: {
+            provider: oauthUserDto.provider,
+            email: oauthUserDto.email,
+            loginAt: new Date()
+          }
+        });
+      }
+
+      return user as User;
+    } catch (error) {
+      // Log the error
+      if (user) {
+        await this.auditService.logAuth({
+          userId: user.id,
+          action: 'OAUTH_LOGIN',
+          status: 'FAILURE',
+          ipAddress,
+          userAgent,
+          details: {
+            provider: oauthUserDto.provider,
+            email: oauthUserDto.email,
+            error: error.message
+          }
+        });
+      } else {
+        await this.auditService.logAuth({
+          userId: 'unknown',
+          action: 'OAUTH_LOGIN',
+          status: 'FAILURE',
+          ipAddress,
+          userAgent,
+          details: {
+            provider: oauthUserDto.provider,
+            email: oauthUserDto.email,
+            error: error.message
+          }
+        });
+      }
+      
+      throw new Error(`Failed to validate OAuth user: ${error.message}`);
+    }
+  }
+
+  async googleLogin(user: User, ipAddress = 'unknown', userAgent = 'unknown') {
+    if (!user) {
+      // Log the failed Google login
+      await this.auditService.logAuth({
+        userId: 'unknown',
+        action: 'GOOGLE_LOGIN',
+        status: 'FAILURE',
+        ipAddress,
+        userAgent,
+        details: {
+          reason: 'User object is null or undefined'
+        }
+      });
+      
+      throw new UnauthorizedException('Google authentication failed');
+    }
+
+    // Generate JWT token
+    const payload = {
+      sub: user.id,
+      email: user.email,
+      role: user.role || 'USER',
+    };
+    
+    // Log the successful Google login
+    await this.auditService.logAuth({
+      userId: user.id,
+      action: 'GOOGLE_LOGIN',
+      status: 'SUCCESS',
+      ipAddress,
+      userAgent,
+      details: {
+        email: user.email,
+        loginAt: new Date()
+      }
+    });
+
+    return {
+      accessToken: this.jwtService.sign(payload, { 
+        expiresIn: this.configService.get<string>('JWT_EXPIRES_IN') || '1d' 
+      }),
+      user: {
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName || '',
+        lastName: user.lastName || '',
+        role: user.role || 'USER',
+      },
+    };
+  }
+
+  /**
+   * Link a user account with an OAuth provider
+   * This is used for manual linking (not during OAuth login)
+   */
+  async linkAccount(userId: string, linkAccountDto: LinkAccountDto, ipAddress = 'unknown', userAgent = 'unknown') {
+    const user = await this.usersService.findById(userId);
+    
+    if (!user) {
+      // Log the failed account linking
+      await this.auditService.logAccountChange({
+        userId,
+        action: 'MANUAL_ACCOUNT_LINKING',
+        status: 'FAILURE',
+        ipAddress,
+        userAgent,
+        details: {
+          provider: linkAccountDto.provider,
+          reason: 'User not found'
+        }
+      });
+      
+      throw new BadRequestException('User not found');
+    }
+    
+    // Check if an account with the same provider already exists
+    // This is to prevent linking an OAuth provider to multiple accounts
+    const existingUser = await this.usersRepository.findByProviderAccount(
+      linkAccountDto.provider, 
+      linkAccountDto.providerAccountId
+    ).catch(() => null);
+    
+    if (existingUser && existingUser.id !== userId) {
+      // Log the conflict
+      await this.auditService.logAccountChange({
+        userId,
+        action: 'MANUAL_ACCOUNT_LINKING',
+        status: 'FAILURE',
+        ipAddress,
+        userAgent,
+        details: {
+          provider: linkAccountDto.provider,
+          providerAccountId: linkAccountDto.providerAccountId,
+          reason: 'Provider already linked to another account',
+          conflictingUserId: existingUser.id
+        }
+      });
+      
+      throw new ConflictException('This provider account is already linked to another user');
+    }
+    
+    // Validate the provider
+    const validProviders = ['google', 'facebook', 'apple'];
+    if (!validProviders.includes(linkAccountDto.provider)) {
+      // Log the invalid provider
+      await this.auditService.logAccountChange({
+        userId,
+        action: 'MANUAL_ACCOUNT_LINKING',
+        status: 'FAILURE',
+        ipAddress,
+        userAgent,
+        details: {
+          provider: linkAccountDto.provider,
+          reason: 'Invalid provider'
+        }
+      });
+      
+      throw new BadRequestException('Invalid provider');
+    }
+    
+    // In a real implementation, you might need to verify the OAuth token here
+    // by making a request to the provider's API
+    
+    // Update user with the provider info
+    const updatedUser = await this.usersRepository.update(userId, {
+      provider: linkAccountDto.provider,
+      providerAccountId: linkAccountDto.providerAccountId || null,
+    });
+    
+    // Log the successful account linking
+    await this.auditService.logAccountChange({
+      userId,
+      action: 'MANUAL_ACCOUNT_LINKING',
+      status: 'SUCCESS',
+      ipAddress,
+      userAgent,
+      details: {
+        provider: linkAccountDto.provider,
+        providerAccountId: linkAccountDto.providerAccountId,
+        linkedAt: new Date()
+      }
+    });
+    
+    return {
+      success: true,
+      message: `Account successfully linked with ${linkAccountDto.provider}`,
+      user: {
+        id: updatedUser.id,
+        email: updatedUser.email,
+        provider: updatedUser.provider,
+      }
+    };
+  }
+  
+  /**
+   * Unlink a provider from a user account
+   * Only allowed if the user has a password (can still login)
+   */
+  async unlinkProvider(userId: string, provider: string, ipAddress = 'unknown', userAgent = 'unknown') {
+    const user = await this.usersService.findById(userId);
+    
+    if (!user) {
+      // Log the failed provider unlinking
+      await this.auditService.logAccountChange({
+        userId,
+        action: 'PROVIDER_UNLINK',
+        status: 'FAILURE',
+        ipAddress,
+        userAgent,
+        details: {
+          provider,
+          reason: 'User not found'
+        }
+      });
+      
+      throw new BadRequestException('User not found');
+    }
+    
+    // Make sure the provider matches what the user has set
+    if (user.provider !== provider) {
+      // Log the mismatch
+      await this.auditService.logAccountChange({
+        userId,
+        action: 'PROVIDER_UNLINK',
+        status: 'FAILURE',
+        ipAddress,
+        userAgent,
+        details: {
+          requestedProvider: provider,
+          actualProvider: user.provider,
+          reason: 'Provider mismatch'
+        }
+      });
+      
+      throw new BadRequestException(`Your account is not linked with ${provider}`);
+    }
+    
+    // Check if user has a password set (to ensure they can still login)
+    const userAuth = await this.usersRepository.findUserAuthById(userId);
+    
+    if (!userAuth || !userAuth.password) {
+      // Log the no password issue
+      await this.auditService.logAccountChange({
+        userId,
+        action: 'PROVIDER_UNLINK',
+        status: 'FAILURE',
+        ipAddress,
+        userAgent,
+        details: {
+          provider,
+          reason: 'No password set'
+        }
+      });
+      
+      throw new BadRequestException(
+        'Cannot unlink provider because you don\'t have a password set. ' +
+        'Please set a password first to ensure you can still log in.'
+      );
+    }
+    
+    // Update user to remove provider info
+    const updatedUser = await this.usersRepository.update(userId, {
+      provider: null,
+      providerAccountId: null,
+    });
+    
+    // Log the successful provider unlinking
+    await this.auditService.logAccountChange({
+      userId,
+      action: 'PROVIDER_UNLINK',
+      status: 'SUCCESS',
+      ipAddress,
+      userAgent,
+      details: {
+        provider,
+        unlinkedAt: new Date()
+      }
+    });
+    
+    return {
+      success: true,
+      message: `${provider} successfully unlinked from your account`,
+      user: {
+        id: updatedUser.id,
+        email: updatedUser.email,
+      }
+    };
+  }
+
+  /**
+   * Generic OAuth login handler for all providers
+   */
+  async oauthLogin(user: User, ipAddress = 'unknown', userAgent = 'unknown') {
+    if (!user) {
+      // Log the failed OAuth login
+      await this.auditService.logAuth({
+        userId: 'unknown',
+        action: 'OAUTH_LOGIN',
+        status: 'FAILURE',
+        ipAddress,
+        userAgent,
+        details: {
+          reason: 'User object is null or undefined'
+        }
+      });
+      
+      throw new UnauthorizedException('OAuth authentication failed');
+    }
+
+    // Generate JWT token
+    const payload = {
+      sub: user.id,
+      email: user.email,
+      role: user.role || 'USER',
+    };
+    
+    // Log the successful OAuth login
+    await this.auditService.logAuth({
+      userId: user.id,
+      action: `${user.provider?.toUpperCase() || 'OAUTH'}_LOGIN`,
+      status: 'SUCCESS',
+      ipAddress,
+      userAgent,
+      details: {
+        email: user.email,
+        provider: user.provider,
+        loginAt: new Date()
+      }
+    });
+
+    return {
+      accessToken: this.jwtService.sign(payload, { 
+        expiresIn: this.configService.get<string>('JWT_EXPIRES_IN') || '1d' 
+      }),
+      user: {
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName || '',
+        lastName: user.lastName || '',
+        role: user.role || 'USER',
+      },
+    };
+  }
+
+  async getEmailVerificationStatus(userId: string) {
+    const user = await this.usersService.findById(userId);
+    
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+    
+    return {
+      email: user.email,
+      verified: user.emailVerified ? true : false,
+      verifiedAt: user.emailVerified,
     };
   }
 }

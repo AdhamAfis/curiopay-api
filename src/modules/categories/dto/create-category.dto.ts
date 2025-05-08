@@ -61,7 +61,7 @@ export class CreateCategoryDto {
 
   @ApiPropertyOptional({
     example: false,
-    description: 'Whether this is a default category',
+    description: 'Whether this is a default category. Note: Requires admin privileges to set to true.',
     default: false,
   })
   @IsBoolean()
@@ -70,7 +70,7 @@ export class CreateCategoryDto {
 
   @ApiPropertyOptional({
     example: false,
-    description: 'Whether this is a system category',
+    description: 'Whether this is a system category. Note: Requires admin privileges to set to true.',
     default: false,
   })
   @IsBoolean()
