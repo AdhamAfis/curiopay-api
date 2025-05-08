@@ -9,7 +9,7 @@
 <body>
     <div class="container">
         <header class="header">
-            <h1>CurioPay Data Export - {{title}}</h1>
+            <h1>Categories</h1>
         </header>
 
         <nav class="nav">
@@ -23,27 +23,29 @@
 
         <main>
             <div class="card">
-                <h2>Categories</h2>
+                <h2>Your Categories</h2>
                 
                 {{#if categories.length}}
                 <table class="table">
                     <thead>
                         <tr>
                             <th>Name</th>
-                            <th>Description</th>
                             <th>Type</th>
                             <th>Color</th>
                             <th>Icon</th>
+                            <th>Budget</th>
+                            <th>Default</th>
                         </tr>
                     </thead>
                     <tbody>
                         {{#each categories}}
                         <tr>
                             <td>{{name}}</td>
-                            <td>{{description}}</td>
                             <td>{{type.name}}</td>
                             <td><span class="badge" style="background-color: {{color}}">{{color}}</span></td>
                             <td>{{icon}}</td>
+                            <td>{{budget}}</td>
+                            <td>{{#if isDefault}}Yes{{else}}No{{/if}}</td>
                         </tr>
                         {{/each}}
                     </tbody>
@@ -53,6 +55,10 @@
                 {{/if}}
             </div>
         </main>
+        
+        <footer class="footer">
+            <p>CurioPay Data Export - User Data</p>
+        </footer>
     </div>
 </body>
 </html> 
