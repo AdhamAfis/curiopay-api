@@ -1,4 +1,4 @@
-import { Module, forwardRef } from '@nestjs/common';
+import { Module, forwardRef, Injectable, OnModuleInit } from '@nestjs/common';
 import { UsersController } from './users.controller';
 import { UsersService } from './users.service';
 import { UsersRepository } from './users.repository';
@@ -9,6 +9,21 @@ import { UserPreferencesController } from './user-preferences.controller';
 import { UserPreferencesService } from './user-preferences.service';
 import { UserPreferencesRepository } from './users-preferences.repository';
 import { AuthModule } from '../auth/auth.module';
+
+@Injectable()
+export class PreferencesInitializer implements OnModuleInit {
+  constructor(private userPreferencesRepository: UserPreferencesRepository) {}
+
+  async onModuleInit() {
+    console.log('Initializing default preferences...');
+    try {
+      await this.userPreferencesRepository.ensureDefaultsExist();
+      console.log('Default preferences initialized successfully');
+    } catch (error) {
+      console.error('Failed to initialize default preferences:', error);
+    }
+  }
+}
 
 @Module({
   imports: [
@@ -29,6 +44,7 @@ import { AuthModule } from '../auth/auth.module';
     UsersRepository,
     UserPreferencesService,
     UserPreferencesRepository,
+    PreferencesInitializer,
   ],
   exports: [UsersService, UsersRepository], // Export for use in other modules like auth
 })

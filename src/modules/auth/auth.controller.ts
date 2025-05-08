@@ -133,12 +133,25 @@ export class AuthController extends BaseController {
     },
   })
   @ApiResponse({ status: 400, description: 'Invalid input' })
-  @ApiResponse({ status: 409, description: 'User already exists' })
-  async register(@Body() registerDto: RegisterDto) {
-    console.log('Register Request DTO (before service):', JSON.stringify(registerDto, null, 2));
-    const result = await this.authService.register(registerDto);
-    console.log('Register Response (after service):', JSON.stringify(result, null, 2));
-    return result;
+  @ApiResponse({ status: 409, description: 'Email already registered' })
+  async register(@Body() registerDto: RegisterDto, @Req() req) {
+    try {
+      console.log('Register Request DTO:', JSON.stringify(registerDto, null, 2));
+      const result = await this.authService.register(registerDto);
+      console.log('Registration successful for:', registerDto.email);
+      return result;
+    } catch (error) {
+      // Log error but ensure we're passing the original error type through
+      console.error(`Registration failed for ${registerDto.email}:`, error.message);
+      
+      // Keep the original error status code and message
+      if (error.status === 409) {
+        // This is a conflict error (email already registered)
+        throw error;
+      }
+      
+      throw error;
+    }
   }
 
   @Public()
@@ -207,10 +220,50 @@ export class AuthController extends BaseController {
   @Public()
   @Post('email/request-verification')
   @HttpCode(200)
-  @ApiOperation({ summary: 'Request email verification' })
-  @ApiResponse({ status: 200, description: 'Verification email sent' })
+  @ApiOperation({ 
+    summary: 'Request email verification for any email address (public)', 
+    description: 'Sends a verification email if the account exists and is not already verified'
+  })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Request processed successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', example: true },
+        verified: { type: 'boolean', example: false },
+        message: { type: 'string' },
+        verifiedAt: { type: 'string', format: 'date-time', nullable: true }
+      }
+    }
+  })
   async requestEmailVerification(@Body() dto: RequestEmailVerificationDto) {
     return this.authService.requestEmailVerification(dto);
+  }
+
+  @Post('email/request-verification/current')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(200)
+  @ApiOperation({ 
+    summary: 'Request email verification for the current authenticated user',
+    description: 'Sends a verification email only if the current user\'s email is not already verified'
+  })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Request processed successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', example: true },
+        verified: { type: 'boolean', example: false },
+        message: { type: 'string' },
+        verifiedAt: { type: 'string', format: 'date-time', nullable: true }
+      }
+    }
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  async requestVerificationForCurrentUser(@CurrentUser() user) {
+    return this.authService.requestEmailVerification({ userId: user.id });
   }
 
   @Public()
@@ -221,6 +274,26 @@ export class AuthController extends BaseController {
   @ApiResponse({ status: 400, description: 'Invalid or expired token' })
   async verifyEmail(@Body() dto: VerifyEmailDto) {
     return this.authService.verifyEmail(dto);
+  }
+
+  @Get('email/verification-status')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Check email verification status for the current user' })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Email verification status', 
+    schema: {
+      type: 'object',
+      properties: {
+        email: { type: 'string' },
+        verified: { type: 'boolean' },
+        verifiedAt: { type: 'string', format: 'date-time', nullable: true },
+      }
+    }
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  async getEmailVerificationStatus(@CurrentUser() user) {
+    return this.authService.getEmailVerificationStatus(user.id);
   }
 
   @Public()
@@ -264,10 +337,10 @@ export class AuthController extends BaseController {
     const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
     try {
       const { accessToken, user } = await this.authService.oauthLogin(req.user, req.ip, req.headers['user-agent']);
-      // Redirect to frontend with token
-      return res.redirect(`${frontendUrl}/auth/callback?token=${accessToken}&userId=${user.id}`);
+      // Redirect to frontend with token - using dashboard path instead of /auth/callback
+      return res.redirect(`${frontendUrl}/dashboard?token=${accessToken}&userId=${user.id}`);
     } catch (error) {
-      return res.redirect(`${frontendUrl}/auth/callback?error=${encodeURIComponent(error.message)}`);
+      return res.redirect(`${frontendUrl}/login?error=${encodeURIComponent(error.message)}`);
     }
   }
 
@@ -338,10 +411,10 @@ export class AuthController extends BaseController {
     const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
     try {
       const { accessToken, user } = await this.authService.oauthLogin(req.user, req.ip, req.headers['user-agent']);
-      // Redirect to frontend with token
-      return res.redirect(`${frontendUrl}/auth/callback?token=${accessToken}&userId=${user.id}`);
+      // Redirect to frontend with token - using dashboard path instead of /auth/callback
+      return res.redirect(`${frontendUrl}/dashboard?token=${accessToken}&userId=${user.id}`);
     } catch (error) {
-      return res.redirect(`${frontendUrl}/auth/callback?error=${encodeURIComponent(error.message)}`);
+      return res.redirect(`${frontendUrl}/login?error=${encodeURIComponent(error.message)}`);
     }
   }
 

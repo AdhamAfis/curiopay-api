@@ -19,6 +19,7 @@ import { authenticator } from 'otplib';
 import { toDataURL } from 'qrcode';
 import { CategoriesService } from '../categories/categories.service';
 import { PaymentMethodsService } from '../payment-methods/payment-methods.service';
+import { PrismaService } from '../../prisma/prisma.service';
 
 @Injectable()
 export class AuthService {
@@ -32,6 +33,7 @@ export class AuthService {
     private categoriesService: CategoriesService,
     private paymentMethodsService: PaymentMethodsService,
     private auditService: AuditService,
+    private prisma: PrismaService,
   ) {}
 
   async login(loginDto: LoginDto, ipAddress = 'unknown', userAgent = 'unknown') {
@@ -407,49 +409,60 @@ export class AuthService {
 
   async register(registerDto: RegisterDto) {
     try {
+      // Check if user with this email already exists
       const existingUser = await this.usersService
         .findByEmail(registerDto.email)
-        .catch(() => null);
+        .catch((error) => {
+          console.error(`Error checking existing user: ${error.message}`);
+          return null;
+        });
 
       if (existingUser) {
-        throw new ConflictException('Email already registered');
+        console.log(`Registration rejected: Email ${registerDto.email} already registered`);
+        throw new ConflictException(`Email ${registerDto.email} is already registered`);
       }
 
       // Generate salt and hash the password
       const salt = await bcrypt.genSalt(10);
       const hashedPassword = await bcrypt.hash(registerDto.password, salt);
 
-      const user = await this.usersRepository.create({
-        email: registerDto.email,
-        firstName: await this.encryptionService.encrypt(registerDto.firstName),
-        lastName: await this.encryptionService.encrypt(registerDto.lastName),
-        auth: {
-          create: {
-            password: hashedPassword,
-            passwordSalt: salt,
-          },
-        },
-      });
-
-      // Seed default categories for the new user
-      await this.categoriesService.seedUserDefaultCategories(user.id);
-      
-      // Seed default payment methods for the new user
-      await this.paymentMethodsService.seedUserDefaultPaymentMethods(user.id);
-
-      // Generate email verification token and send verification email
+      // Generate email verification token and set expiration
       const token = crypto.randomBytes(32).toString('hex');
       const expiration = new Date();
       expiration.setHours(expiration.getHours() + 24); // Token expires in 24 hours
 
-      // Store token in database
-      await this.usersRepository.updateUserAuth(user.id, {
-        emailVerificationToken: token,
-        emailVerificationTokenExpiry: expiration,
+      // Encrypt user data
+      const encryptedFirstName = await this.encryptionService.encrypt(registerDto.firstName);
+      const encryptedLastName = await this.encryptionService.encrypt(registerDto.lastName);
+
+      // Create user with all data in a single operation
+      const user = await this.usersRepository.create({
+        email: registerDto.email,
+        firstName: encryptedFirstName,
+        lastName: encryptedLastName,
+        auth: {
+          create: {
+            password: hashedPassword,
+            passwordSalt: salt,
+            emailVerificationToken: token,
+            emailVerificationTokenExpiry: expiration,
+          },
+        },
       });
 
-      // Send verification email
-      await this.emailService.sendEmailVerificationLink(user.email, token);
+      try {
+        // Seed default categories for the new user
+        await this.categoriesService.seedUserDefaultCategories(user.id);
+        
+        // Seed default payment methods for the new user
+        await this.paymentMethodsService.seedUserDefaultPaymentMethods(user.id);
+
+        // Send verification email
+        await this.emailService.sendEmailVerificationLink(user.email, token);
+      } catch (seedError) {
+        console.error('Error during post-registration setup:', seedError);
+        // We'll continue even if seeding fails, since the user was created
+      }
 
       const payload = {
         sub: user.id,
@@ -468,7 +481,20 @@ export class AuthService {
         },
       };
     } catch (error) {
-      throw new Error('Failed to create user');
+      // If the error is already a NestJS exception (like ConflictException),
+      // rethrow it so the proper HTTP status is returned
+      if (error.status) {
+        throw error;
+      }
+      
+      // Check if this is a database unique constraint error (likely email duplicate)
+      if (error.code === 'P2002' && error.meta?.target?.includes('email')) {
+        console.error(`Duplicate email error for ${registerDto.email}`);
+        throw new ConflictException(`Email ${registerDto.email} is already registered`);
+      }
+      
+      console.error('Registration error details:', error);
+      throw new Error(`Failed to create user: ${error.message}`);
     }
   }
 
@@ -682,18 +708,37 @@ export class AuthService {
     return false;
   }
 
-  async requestEmailVerification(dto: { email: string }) {
-    const user = await this.usersService
-      .findByEmail(dto.email)
-      .catch(() => null);
+  async requestEmailVerification(params: { email?: string; userId?: string }) {
+    let user;
 
-    if (!user) {
-      // Don't reveal that the email doesn't exist
-      return { success: true, message: 'If your email exists, a verification link has been sent' };
+    if (params.userId) {
+      // Find by ID for authenticated users
+      user = await this.usersService.findById(params.userId);
+      if (!user) {
+        throw new NotFoundException('User not found');
+      }
+    } else if (params.email) {
+      // Find by email for unauthenticated users
+      user = await this.usersService
+        .findByEmail(params.email)
+        .catch(() => null);
+
+      if (!user) {
+        // Don't reveal that the email doesn't exist
+        return { success: true, message: 'If your email exists, a verification link has been sent' };
+      }
+    } else {
+      throw new BadRequestException('Either email or userId must be provided');
     }
 
+    // Check if email is already verified
     if (user.emailVerified) {
-      return { success: true, message: 'Email is already verified' };
+      return { 
+        success: true, 
+        verified: true, 
+        message: 'Your email is already verified', 
+        verifiedAt: user.emailVerified 
+      };
     }
 
     // Generate token
@@ -712,6 +757,7 @@ export class AuthService {
 
     return {
       success: true,
+      verified: false,
       message: 'Verification link has been sent to your email',
     };
   }
@@ -829,6 +875,7 @@ export class AuthService {
           }
         }
       } else {
+        // Only create a new user if one doesn't already exist
         // Create a random password for OAuth users
         const randomPassword = crypto.randomBytes(16).toString('hex');
         const salt = await bcrypt.genSalt(10);
@@ -1236,6 +1283,20 @@ export class AuthService {
         lastName: user.lastName || '',
         role: user.role || 'USER',
       },
+    };
+  }
+
+  async getEmailVerificationStatus(userId: string) {
+    const user = await this.usersService.findById(userId);
+    
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+    
+    return {
+      email: user.email,
+      verified: user.emailVerified ? true : false,
+      verifiedAt: user.emailVerified,
     };
   }
 }

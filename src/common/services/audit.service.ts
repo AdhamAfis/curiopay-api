@@ -4,7 +4,7 @@ import { Prisma } from '@prisma/client';
 import * as crypto from 'crypto';
 
 export interface AuditLogData {
-  userId: string;
+  userId?: string; // Make userId optional
   action: string;
   category: string;
   ipAddress: string;
@@ -47,6 +47,16 @@ export class AuditService {
       
       // Add server timestamp
       const timestamp = new Date();
+      
+      // Check if userId is valid (not 'unknown' and not empty) before inserting into db
+      if (!enhancedLogData.userId || enhancedLogData.userId === 'unknown') {
+        // If userId is missing or 'unknown', just log to application logs
+        this.logger.log(
+          `Audit event without user: ${enhancedLogData.category}:${enhancedLogData.action} - ${enhancedLogData.status}`,
+          { ...enhancedLogData, timestamp }
+        );
+        return null;
+      }
       
       return await this.prisma.auditLog.create({
         data: {
