@@ -18,6 +18,7 @@ import { CreatePaymentMethodDto } from './dto/create-payment-method.dto';
 import { UpdatePaymentMethodDto } from './dto/update-payment-method.dto';
 import { QueryPaymentMethodDto } from './dto/query-payment-method.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { AdminPropertiesGuard } from '../../common/guards/admin-properties.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { IUser } from '../users/interfaces/user.interface';
 import {
@@ -37,10 +38,15 @@ export class PaymentMethodsController {
   constructor(private readonly paymentMethodsService: PaymentMethodsService) {}
 
   @Post()
+  @UseGuards(AdminPropertiesGuard())
   @HttpCode(201)
-  @ApiOperation({ summary: 'Create a new payment method' })
+  @ApiOperation({ 
+    summary: 'Create a new payment method',
+    description: 'Creates a new payment method. Note: Setting isDefault or isSystem to true requires admin privileges.'
+  })
   @ApiResponse({ status: 201, description: 'Payment method created successfully.' })
   @ApiResponse({ status: 400, description: 'Bad request.' })
+  @ApiResponse({ status: 403, description: 'Forbidden. Admin privileges required for setting isDefault or isSystem.' })
   @ApiResponse({ status: 409, description: 'Payment method already exists.' })
   async create(
     @CurrentUser() user: IUser,
@@ -88,9 +94,14 @@ export class PaymentMethodsController {
   }
 
   @Patch(':id')
-  @ApiOperation({ summary: 'Update a payment method' })
+  @UseGuards(AdminPropertiesGuard())
+  @ApiOperation({ 
+    summary: 'Update a payment method',
+    description: 'Updates a payment method. Note: Setting isDefault or isSystem to true requires admin privileges.'
+  })
   @ApiResponse({ status: 200, description: 'Payment method updated successfully.' })
   @ApiResponse({ status: 400, description: 'Bad request.' })
+  @ApiResponse({ status: 403, description: 'Forbidden. Admin privileges required for setting isDefault or isSystem.' })
   @ApiResponse({ status: 404, description: 'Payment method not found.' })
   @ApiParam({ name: 'id', description: 'Payment method ID' })
   async update(

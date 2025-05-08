@@ -18,6 +18,7 @@ import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 import { QueryCategoryDto } from './dto/query-category.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { AdminPropertiesGuard } from '../../common/guards/admin-properties.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { IUser } from '../users/interfaces/user.interface';
 import {
@@ -37,10 +38,15 @@ export class CategoriesController {
   constructor(private readonly categoriesService: CategoriesService) {}
 
   @Post()
+  @UseGuards(AdminPropertiesGuard())
   @HttpCode(201)
-  @ApiOperation({ summary: 'Create a new category' })
+  @ApiOperation({ 
+    summary: 'Create a new category',
+    description: 'Creates a new category. Note: Setting isDefault or isSystem to true requires admin privileges.'
+  })
   @ApiResponse({ status: 201, description: 'Category created successfully.' })
   @ApiResponse({ status: 400, description: 'Bad request.' })
+  @ApiResponse({ status: 403, description: 'Forbidden. Admin privileges required for setting isDefault or isSystem.' })
   @ApiResponse({ status: 409, description: 'Category already exists.' })
   async create(
     @CurrentUser() user: IUser,
@@ -93,9 +99,14 @@ export class CategoriesController {
   }
 
   @Patch(':id')
-  @ApiOperation({ summary: 'Update a category' })
+  @UseGuards(AdminPropertiesGuard())
+  @ApiOperation({ 
+    summary: 'Update a category',
+    description: 'Updates a category. Note: Setting isDefault or isSystem to true requires admin privileges.'
+  })
   @ApiResponse({ status: 200, description: 'Category updated successfully.' })
   @ApiResponse({ status: 400, description: 'Bad request.' })
+  @ApiResponse({ status: 403, description: 'Forbidden. Admin privileges required for setting isDefault or isSystem.' })
   @ApiResponse({ status: 404, description: 'Category not found.' })
   @ApiParam({ name: 'id', description: 'Category ID' })
   async update(
