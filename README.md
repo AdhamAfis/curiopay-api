@@ -56,4 +56,4 @@ Set up your environment variables according to `.env.example`. For production, e
   6. Open a pull request to the main repository.
 
 ## License
-
+This project is licensed under the [Apache License 2.0](LICENSE).
