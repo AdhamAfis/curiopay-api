@@ -128,7 +128,7 @@ export class UsersService {
     currentUserRole: Role,
   ) {
     const targetUser = await this.findOne(id);
-    const newRole = updateUserRoleDto.role as Role;
+    const newRole = updateUserRoleDto.role;
 
     if (!ROLE_HIERARCHY[currentUserRole].includes(newRole)) {
       throw new UnauthorizedException(
