@@ -69,7 +69,7 @@ export class CategoriesService {
       const cachePrefix = `categories:${userId}`;
       // Clear all cache keys for this user's categories
       await this.cacheManager.del(cachePrefix);
-      
+
       return category;
     } catch (error) {
       if (error instanceof ConflictException) {
@@ -83,13 +83,13 @@ export class CategoriesService {
     try {
       // Create a cache key based on the userId and query parameters
       const cacheKey = `categories:${userId}:${JSON.stringify(query)}`;
-      
+
       // Try to get data from cache first
       const cachedData = await this.cacheManager.get(cacheKey);
       if (cachedData) {
         return cachedData;
       }
-      
+
       const { search, type, isDefault, isSystem } = query;
 
       const categories = await this.prisma.category.findMany({
@@ -130,10 +130,10 @@ export class CategoriesService {
         transactionCount: category._count.expenses + category._count.incomes,
         _count: undefined,
       }));
-      
+
       // Store in cache for future requests
       await this.cacheManager.set(cacheKey, result);
-      
+
       return result;
     } catch (error) {
       throw new BadRequestException('Failed to fetch categories');
@@ -144,13 +144,13 @@ export class CategoriesService {
     try {
       // Create a cache key based on the userId and category id
       const cacheKey = `category:${userId}:${id}`;
-      
+
       // Try to get data from cache first
       const cachedData = await this.cacheManager.get(cacheKey);
       if (cachedData) {
         return cachedData;
       }
-      
+
       const category = await this.prisma.category.findFirst({
         where: { id, userId },
         include: {
@@ -177,10 +177,10 @@ export class CategoriesService {
         transactionCount: category._count.expenses + category._count.incomes,
         _count: undefined,
       };
-      
+
       // Store in cache for future requests
       await this.cacheManager.set(cacheKey, result);
-      
+
       return result;
     } catch (error) {
       if (error instanceof NotFoundException) {
@@ -251,11 +251,11 @@ export class CategoriesService {
           type: true,
         },
       });
-      
+
       // Invalidate cache for this category and the categories list
       await this.cacheManager.del(`category:${userId}:${id}`);
       await this.cacheManager.del(`categories:${userId}`);
-      
+
       return updatedCategory;
     } catch (error) {
       if (
@@ -304,11 +304,11 @@ export class CategoriesService {
       await this.prisma.category.delete({
         where: { id },
       });
-      
+
       // Invalidate cache for this category and the categories list
       await this.cacheManager.del(`category:${userId}:${id}`);
       await this.cacheManager.del(`categories:${userId}`);
-      
+
       return { success: true, message: 'Category deleted successfully' };
     } catch (error) {
       if (

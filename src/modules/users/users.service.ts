@@ -122,12 +122,18 @@ export class UsersService {
     });
   }
 
-  async updateRole(id: string, updateUserRoleDto: UpdateUserRoleDto, currentUserRole: Role) {
+  async updateRole(
+    id: string,
+    updateUserRoleDto: UpdateUserRoleDto,
+    currentUserRole: Role,
+  ) {
     const targetUser = await this.findOne(id);
     const newRole = updateUserRoleDto.role as Role;
 
     if (!ROLE_HIERARCHY[currentUserRole].includes(newRole)) {
-      throw new UnauthorizedException('You are not authorized to assign this role');
+      throw new UnauthorizedException(
+        'You are not authorized to assign this role',
+      );
     }
 
     return this.prisma.user.update({
@@ -200,31 +206,41 @@ export class UsersService {
     let decryptedFirstName = '';
     let decryptedLastName = '';
     let decryptedPhone: string | undefined = undefined;
-    
+
     try {
       if (user.firstName) {
-        decryptedFirstName = await this.encryptionService.decrypt(user.firstName);
+        decryptedFirstName = await this.encryptionService.decrypt(
+          user.firstName,
+        );
       }
     } catch (error) {
-      console.warn(`Failed to decrypt firstName for user ${userId}: ${error.message}`);
+      console.warn(
+        `Failed to decrypt firstName for user ${userId}: ${error.message}`,
+      );
       decryptedFirstName = 'Data unavailable';
     }
-    
+
     try {
       if (user.lastName) {
         decryptedLastName = await this.encryptionService.decrypt(user.lastName);
       }
     } catch (error) {
-      console.warn(`Failed to decrypt lastName for user ${userId}: ${error.message}`);
+      console.warn(
+        `Failed to decrypt lastName for user ${userId}: ${error.message}`,
+      );
       decryptedLastName = 'Data unavailable';
     }
-    
+
     try {
       if (user.contactInfo?.phone) {
-        decryptedPhone = await this.encryptionService.decrypt(user.contactInfo.phone);
+        decryptedPhone = await this.encryptionService.decrypt(
+          user.contactInfo.phone,
+        );
       }
     } catch (error) {
-      console.warn(`Failed to decrypt phone for user ${userId}: ${error.message}`);
+      console.warn(
+        `Failed to decrypt phone for user ${userId}: ${error.message}`,
+      );
       decryptedPhone = undefined;
     }
 
@@ -257,7 +273,9 @@ export class UsersService {
     return this.prisma.user.create({
       data: {
         email: createUserDto.email,
-        firstName: await this.encryptionService.encrypt(createUserDto.firstName),
+        firstName: await this.encryptionService.encrypt(
+          createUserDto.firstName,
+        ),
         lastName: await this.encryptionService.encrypt(createUserDto.lastName),
         role: Role.USER,
         isActive: true,

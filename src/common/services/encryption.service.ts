@@ -1,5 +1,12 @@
 import { Injectable } from '@nestjs/common';
-import { createCipheriv, createDecipheriv, randomBytes, scrypt, BinaryLike, CipherKey } from 'crypto';
+import {
+  createCipheriv,
+  createDecipheriv,
+  randomBytes,
+  scrypt,
+  BinaryLike,
+  CipherKey,
+} from 'crypto';
 import { promisify } from 'util';
 
 @Injectable()
@@ -26,12 +33,12 @@ export class EncryptionService {
     try {
       // Generate a random salt
       const salt = randomBytes(this.saltLength);
-      
+
       // Generate key using scrypt
       const key = (await promisify(scrypt)(
         process.env.ENCRYPTION_KEY as BinaryLike,
         salt,
-        this.keyLength
+        this.keyLength,
       )) as CipherKey;
 
       // Generate IV
@@ -50,12 +57,7 @@ export class EncryptionService {
       const authTag = cipher.getAuthTag();
 
       // Combine all components
-      const combined = Buffer.concat([
-        salt,
-        iv,
-        authTag,
-        encryptedData,
-      ]);
+      const combined = Buffer.concat([salt, iv, authTag, encryptedData]);
 
       // Return as base64 string
       return combined.toString('base64');
@@ -76,18 +78,23 @@ export class EncryptionService {
 
       // Extract components
       const salt = combined.subarray(0, this.saltLength);
-      const iv = combined.subarray(this.saltLength, this.saltLength + this.ivLength);
+      const iv = combined.subarray(
+        this.saltLength,
+        this.saltLength + this.ivLength,
+      );
       const authTag = combined.subarray(
         this.saltLength + this.ivLength,
-        this.saltLength + this.ivLength + this.authTagLength
+        this.saltLength + this.ivLength + this.authTagLength,
       );
-      const encrypted = combined.subarray(this.saltLength + this.ivLength + this.authTagLength);
+      const encrypted = combined.subarray(
+        this.saltLength + this.ivLength + this.authTagLength,
+      );
 
       // Generate key using scrypt
       const key = (await promisify(scrypt)(
         process.env.ENCRYPTION_KEY as BinaryLike,
         salt,
-        this.keyLength
+        this.keyLength,
       )) as CipherKey;
 
       // Create decipher

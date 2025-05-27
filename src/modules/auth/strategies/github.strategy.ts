@@ -17,7 +17,7 @@ export class GitHubStrategy extends PassportStrategy(Strategy, 'github') {
       callbackURL: configService.get<string>('GITHUB_CALLBACK_URL') || '',
       scope: ['user:email'],
     };
-    
+
     super(options);
   }
 
@@ -30,7 +30,7 @@ export class GitHubStrategy extends PassportStrategy(Strategy, 'github') {
     try {
       // GitHub profile structure is different from Google
       const { id, displayName, username, emails, photos } = profile;
-      
+
       if (!emails || emails.length === 0) {
         return done(new Error('Email not provided by GitHub'), false);
       }
@@ -43,21 +43,25 @@ export class GitHubStrategy extends PassportStrategy(Strategy, 'github') {
       // Parse name - GitHub may provide full name in displayName
       let firstName = displayName || username || 'GitHub';
       let lastName = 'User';
-      
+
       if (displayName && displayName.includes(' ')) {
         const nameParts = displayName.split(' ');
         firstName = nameParts[0];
         lastName = nameParts.slice(1).join(' ');
       }
 
-      const user = await this.authService.validateOAuthUser({
-        email: emails[0].value,
-        firstName,
-        lastName,
-        provider: 'github',
-        providerAccountId: id,
-        photoUrl: photos && photos.length > 0 ? photos[0].value : undefined,
-      }, ipAddress, userAgent);
+      const user = await this.authService.validateOAuthUser(
+        {
+          email: emails[0].value,
+          firstName,
+          lastName,
+          provider: 'github',
+          providerAccountId: id,
+          photoUrl: photos && photos.length > 0 ? photos[0].value : undefined,
+        },
+        ipAddress,
+        userAgent,
+      );
 
       return done(null, user as User);
     } catch (error) {
@@ -69,7 +73,7 @@ export class GitHubStrategy extends PassportStrategy(Strategy, 'github') {
   private getRequest() {
     const context = this.getPassportExecutionContext();
     if (!context) return null;
-    
+
     return context.switchToHttp().getRequest();
   }
 
@@ -82,4 +86,4 @@ export class GitHubStrategy extends PassportStrategy(Strategy, 'github') {
       return null;
     }
   }
-} 
+}

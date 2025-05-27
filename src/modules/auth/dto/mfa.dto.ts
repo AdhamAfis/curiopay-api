@@ -21,7 +21,10 @@ export class CompleteLoginWithMfaDto {
   @IsNotEmpty()
   code: string;
 
-  @ApiProperty({ example: 'abc123', description: 'Temporary login token for MFA verification' })
+  @ApiProperty({
+    example: 'abc123',
+    description: 'Temporary login token for MFA verification',
+  })
   @IsString()
   @IsNotEmpty()
   tempToken: string;
@@ -37,4 +40,4 @@ export class DisableMfaDto {
   @IsBoolean()
   @IsNotEmpty()
   confirm: boolean;
-} 
+}

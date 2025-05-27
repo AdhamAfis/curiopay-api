@@ -40,13 +40,18 @@ export class CategoriesController {
   @Post()
   @UseGuards(AdminPropertiesGuard())
   @HttpCode(201)
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Create a new category',
-    description: 'Creates a new category. Note: Setting isDefault or isSystem to true requires admin privileges.'
+    description:
+      'Creates a new category. Note: Setting isDefault or isSystem to true requires admin privileges.',
   })
   @ApiResponse({ status: 201, description: 'Category created successfully.' })
   @ApiResponse({ status: 400, description: 'Bad request.' })
-  @ApiResponse({ status: 403, description: 'Forbidden. Admin privileges required for setting isDefault or isSystem.' })
+  @ApiResponse({
+    status: 403,
+    description:
+      'Forbidden. Admin privileges required for setting isDefault or isSystem.',
+  })
   @ApiResponse({ status: 409, description: 'Category already exists.' })
   async create(
     @CurrentUser() user: IUser,
@@ -80,10 +85,7 @@ export class CategoriesController {
     required: false,
     description: 'Filter by system flag',
   })
-  async findAll(
-    @CurrentUser() user: IUser,
-    @Query() query: QueryCategoryDto,
-  ) {
+  async findAll(@CurrentUser() user: IUser, @Query() query: QueryCategoryDto) {
     return this.categoriesService.findAll(user.id, query);
   }
 
@@ -100,13 +102,18 @@ export class CategoriesController {
 
   @Patch(':id')
   @UseGuards(AdminPropertiesGuard())
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Update a category',
-    description: 'Updates a category. Note: Setting isDefault or isSystem to true requires admin privileges.'
+    description:
+      'Updates a category. Note: Setting isDefault or isSystem to true requires admin privileges.',
   })
   @ApiResponse({ status: 200, description: 'Category updated successfully.' })
   @ApiResponse({ status: 400, description: 'Bad request.' })
-  @ApiResponse({ status: 403, description: 'Forbidden. Admin privileges required for setting isDefault or isSystem.' })
+  @ApiResponse({
+    status: 403,
+    description:
+      'Forbidden. Admin privileges required for setting isDefault or isSystem.',
+  })
   @ApiResponse({ status: 404, description: 'Category not found.' })
   @ApiParam({ name: 'id', description: 'Category ID' })
   async update(

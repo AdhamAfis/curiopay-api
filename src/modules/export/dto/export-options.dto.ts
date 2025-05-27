@@ -41,4 +41,4 @@ export class ExportOptionsDto {
   @IsBoolean()
   @IsOptional()
   includeNewsletter?: boolean = true;
-} 
+}

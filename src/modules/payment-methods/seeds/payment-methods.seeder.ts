@@ -20,7 +20,7 @@ export class PaymentMethodsSeeder {
     };
 
     await Promise.all(
-      paymentMethods.map(methodName =>
+      paymentMethods.map((methodName) =>
         this.prisma.paymentMethod.upsert({
           where: {
             userId_name: {
@@ -36,8 +36,8 @@ export class PaymentMethodsSeeder {
             isSystem: true,
             userId,
           },
-        })
-      )
+        }),
+      ),
     );
 
     return this.prisma.paymentMethod.findMany({
@@ -50,4 +50,4 @@ export class PaymentMethodsSeeder {
       },
     });
   }
-} 
+}

@@ -45,7 +45,7 @@ describe('AuthService - MFA', () => {
     isDeleted: false,
     createdAt: new Date(),
     updatedAt: new Date(),
-    securityAuditLog: null
+    securityAuditLog: null,
   };
 
   const mockEnabledUserAuth = {
@@ -86,8 +86,14 @@ describe('AuthService - MFA', () => {
         {
           provide: EncryptionService,
           useValue: {
-            encrypt: jest.fn().mockImplementation((val) => Promise.resolve(`encrypted_${val}`)),
-            decrypt: jest.fn().mockImplementation((val) => Promise.resolve(val.replace('encrypted_', ''))),
+            encrypt: jest
+              .fn()
+              .mockImplementation((val) => Promise.resolve(`encrypted_${val}`)),
+            decrypt: jest
+              .fn()
+              .mockImplementation((val) =>
+                Promise.resolve(val.replace('encrypted_', '')),
+              ),
           },
         },
         {
@@ -110,10 +116,10 @@ describe('AuthService - MFA', () => {
     it('should generate MFA secret and QR code', async () => {
       const mockSecret = 'test-secret';
       const mockQrCode = 'test-qr-code';
-      
+
       (authenticator.generateSecret as jest.Mock).mockReturnValue(mockSecret);
       (authenticator.keyuri as jest.Mock).mockReturnValue('otpauth://test');
-      
+
       const result = await authService.generateMfaSecret(mockUser.id);
 
       expect(result).toHaveProperty('secret');
@@ -134,13 +140,15 @@ describe('AuthService - MFA', () => {
 
   describe('enableMfa', () => {
     const mockCode = '123456';
-    
+
     beforeEach(() => {
       (authenticator.verify as jest.Mock).mockReturnValue(true);
     });
 
     it('should enable MFA when valid code is provided', async () => {
-      const result = await authService.enableMfa(mockUser.id, { code: mockCode });
+      const result = await authService.enableMfa(mockUser.id, {
+        code: mockCode,
+      });
 
       expect(result).toHaveProperty('message', 'MFA enabled successfully');
       expect(result).toHaveProperty('backupCodes');
@@ -155,19 +163,21 @@ describe('AuthService - MFA', () => {
     });
 
     it('should throw BadRequestException when MFA setup not initiated', async () => {
-      jest.spyOn(usersRepository, 'findUserAuthById').mockResolvedValueOnce(null);
+      jest
+        .spyOn(usersRepository, 'findUserAuthById')
+        .mockResolvedValueOnce(null);
 
-      await expect(authService.enableMfa(mockUser.id, { code: mockCode }))
-        .rejects
-        .toThrow(BadRequestException);
+      await expect(
+        authService.enableMfa(mockUser.id, { code: mockCode }),
+      ).rejects.toThrow(BadRequestException);
     });
 
     it('should throw BadRequestException when invalid code provided', async () => {
       (authenticator.verify as jest.Mock).mockReturnValue(false);
 
-      await expect(authService.enableMfa(mockUser.id, { code: mockCode }))
-        .rejects
-        .toThrow(BadRequestException);
+      await expect(
+        authService.enableMfa(mockUser.id, { code: mockCode }),
+      ).rejects.toThrow(BadRequestException);
     });
   });
 
@@ -181,11 +191,15 @@ describe('AuthService - MFA', () => {
 
     beforeEach(() => {
       (authenticator.verify as jest.Mock).mockReturnValue(true);
-      jest.spyOn(usersRepository, 'findUserAuthById').mockResolvedValue(mockEnabledUserAuth);
+      jest
+        .spyOn(usersRepository, 'findUserAuthById')
+        .mockResolvedValue(mockEnabledUserAuth);
     });
 
     it('should verify valid MFA code', async () => {
-      const result = await authService.verifyMfa(mockUser.id, { code: mockCode });
+      const result = await authService.verifyMfa(mockUser.id, {
+        code: mockCode,
+      });
 
       expect(result).toEqual({ verified: true });
     });
@@ -193,9 +207,9 @@ describe('AuthService - MFA', () => {
     it('should throw UnauthorizedException when invalid code provided', async () => {
       (authenticator.verify as jest.Mock).mockReturnValue(false);
 
-      await expect(authService.verifyMfa(mockUser.id, { code: mockCode }))
-        .rejects
-        .toThrow(UnauthorizedException);
+      await expect(
+        authService.verifyMfa(mockUser.id, { code: mockCode }),
+      ).rejects.toThrow(UnauthorizedException);
     });
 
     it('should throw BadRequestException when MFA not enabled', async () => {
@@ -204,9 +218,9 @@ describe('AuthService - MFA', () => {
         mfaEnabled: false,
       });
 
-      await expect(authService.verifyMfa(mockUser.id, { code: mockCode }))
-        .rejects
-        .toThrow(BadRequestException);
+      await expect(
+        authService.verifyMfa(mockUser.id, { code: mockCode }),
+      ).rejects.toThrow(BadRequestException);
     });
   });
 
@@ -220,11 +234,16 @@ describe('AuthService - MFA', () => {
 
     beforeEach(() => {
       (authenticator.verify as jest.Mock).mockReturnValue(true);
-      jest.spyOn(usersRepository, 'findUserAuthById').mockResolvedValue(mockEnabledUserAuth);
+      jest
+        .spyOn(usersRepository, 'findUserAuthById')
+        .mockResolvedValue(mockEnabledUserAuth);
     });
 
     it('should disable MFA when valid code and confirmation provided', async () => {
-      const result = await authService.disableMfa(mockUser.id, { code: mockCode, confirm: true });
+      const result = await authService.disableMfa(mockUser.id, {
+        code: mockCode,
+        confirm: true,
+      });
 
       expect(result).toEqual({ message: 'MFA disabled successfully' });
       expect(usersRepository.updateUserAuth).toHaveBeenCalledWith(
@@ -238,17 +257,17 @@ describe('AuthService - MFA', () => {
     });
 
     it('should throw BadRequestException when confirmation not provided', async () => {
-      await expect(authService.disableMfa(mockUser.id, { code: mockCode, confirm: false }))
-        .rejects
-        .toThrow(BadRequestException);
+      await expect(
+        authService.disableMfa(mockUser.id, { code: mockCode, confirm: false }),
+      ).rejects.toThrow(BadRequestException);
     });
 
     it('should throw UnauthorizedException when invalid code provided', async () => {
       (authenticator.verify as jest.Mock).mockReturnValue(false);
 
-      await expect(authService.disableMfa(mockUser.id, { code: mockCode, confirm: true }))
-        .rejects
-        .toThrow(UnauthorizedException);
+      await expect(
+        authService.disableMfa(mockUser.id, { code: mockCode, confirm: true }),
+      ).rejects.toThrow(UnauthorizedException);
     });
   });
-}); 
+});

@@ -33,51 +33,55 @@ export class ExpensesService {
     try {
       // Create a cache key based on user ID and query parameters
       const cacheKey = `expenses:${userId}:${JSON.stringify(query)}`;
-      
+
       // Try to get data from cache first
       const cachedData = await this.cacheManager.get(cacheKey);
       if (cachedData) {
         return cachedData;
       }
 
-      const { 
-        page = 1, 
-        limit = 10, 
-        startDate, 
+      const {
+        page = 1,
+        limit = 10,
+        startDate,
         endDate,
         categoryId,
         minAmount,
         maxAmount,
         searchTerm,
         paymentMethodId,
-        includeVoid = false
+        includeVoid = false,
       } = query;
-      
+
       const skip = (page - 1) * limit;
-      
+
       // Build filter conditions
       const where: Prisma.ExpenseWhereInput = {
         userId,
         isVoid: includeVoid ? undefined : false,
-        ...(startDate && endDate 
-          ? { date: { gte: new Date(startDate), lte: new Date(endDate) } } 
+        ...(startDate && endDate
+          ? { date: { gte: new Date(startDate), lte: new Date(endDate) } }
           : {}),
         ...(categoryId ? { categoryId } : {}),
         ...(paymentMethodId ? { paymentMethodId } : {}),
-        ...(minAmount || maxAmount ? {
-          amount: {
-            ...(minAmount ? { gte: parseFloat(minAmount.toString()) } : {}),
-            ...(maxAmount ? { lte: parseFloat(maxAmount.toString()) } : {})
-          }
-        } : {}),
-        ...(searchTerm ? {
-          description: {
-            contains: searchTerm,
-            mode: 'insensitive'
-          }
-        } : {})
+        ...(minAmount || maxAmount
+          ? {
+              amount: {
+                ...(minAmount ? { gte: parseFloat(minAmount.toString()) } : {}),
+                ...(maxAmount ? { lte: parseFloat(maxAmount.toString()) } : {}),
+              },
+            }
+          : {}),
+        ...(searchTerm
+          ? {
+              description: {
+                contains: searchTerm,
+                mode: 'insensitive',
+              },
+            }
+          : {}),
       };
-      
+
       // Optimize data loading - only get what we need
       const [expenses, total] = await Promise.all([
         this.prisma.expense.findMany({
@@ -97,26 +101,28 @@ export class ExpensesService {
                 name: true,
                 icon: true,
                 color: true,
-              }
+              },
             },
             paymentMethod: {
               select: {
                 name: true,
-              }
+              },
             },
             // Only load recurring info if needed
-            recurring: query.includeRecurring ? {
-              select: {
-                id: true,
-                nextProcessDate: true,
-                pattern: {
+            recurring: query.includeRecurring
+              ? {
                   select: {
-                    type: true,
-                    frequency: true,
+                    id: true,
+                    nextProcessDate: true,
+                    pattern: {
+                      select: {
+                        type: true,
+                        frequency: true,
+                      },
+                    },
                   },
-                },
-              }
-            } : undefined,
+                }
+              : undefined,
           },
           skip,
           take: limit,
@@ -124,7 +130,7 @@ export class ExpensesService {
         }),
         this.prisma.expense.count({ where }),
       ]);
-      
+
       // Calculate pagination metadata
       const result = {
         data: expenses,
@@ -135,15 +141,17 @@ export class ExpensesService {
           totalPages: Math.ceil(total / Number(limit)),
           hasNextPage: skip + expenses.length < total,
           hasPreviousPage: page > 1,
-        }
+        },
       };
-      
+
       // Store in cache for future requests (1 minute TTL)
       await this.cacheManager.set(cacheKey, result, 60000);
-      
+
       return result;
     } catch (error) {
-      throw new BadRequestException(`Failed to fetch expenses: ${error.message}`);
+      throw new BadRequestException(
+        `Failed to fetch expenses: ${error.message}`,
+      );
     }
   }
 
@@ -171,7 +179,9 @@ export class ExpensesService {
       const encryptedData = {
         ...data,
         description: await this.encryptionService.encrypt(data.description),
-        notes: data.notes ? await this.encryptionService.encrypt(data.notes) : null,
+        notes: data.notes
+          ? await this.encryptionService.encrypt(data.notes)
+          : null,
       };
 
       return await this.prisma.expense.create({
@@ -197,8 +207,12 @@ export class ExpensesService {
 
     const encryptedData = {
       ...data,
-      description: data.description ? await this.encryptionService.encrypt(data.description) : undefined,
-      notes: data.notes ? await this.encryptionService.encrypt(data.notes) : undefined,
+      description: data.description
+        ? await this.encryptionService.encrypt(data.description)
+        : undefined,
+      notes: data.notes
+        ? await this.encryptionService.encrypt(data.notes)
+        : undefined,
     };
 
     return this.prisma.expense.update({
@@ -226,13 +240,13 @@ export class ExpensesService {
   async findById(id: string, userId: string) {
     try {
       const cacheKey = `expense:${userId}:${id}`;
-      
+
       // Try to get data from cache first
       const cachedData = await this.cacheManager.get(cacheKey);
       if (cachedData) {
         return cachedData;
       }
-      
+
       const expense = await this.prisma.expense.findFirst({
         where: { id, userId },
         include: {
@@ -262,7 +276,7 @@ export class ExpensesService {
       if (!expense) {
         throw new NotFoundException('Expense record not found');
       }
-      
+
       // Store in cache for future requests (5 minutes TTL)
       await this.cacheManager.set(cacheKey, expense, 300000);
 

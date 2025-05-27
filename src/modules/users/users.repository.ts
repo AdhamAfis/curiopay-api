@@ -104,7 +104,9 @@ export class UsersRepository {
     });
   }
 
-  async findUserAuthByVerificationToken(token: string): Promise<UserAuth | null> {
+  async findUserAuthByVerificationToken(
+    token: string,
+  ): Promise<UserAuth | null> {
     return this.prisma.userAuth.findFirst({
       where: {
         emailVerificationToken: token,
@@ -116,15 +118,18 @@ export class UsersRepository {
    * Find a user by their OAuth provider details
    * Used for account linking and preventing duplicate OAuth connections
    */
-  async findByProviderAccount(provider: string, providerAccountId?: string): Promise<User | null> {
+  async findByProviderAccount(
+    provider: string,
+    providerAccountId?: string,
+  ): Promise<User | null> {
     const whereClause: any = {
       provider,
     };
-    
+
     if (providerAccountId) {
       whereClause.providerAccountId = providerAccountId;
     }
-    
+
     return this.prisma.user.findFirst({
       where: whereClause,
       include: {

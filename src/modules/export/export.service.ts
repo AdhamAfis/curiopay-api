@@ -7,7 +7,12 @@ import * as path from 'path';
 import * as handlebars from 'handlebars';
 import * as dayjs from 'dayjs';
 import { v4 as uuidv4 } from 'uuid';
-import { User, UserPreference, NewsletterSubscription, UserContact } from '@prisma/client';
+import {
+  User,
+  UserPreference,
+  NewsletterSubscription,
+  UserContact,
+} from '@prisma/client';
 import { EmailService } from '../../common/services/email.service';
 import { PassThrough } from 'stream';
 import * as memfs from 'memfs';
@@ -22,46 +27,58 @@ interface UserWithRelations extends User {
 @Injectable()
 export class ExportService {
   private readonly logger = new Logger(ExportService.name);
-  private readonly templatesDir = path.join(process.cwd(), 'src', 'modules', 'export', 'templates');
+  private readonly templatesDir = path.join(
+    process.cwd(),
+    'src',
+    'modules',
+    'export',
+    'templates',
+  );
 
   constructor(
     private readonly prisma: PrismaService,
     private readonly emailService: EmailService,
-    private readonly encryptionService: EncryptionService
+    private readonly encryptionService: EncryptionService,
   ) {}
 
-  async generateUserDataExport(userId: string, options: ExportOptionsDto): Promise<{ success: boolean; message: string }> {
+  async generateUserDataExport(
+    userId: string,
+    options: ExportOptionsDto,
+  ): Promise<{ success: boolean; message: string }> {
     try {
       this.logger.log(`Generating data export for user ${userId}`);
-      
+
       // Ensure userId is a string and not an object
-      const userIdString = typeof userId === 'object' && userId !== null 
-        ? (userId as any).id 
-        : userId;
-      
+      const userIdString =
+        typeof userId === 'object' && userId !== null
+          ? (userId as any).id
+          : userId;
+
       // Check if user has already requested an export in the last 24 hours
       const lastDayExports = await this.prisma.auditLog.findMany({
         where: {
           userId: userIdString,
           action: 'DATA_EXPORT',
           timestamp: {
-            gte: dayjs().subtract(24, 'hours').toDate()
-          }
-        }
+            gte: dayjs().subtract(24, 'hours').toDate(),
+          },
+        },
       });
 
       if (lastDayExports.length > 0) {
-        const nextAvailableTime = dayjs(lastDayExports[0].timestamp).add(24, 'hours').format('YYYY-MM-DD HH:mm:ss');
+        const nextAvailableTime = dayjs(lastDayExports[0].timestamp)
+          .add(24, 'hours')
+          .format('YYYY-MM-DD HH:mm:ss');
         return {
           success: false,
-          message: `Rate limit reached. You can request another export after ${nextAvailableTime}`
+          message: `Rate limit reached. You can request another export after ${nextAvailableTime}`,
         };
       }
-      
+
       // Create virtual file system for in-memory operations
       const vol = memfs.Volume.fromJSON({});
       const fs = memfs.createFsFromVolume(vol);
-      
+
       // Create temp directory in virtual filesystem
       const exportId = uuidv4();
       const exportDir = `/temp/${exportId}`;
@@ -71,8 +88,8 @@ export class ExportService {
 
       // Get user data
       const user = await this.prisma.user.findUnique({
-        where: { 
-          id: userIdString
+        where: {
+          id: userIdString,
         },
         include: {
           contactInfo: true,
@@ -98,7 +115,9 @@ export class ExportService {
           firstName = await this.encryptionService.decrypt(user.firstName);
         }
       } catch (error) {
-        this.logger.warn(`Could not decrypt user's first name: ${error.message}`);
+        this.logger.warn(
+          `Could not decrypt user's first name: ${error.message}`,
+        );
         firstName = 'User';
       }
 
@@ -134,12 +153,12 @@ export class ExportService {
 
       // Create zip buffer in memory
       const zipBuffer = await this.createInMemoryZipArchive(fs, exportDir);
-      
+
       // Send email with the zip file as attachment
       await this.emailService.sendDataExportEmail(
         user.email,
         firstName,
-        zipBuffer
+        zipBuffer,
       );
 
       // Log this export in audit logs
@@ -154,24 +173,31 @@ export class ExportService {
           details: {
             exportType: 'USER_DATA',
             exportOptions: JSON.parse(JSON.stringify(options)),
-            exportId
+            exportId,
           },
-          isCritical: false
-        }
+          isCritical: false,
+        },
       });
 
       this.logger.log(`Export generated and sent via email to ${user.email}`);
-      return { 
-        success: true, 
-        message: 'Export has been generated and sent to your email address'
+      return {
+        success: true,
+        message: 'Export has been generated and sent to your email address',
       };
     } catch (error) {
-      this.logger.error(`Error generating export: ${error.message}`, error.stack);
+      this.logger.error(
+        `Error generating export: ${error.message}`,
+        error.stack,
+      );
       throw error;
     }
   }
 
-  private async generateExpensesPage(fs: any, exportDir: string, userId: string): Promise<void> {
+  private async generateExpensesPage(
+    fs: any,
+    exportDir: string,
+    userId: string,
+  ): Promise<void> {
     const expenses = await this.prisma.expense.findMany({
       where: { userId },
       include: {
@@ -182,58 +208,79 @@ export class ExportService {
     });
 
     // Process expenses for display with decryption
-    const formattedExpenses = await Promise.all(expenses.map(async exp => {
-      // Decrypt description
-      let decryptedDescription = '';
-      try {
-        if (exp.description) {
-          decryptedDescription = await this.encryptionService.decrypt(exp.description);
+    const formattedExpenses = await Promise.all(
+      expenses.map(async (exp) => {
+        // Decrypt description
+        let decryptedDescription = '';
+        try {
+          if (exp.description) {
+            decryptedDescription = await this.encryptionService.decrypt(
+              exp.description,
+            );
+          }
+        } catch (error) {
+          this.logger.warn(
+            `Could not decrypt expense description: ${error.message}`,
+          );
+          decryptedDescription = 'Data unavailable';
         }
-      } catch (error) {
-        this.logger.warn(`Could not decrypt expense description: ${error.message}`);
-        decryptedDescription = 'Data unavailable';
-      }
 
-      return {
-        ...exp,
-        date: dayjs(exp.date).format('YYYY-MM-DD'),
-        amount: Number(exp.amount).toFixed(2),
-        status: exp.isVoid ? 'voided' : 'active',
-        description: decryptedDescription
-      };
-    }));
+        return {
+          ...exp,
+          date: dayjs(exp.date).format('YYYY-MM-DD'),
+          amount: Number(exp.amount).toFixed(2),
+          status: exp.isVoid ? 'voided' : 'active',
+          description: decryptedDescription,
+        };
+      }),
+    );
 
     // Calculate summary data
-    const totalAmount = expenses.reduce((sum, exp) => sum + Number(exp.amount), 0);
-    
+    const totalAmount = expenses.reduce(
+      (sum, exp) => sum + Number(exp.amount),
+      0,
+    );
+
     // Create monthly aggregates for summary stats
-    const monthlyAggregates = expenses.reduce((acc, exp) => {
-      const month = dayjs(exp.date).format('YYYY-MM');
-      if (!acc[month]) {
-        acc[month] = { amount: 0, date: month };
-      }
-      acc[month].amount += Number(exp.amount);
-      return acc;
-    }, {} as Record<string, { amount: number; date: string }>);
+    const monthlyAggregates = expenses.reduce(
+      (acc, exp) => {
+        const month = dayjs(exp.date).format('YYYY-MM');
+        if (!acc[month]) {
+          acc[month] = { amount: 0, date: month };
+        }
+        acc[month].amount += Number(exp.amount);
+        return acc;
+      },
+      {} as Record<string, { amount: number; date: string }>,
+    );
 
     const monthlyValues = Object.values(monthlyAggregates);
-    const monthlyAverage = monthlyValues.length > 0 
-      ? (totalAmount / monthlyValues.length).toFixed(2) 
-      : '0.00';
-    
+    const monthlyAverage =
+      monthlyValues.length > 0
+        ? (totalAmount / monthlyValues.length).toFixed(2)
+        : '0.00';
+
     // Find highest and lowest months
     let highestMonth = { amount: '0.00', date: 'N/A' };
     let lowestMonth = { amount: '999999999.99', date: 'N/A' };
-    
+
     if (monthlyValues.length > 0) {
-      highestMonth = monthlyValues.reduce((max, month) => 
-        month.amount > Number(max.amount) ? { amount: month.amount.toString(), date: month.date } : max, 
-        { amount: '0', date: '' });
-      
-      lowestMonth = monthlyValues.reduce((min, month) => 
-        month.amount < Number(min.amount) ? { amount: month.amount.toString(), date: month.date } : min, 
-        { amount: '999999999.99', date: '' });
-      
+      highestMonth = monthlyValues.reduce(
+        (max, month) =>
+          month.amount > Number(max.amount)
+            ? { amount: month.amount.toString(), date: month.date }
+            : max,
+        { amount: '0', date: '' },
+      );
+
+      lowestMonth = monthlyValues.reduce(
+        (min, month) =>
+          month.amount < Number(min.amount)
+            ? { amount: month.amount.toString(), date: month.date }
+            : min,
+        { amount: '999999999.99', date: '' },
+      );
+
       // Convert amounts to formatted strings
       highestMonth.amount = Number(highestMonth.amount).toFixed(2);
       lowestMonth.amount = Number(lowestMonth.amount).toFixed(2);
@@ -241,22 +288,24 @@ export class ExportService {
 
     // Calculate category totals with percentages
     const categoryTotals = Object.values(
-      expenses.reduce<Record<string, { name: string; amount: number; percentage: number }>>((acc, exp) => {
+      expenses.reduce<
+        Record<string, { name: string; amount: number; percentage: number }>
+      >((acc, exp) => {
         const categoryId = exp.category.id;
         if (!acc[categoryId]) {
-          acc[categoryId] = { 
-            name: exp.category.name, 
+          acc[categoryId] = {
+            name: exp.category.name,
             amount: 0,
-            percentage: 0
+            percentage: 0,
           };
         }
         acc[categoryId].amount += Number(exp.amount);
         return acc;
-      }, {})
-    ).map(cat => ({
+      }, {}),
+    ).map((cat) => ({
       ...cat,
       amount: cat.amount.toFixed(2),
-      percentage: (cat.amount / totalAmount * 100).toFixed(1)
+      percentage: ((cat.amount / totalAmount) * 100).toFixed(1),
     }));
 
     const template = this.getTemplate('expenses');
@@ -270,21 +319,25 @@ export class ExportService {
         highestMonth: {
           label: 'Highest Month',
           value: highestMonth.amount,
-          date: highestMonth.date
+          date: highestMonth.date,
         },
         lowestMonth: {
           label: 'Lowest Month',
           value: lowestMonth.amount,
-          date: lowestMonth.date
-        }
+          date: lowestMonth.date,
+        },
       },
-      categoryTotals
+      categoryTotals,
     });
 
     fs.writeFileSync(`${exportDir}/expenses.html`, html);
   }
 
-  private async generateIncomePage(fs: any, exportDir: string, userId: string): Promise<void> {
+  private async generateIncomePage(
+    fs: any,
+    exportDir: string,
+    userId: string,
+  ): Promise<void> {
     const incomes = await this.prisma.income.findMany({
       where: { userId },
       include: {
@@ -295,102 +348,135 @@ export class ExportService {
     });
 
     // Process income for display with decryption
-    const formattedIncomes = await Promise.all(incomes.map(async inc => {
-      // Decrypt description
-      let decryptedDescription = '';
-      try {
-        if (inc.description) {
-          decryptedDescription = await this.encryptionService.decrypt(inc.description);
+    const formattedIncomes = await Promise.all(
+      incomes.map(async (inc) => {
+        // Decrypt description
+        let decryptedDescription = '';
+        try {
+          if (inc.description) {
+            decryptedDescription = await this.encryptionService.decrypt(
+              inc.description,
+            );
+          }
+        } catch (error) {
+          this.logger.warn(
+            `Could not decrypt income description: ${error.message}`,
+          );
+          decryptedDescription = 'Data unavailable';
         }
-      } catch (error) {
-        this.logger.warn(`Could not decrypt income description: ${error.message}`);
-        decryptedDescription = 'Data unavailable';
-      }
 
-      return {
-        ...inc,
-        date: dayjs(inc.date).format('YYYY-MM-DD'),
-        amount: Number(inc.amount).toFixed(2),
-        status: inc.isVoid ? 'voided' : 'active',
-        source: decryptedDescription, // Using decrypted description as source
-        description: decryptedDescription
-      };
-    }));
+        return {
+          ...inc,
+          date: dayjs(inc.date).format('YYYY-MM-DD'),
+          amount: Number(inc.amount).toFixed(2),
+          status: inc.isVoid ? 'voided' : 'active',
+          source: decryptedDescription, // Using decrypted description as source
+          description: decryptedDescription,
+        };
+      }),
+    );
 
     // Calculate summary data
-    const totalAmount = incomes.reduce((sum, inc) => sum + Number(inc.amount), 0);
-    
+    const totalAmount = incomes.reduce(
+      (sum, inc) => sum + Number(inc.amount),
+      0,
+    );
+
     // Calculate category totals with percentages
     const categoryTotals = Object.values(
-      incomes.reduce<Record<string, { name: string; amount: number; percentage: number }>>((acc, inc) => {
+      incomes.reduce<
+        Record<string, { name: string; amount: number; percentage: number }>
+      >((acc, inc) => {
         const categoryId = inc.category.id;
         if (!acc[categoryId]) {
-          acc[categoryId] = { 
-            name: inc.category.name, 
+          acc[categoryId] = {
+            name: inc.category.name,
             amount: 0,
-            percentage: 0
+            percentage: 0,
           };
         }
         acc[categoryId].amount += Number(inc.amount);
         return acc;
-      }, {})
-    ).map(cat => ({
+      }, {}),
+    ).map((cat) => ({
       ...cat,
       amount: cat.amount.toFixed(2),
-      percentage: (cat.amount / totalAmount * 100).toFixed(1)
+      percentage: ((cat.amount / totalAmount) * 100).toFixed(1),
     }));
 
     // Calculate source totals with percentages
     const sourceTotals = Object.values(
-      incomes.reduce<Record<string, { name: string; amount: number; percentage: number; frequency: number }>>((acc, inc) => {
+      incomes.reduce<
+        Record<
+          string,
+          {
+            name: string;
+            amount: number;
+            percentage: number;
+            frequency: number;
+          }
+        >
+      >((acc, inc) => {
         const source = inc.description;
         if (!acc[source]) {
-          acc[source] = { 
-            name: source, 
+          acc[source] = {
+            name: source,
             amount: 0,
             percentage: 0,
-            frequency: 1
+            frequency: 1,
           };
         } else {
           acc[source].frequency += 1;
         }
         acc[source].amount += Number(inc.amount);
         return acc;
-      }, {})
-    ).map(src => ({
+      }, {}),
+    ).map((src) => ({
       ...src,
       amount: src.amount.toFixed(2),
-      percentage: (src.amount / totalAmount * 100).toFixed(1)
+      percentage: ((src.amount / totalAmount) * 100).toFixed(1),
     }));
 
     // Create monthly aggregates for summary stats
-    const monthlyAggregates = incomes.reduce((acc, inc) => {
-      const month = dayjs(inc.date).format('YYYY-MM');
-      if (!acc[month]) {
-        acc[month] = { amount: 0, date: month };
-      }
-      acc[month].amount += Number(inc.amount);
-      return acc;
-    }, {} as Record<string, { amount: number; date: string }>);
+    const monthlyAggregates = incomes.reduce(
+      (acc, inc) => {
+        const month = dayjs(inc.date).format('YYYY-MM');
+        if (!acc[month]) {
+          acc[month] = { amount: 0, date: month };
+        }
+        acc[month].amount += Number(inc.amount);
+        return acc;
+      },
+      {} as Record<string, { amount: number; date: string }>,
+    );
 
     const monthlyValues = Object.values(monthlyAggregates);
-    const monthlyAverage = monthlyValues.length > 0 
-      ? (totalAmount / monthlyValues.length).toFixed(2) 
-      : '0.00';
-    
+    const monthlyAverage =
+      monthlyValues.length > 0
+        ? (totalAmount / monthlyValues.length).toFixed(2)
+        : '0.00';
+
     // Find highest and lowest months
     let highestMonth = { amount: '0.00', date: 'N/A' };
     let lowestMonth = { amount: '999999999.99', date: 'N/A' };
-    
+
     if (monthlyValues.length > 0) {
-      highestMonth = monthlyValues.reduce((max, month) => 
-        month.amount > Number(max.amount) ? { amount: month.amount.toString(), date: month.date } : max, 
-        { amount: '0', date: '' });
-      
-      lowestMonth = monthlyValues.reduce((min, month) => 
-        month.amount < Number(min.amount) ? { amount: month.amount.toString(), date: month.date } : min, 
-        { amount: '999999999.99', date: '' });
-      
+      highestMonth = monthlyValues.reduce(
+        (max, month) =>
+          month.amount > Number(max.amount)
+            ? { amount: month.amount.toString(), date: month.date }
+            : max,
+        { amount: '0', date: '' },
+      );
+
+      lowestMonth = monthlyValues.reduce(
+        (min, month) =>
+          month.amount < Number(min.amount)
+            ? { amount: month.amount.toString(), date: month.date }
+            : min,
+        { amount: '999999999.99', date: '' },
+      );
+
       // Convert amounts to formatted strings
       highestMonth.amount = Number(highestMonth.amount).toFixed(2);
       lowestMonth.amount = Number(lowestMonth.amount).toFixed(2);
@@ -407,22 +493,26 @@ export class ExportService {
         highestMonth: {
           label: 'Highest Month',
           value: highestMonth.amount,
-          date: highestMonth.date
+          date: highestMonth.date,
         },
         lowestMonth: {
           label: 'Lowest Month',
           value: lowestMonth.amount,
-          date: lowestMonth.date
-        }
+          date: lowestMonth.date,
+        },
       },
       categoryTotals,
-      sourceTotals
+      sourceTotals,
     });
 
     fs.writeFileSync(`${exportDir}/income.html`, html);
   }
 
-  private async generateCategoriesPage(fs: any, exportDir: string, userId: string): Promise<void> {
+  private async generateCategoriesPage(
+    fs: any,
+    exportDir: string,
+    userId: string,
+  ): Promise<void> {
     const categories = await this.prisma.category.findMany({
       where: { userId },
       include: {
@@ -440,7 +530,11 @@ export class ExportService {
     fs.writeFileSync(`${exportDir}/categories.html`, html);
   }
 
-  private async generatePreferencesPage(fs: any, exportDir: string, user: UserWithRelations): Promise<void> {
+  private async generatePreferencesPage(
+    fs: any,
+    exportDir: string,
+    user: UserWithRelations,
+  ): Promise<void> {
     const template = this.getTemplate('preferences');
     const html = template({
       preferences: user.preferences,
@@ -450,7 +544,11 @@ export class ExportService {
     fs.writeFileSync(`${exportDir}/preferences.html`, html);
   }
 
-  private async generateNewsletterPage(fs: any, exportDir: string, user: UserWithRelations): Promise<void> {
+  private async generateNewsletterPage(
+    fs: any,
+    exportDir: string,
+    user: UserWithRelations,
+  ): Promise<void> {
     const template = this.getTemplate('newsletter');
     const html = template({
       newsletter: user.newsletterSubscription,
@@ -698,64 +796,70 @@ export class ExportService {
     `;
   }
 
-  private async createInMemoryZipArchive(fs: any, sourceDir: string): Promise<Buffer> {
+  private async createInMemoryZipArchive(
+    fs: any,
+    sourceDir: string,
+  ): Promise<Buffer> {
     return new Promise((resolve, reject) => {
       // Create a PassThrough stream to collect the data
       const output = new PassThrough();
       const chunks: Buffer[] = [];
-      
+
       // Create the archive
       const archive = archiver('zip', {
-        zlib: { level: 9 }
+        zlib: { level: 9 },
       });
 
       // Listen for archive data
       output.on('data', (chunk) => chunks.push(chunk as Buffer));
       output.on('end', () => resolve(Buffer.concat(chunks)));
-      
+
       // Handle errors
       archive.on('error', (err) => reject(err));
-      
+
       // Pipe archive to the output stream
       archive.pipe(output);
-      
+
       // Add virtual directory to archive
       const entries = this.getEntriesFromVirtualFs(fs, sourceDir);
-      
+
       // Add each file to the archive
       for (const entry of entries) {
         const content = fs.readFileSync(entry.path);
         archive.append(content, { name: entry.name });
       }
-      
+
       // Finalize the archive
       archive.finalize();
     });
   }
 
-  private getEntriesFromVirtualFs(fs: any, dir: string): Array<{ path: string; name: string }> {
+  private getEntriesFromVirtualFs(
+    fs: any,
+    dir: string,
+  ): Array<{ path: string; name: string }> {
     const entries: Array<{ path: string; name: string }> = [];
     const baseDir = dir.replace(/^\//, ''); // Remove leading slash
-    
+
     function processDir(currentDir: string, basePath: string) {
       const files = fs.readdirSync(currentDir);
-      
+
       for (const file of files) {
         const filePath = path.join(currentDir, file);
         const stat = fs.statSync(filePath);
-        
+
         if (stat.isDirectory()) {
           processDir(filePath, path.join(basePath, file));
         } else {
           entries.push({
             path: filePath,
-            name: path.join(basePath, file)
+            name: path.join(basePath, file),
           });
         }
       }
     }
-    
+
     processDir(dir, '');
     return entries;
   }
-} 
+}

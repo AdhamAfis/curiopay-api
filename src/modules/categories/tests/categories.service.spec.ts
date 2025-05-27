@@ -1,7 +1,11 @@
 import { Test } from '@nestjs/testing';
 import { CategoriesService } from '../categories.service';
 import { PrismaService } from '../../../prisma/prisma.service';
-import { NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
+import {
+  NotFoundException,
+  BadRequestException,
+  ConflictException,
+} from '@nestjs/common';
 import { CategoryTypeEnum } from '../dto/create-category.dto';
 
 describe('CategoriesService', () => {
@@ -33,7 +37,7 @@ describe('CategoriesService', () => {
     _count: {
       expenses: 0,
       incomes: 0,
-    }
+    },
   };
 
   beforeEach(async () => {
@@ -66,15 +70,19 @@ describe('CategoriesService', () => {
   describe('findAll', () => {
     it('should return all categories for a user', async () => {
       const categories = [mockCategory];
-      jest.spyOn(prismaService.category, 'findMany').mockResolvedValue(categories);
+      jest
+        .spyOn(prismaService.category, 'findMany')
+        .mockResolvedValue(categories);
 
       const result = await service.findAll(mockUser.id, {});
-      
-      expect(result).toEqual(categories.map(category => ({
-        ...category,
-        transactionCount: category._count.expenses + category._count.incomes,
-        _count: undefined,
-      })));
+
+      expect(result).toEqual(
+        categories.map((category) => ({
+          ...category,
+          transactionCount: category._count.expenses + category._count.incomes,
+          _count: undefined,
+        })),
+      );
       expect(prismaService.category.findMany).toHaveBeenCalledWith({
         where: { userId: mockUser.id },
         include: {
@@ -97,13 +105,16 @@ describe('CategoriesService', () => {
 
   describe('findOne', () => {
     it('should return a single category', async () => {
-      jest.spyOn(prismaService.category, 'findFirst').mockResolvedValue(mockCategory);
+      jest
+        .spyOn(prismaService.category, 'findFirst')
+        .mockResolvedValue(mockCategory);
 
       const result = await service.findOne(mockUser.id, mockCategory.id);
-      
+
       expect(result).toEqual({
         ...mockCategory,
-        transactionCount: mockCategory._count.expenses + mockCategory._count.incomes,
+        transactionCount:
+          mockCategory._count.expenses + mockCategory._count.incomes,
         _count: undefined,
       });
       expect(prismaService.category.findFirst).toHaveBeenCalledWith({
@@ -127,9 +138,9 @@ describe('CategoriesService', () => {
     it('should throw NotFoundException if category not found', async () => {
       jest.spyOn(prismaService.category, 'findFirst').mockResolvedValue(null);
 
-      await expect(service.findOne(mockUser.id, 'non-existent-id'))
-        .rejects
-        .toThrow(NotFoundException);
+      await expect(
+        service.findOne(mockUser.id, 'non-existent-id'),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -148,7 +159,7 @@ describe('CategoriesService', () => {
         name: CategoryTypeEnum.INCOME,
         icon: '💰',
         createdAt: new Date(),
-        updatedAt: new Date()
+        updatedAt: new Date(),
       });
       jest.spyOn(prismaService.category, 'create').mockResolvedValue({
         ...mockCategory,
@@ -156,7 +167,7 @@ describe('CategoriesService', () => {
       });
 
       const result = await service.create(mockUser.id, createCategoryDto);
-      
+
       expect(result).toBeDefined();
       expect(prismaService.category.create).toHaveBeenCalledWith({
         data: {
@@ -175,11 +186,13 @@ describe('CategoriesService', () => {
     });
 
     it('should throw ConflictException if category with same name exists', async () => {
-      jest.spyOn(prismaService.category, 'findUnique').mockResolvedValue(mockCategory);
+      jest
+        .spyOn(prismaService.category, 'findUnique')
+        .mockResolvedValue(mockCategory);
 
-      await expect(service.create(mockUser.id, createCategoryDto))
-        .rejects
-        .toThrow(ConflictException);
+      await expect(
+        service.create(mockUser.id, createCategoryDto),
+      ).rejects.toThrow(ConflictException);
     });
   });
 
@@ -192,16 +205,22 @@ describe('CategoriesService', () => {
     it('should update a category', async () => {
       const updatedCategory = { ...mockCategory, ...updateCategoryDto };
       const findFirstMock = jest.spyOn(prismaService.category, 'findFirst');
-      
+
       // First call - category lookup
       findFirstMock.mockResolvedValueOnce(mockCategory);
       // Second call - name check
       findFirstMock.mockResolvedValueOnce(null);
-      
-      jest.spyOn(prismaService.category, 'update').mockResolvedValue(updatedCategory);
 
-      const result = await service.update(mockUser.id, mockCategory.id, updateCategoryDto);
-      
+      jest
+        .spyOn(prismaService.category, 'update')
+        .mockResolvedValue(updatedCategory);
+
+      const result = await service.update(
+        mockUser.id,
+        mockCategory.id,
+        updateCategoryDto,
+      );
+
       expect(result).toEqual(updatedCategory);
       expect(prismaService.category.update).toHaveBeenCalledWith({
         where: { id: mockCategory.id },
@@ -215,28 +234,34 @@ describe('CategoriesService', () => {
     it('should throw NotFoundException if category not found', async () => {
       jest.spyOn(prismaService.category, 'findFirst').mockResolvedValue(null);
 
-      await expect(service.update(mockUser.id, 'non-existent-id', updateCategoryDto))
-        .rejects
-        .toThrow(NotFoundException);
+      await expect(
+        service.update(mockUser.id, 'non-existent-id', updateCategoryDto),
+      ).rejects.toThrow(NotFoundException);
     });
 
     it('should throw BadRequestException if trying to update system category', async () => {
       const systemCategory = { ...mockCategory, isSystem: true };
-      jest.spyOn(prismaService.category, 'findFirst').mockResolvedValue(systemCategory);
+      jest
+        .spyOn(prismaService.category, 'findFirst')
+        .mockResolvedValue(systemCategory);
 
-      await expect(service.update(mockUser.id, systemCategory.id, updateCategoryDto))
-        .rejects
-        .toThrow(BadRequestException);
+      await expect(
+        service.update(mockUser.id, systemCategory.id, updateCategoryDto),
+      ).rejects.toThrow(BadRequestException);
     });
   });
 
   describe('remove', () => {
     it('should delete a category', async () => {
-      jest.spyOn(prismaService.category, 'findFirst').mockResolvedValue(mockCategory);
-      jest.spyOn(prismaService.category, 'delete').mockResolvedValue(mockCategory);
+      jest
+        .spyOn(prismaService.category, 'findFirst')
+        .mockResolvedValue(mockCategory);
+      jest
+        .spyOn(prismaService.category, 'delete')
+        .mockResolvedValue(mockCategory);
 
       const result = await service.remove(mockUser.id, mockCategory.id);
-      
+
       expect(result).toEqual(mockCategory);
       expect(prismaService.category.delete).toHaveBeenCalledWith({
         where: { id: mockCategory.id },
@@ -246,27 +271,31 @@ describe('CategoriesService', () => {
     it('should throw NotFoundException if category not found', async () => {
       jest.spyOn(prismaService.category, 'findFirst').mockResolvedValue(null);
 
-      await expect(service.remove(mockUser.id, 'non-existent-id'))
-        .rejects
-        .toThrow(NotFoundException);
+      await expect(
+        service.remove(mockUser.id, 'non-existent-id'),
+      ).rejects.toThrow(NotFoundException);
     });
 
     it('should throw BadRequestException if trying to delete system category', async () => {
       const systemCategory = { ...mockCategory, isSystem: true };
-      jest.spyOn(prismaService.category, 'findFirst').mockResolvedValue(systemCategory);
+      jest
+        .spyOn(prismaService.category, 'findFirst')
+        .mockResolvedValue(systemCategory);
 
-      await expect(service.remove(mockUser.id, systemCategory.id))
-        .rejects
-        .toThrow(BadRequestException);
+      await expect(
+        service.remove(mockUser.id, systemCategory.id),
+      ).rejects.toThrow(BadRequestException);
     });
 
     it('should throw BadRequestException if trying to delete default category', async () => {
       const defaultCategory = { ...mockCategory, isDefault: true };
-      jest.spyOn(prismaService.category, 'findFirst').mockResolvedValue(defaultCategory);
+      jest
+        .spyOn(prismaService.category, 'findFirst')
+        .mockResolvedValue(defaultCategory);
 
-      await expect(service.remove(mockUser.id, defaultCategory.id))
-        .rejects
-        .toThrow(BadRequestException);
+      await expect(
+        service.remove(mockUser.id, defaultCategory.id),
+      ).rejects.toThrow(BadRequestException);
     });
   });
-}); 
+});

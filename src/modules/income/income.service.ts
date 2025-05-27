@@ -89,7 +89,7 @@ export class IncomeService {
     const decryptedDescription = await this.encryptionService.decrypt(
       income.description,
     );
-    
+
     const decryptedNotes = income.notes
       ? await this.encryptionService.decrypt(income.notes)
       : null;
@@ -253,9 +253,7 @@ export class IncomeService {
     });
 
     // Create a map of category IDs to names
-    const categoryMap = new Map(
-      categories.map((cat) => [cat.id, cat.name]),
-    );
+    const categoryMap = new Map(categories.map((cat) => [cat.id, cat.name]));
 
     // Get totals by category
     const totals = await this.prisma.income.groupBy({

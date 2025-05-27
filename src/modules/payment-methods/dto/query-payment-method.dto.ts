@@ -25,4 +25,4 @@ export class QueryPaymentMethodDto {
   @IsBoolean()
   @IsOptional()
   isSystem?: boolean;
-} 
+}

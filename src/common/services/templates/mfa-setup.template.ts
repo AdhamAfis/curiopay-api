@@ -34,4 +34,4 @@ export const getMfaSetupTemplate = (qrCodeUrl: string, secret: string) => `
   </div>
 </body>
 </html>
-`; 
+`;

@@ -57,7 +57,7 @@ describe('AuthService', () => {
       isDeleted: false,
       createdAt: new Date(),
       updatedAt: new Date(),
-      securityAuditLog: null
+      securityAuditLog: null,
     },
     contactInfo: {
       id: 'contact-id',
@@ -69,7 +69,7 @@ describe('AuthService', () => {
       createdAt: new Date(),
       updatedAt: new Date(),
       avatarUrl: null,
-      encryptionStatus: DataEncryptionStatus.ENCRYPTED
+      encryptionStatus: DataEncryptionStatus.ENCRYPTED,
     },
     preferences: {
       id: 'pref-id',
@@ -80,8 +80,8 @@ describe('AuthService', () => {
       isDeleted: false,
       createdAt: new Date(),
       updatedAt: new Date(),
-      monthlyBudget: null
-    }
+      monthlyBudget: null,
+    },
   };
 
   beforeEach(async () => {
@@ -147,7 +147,9 @@ describe('AuthService', () => {
           provide: EncryptionService,
           useValue: {
             encrypt: jest.fn((data) => Promise.resolve(`encrypted_${data}`)),
-            decrypt: jest.fn((data) => Promise.resolve(data.replace('encrypted_', ''))),
+            decrypt: jest.fn((data) =>
+              Promise.resolve(data.replace('encrypted_', '')),
+            ),
           },
         },
       ],
@@ -165,9 +167,11 @@ describe('AuthService', () => {
     it('should return user if credentials are valid', async () => {
       const email = 'test@example.com';
       const password = 'password123';
-      
+
       jest.spyOn(usersRepository, 'findByEmail').mockResolvedValue(mockUser);
-      jest.spyOn(usersRepository, 'findUserAuthById').mockResolvedValue(mockUser.auth);
+      jest
+        .spyOn(usersRepository, 'findUserAuthById')
+        .mockResolvedValue(mockUser.auth);
       (bcrypt.compare as jest.Mock).mockResolvedValue(true);
 
       const result = await service.validateCredentials(email, password);
@@ -178,19 +182,21 @@ describe('AuthService', () => {
     it('should throw UnauthorizedException if user not found', async () => {
       jest.spyOn(usersRepository, 'findByEmail').mockResolvedValue(null);
 
-      await expect(service.validateCredentials('wrong@email.com', 'password'))
-        .rejects
-        .toThrow(UnauthorizedException);
+      await expect(
+        service.validateCredentials('wrong@email.com', 'password'),
+      ).rejects.toThrow(UnauthorizedException);
     });
 
     it('should throw UnauthorizedException if password is invalid', async () => {
       jest.spyOn(usersRepository, 'findByEmail').mockResolvedValue(mockUser);
-      jest.spyOn(usersRepository, 'findUserAuthById').mockResolvedValue(mockUser.auth);
+      jest
+        .spyOn(usersRepository, 'findUserAuthById')
+        .mockResolvedValue(mockUser.auth);
       (bcrypt.compare as jest.Mock).mockResolvedValue(false);
 
-      await expect(service.validateCredentials('test@example.com', 'wrong_password'))
-        .rejects
-        .toThrow(UnauthorizedException);
+      await expect(
+        service.validateCredentials('test@example.com', 'wrong_password'),
+      ).rejects.toThrow(UnauthorizedException);
     });
   });
 
@@ -198,17 +204,21 @@ describe('AuthService', () => {
     it('should return access token for valid user', async () => {
       const loginDto = {
         email: mockUser.email,
-        password: 'password123'
+        password: 'password123',
       };
-      
+
       jest.spyOn(usersService, 'findByEmail').mockResolvedValue(mockUser);
-      jest.spyOn(usersRepository, 'findUserAuthById').mockResolvedValue(mockUser.auth);
-      jest.spyOn(usersRepository, 'updateUserAuth').mockResolvedValue(mockUser.auth);
+      jest
+        .spyOn(usersRepository, 'findUserAuthById')
+        .mockResolvedValue(mockUser.auth);
+      jest
+        .spyOn(usersRepository, 'updateUserAuth')
+        .mockResolvedValue(mockUser.auth);
       jest.spyOn(usersRepository, 'update').mockResolvedValue(mockUser);
       (bcrypt.compare as jest.Mock).mockResolvedValue(true);
-      
+
       const result = await service.login(loginDto);
-      
+
       expect(result).toBeDefined();
       expect(result.accessToken).toBe('test.jwt.token');
       expect(result.user).toBeDefined();
@@ -227,47 +237,52 @@ describe('AuthService', () => {
     it('should create new user and return access token', async () => {
       const hashedPassword = 'hashed_password';
       const salt = 'test-salt';
-      
+
       (bcrypt.genSalt as jest.Mock).mockResolvedValue(salt);
       (bcrypt.hash as jest.Mock).mockResolvedValue(hashedPassword);
-      
+
       jest.spyOn(usersRepository, 'create').mockResolvedValue({
         ...mockUser,
         email: signupDto.email,
         firstName: 'encrypted_John',
         lastName: 'encrypted_Doe',
       });
-      
-      jest.spyOn(encryptionService, 'encrypt')
+
+      jest
+        .spyOn(encryptionService, 'encrypt')
         .mockImplementation((value) => Promise.resolve(`encrypted_${value}`));
 
       const result = await service.signup(signupDto);
-      
+
       expect(result).toBeDefined();
       expect(result.accessToken).toBe('test.jwt.token');
       expect(result.user).toBeDefined();
       expect(result.user.email).toBe(signupDto.email);
-      expect(usersRepository.create).toHaveBeenCalledWith(expect.objectContaining({
-        email: signupDto.email,
-        firstName: 'encrypted_John',
-        lastName: 'encrypted_Doe',
-        role: 'USER',
-        isActive: true,
-        auth: {
-          create: {
-            password: hashedPassword,
-            passwordSalt: salt,
+      expect(usersRepository.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          email: signupDto.email,
+          firstName: 'encrypted_John',
+          lastName: 'encrypted_Doe',
+          role: 'USER',
+          isActive: true,
+          auth: {
+            create: {
+              password: hashedPassword,
+              passwordSalt: salt,
+            },
           },
-        },
-      }));
+        }),
+      );
     });
 
     it('should throw error if user creation fails', async () => {
-      jest.spyOn(usersService, 'create').mockRejectedValue(new Error('Database error'));
-      
-      await expect(service.signup(signupDto))
-        .rejects
-        .toThrow('Failed to create user');
+      jest
+        .spyOn(usersService, 'create')
+        .mockRejectedValue(new Error('Database error'));
+
+      await expect(service.signup(signupDto)).rejects.toThrow(
+        'Failed to create user',
+      );
     });
   });
-}); 
+});

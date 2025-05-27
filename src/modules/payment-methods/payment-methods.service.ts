@@ -1,4 +1,10 @@
-import { Injectable, NotFoundException, ConflictException, BadRequestException, Inject } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+  BadRequestException,
+  Inject,
+} from '@nestjs/common';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Cache } from 'cache-manager';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -20,7 +26,7 @@ export class PaymentMethodsService {
     try {
       // Create a cache key based on the userId and query parameters
       const cacheKey = `payment-methods:${userId}:${JSON.stringify(query)}`;
-      
+
       // Try to get data from cache first
       const cachedData = await this.cacheManager.get(cacheKey);
       if (cachedData) {
@@ -28,7 +34,7 @@ export class PaymentMethodsService {
       }
 
       const { search, isDefault, isSystem } = query;
-      
+
       const paymentMethods = await this.prisma.paymentMethod.findMany({
         where: {
           userId,
@@ -54,8 +60,8 @@ export class PaymentMethodsService {
       let filteredPaymentMethods = paymentMethods;
       if (search) {
         const searchLower = search.toLowerCase();
-        filteredPaymentMethods = paymentMethods.filter(method => 
-          method.name.toLowerCase().includes(searchLower)
+        filteredPaymentMethods = paymentMethods.filter((method) =>
+          method.name.toLowerCase().includes(searchLower),
         );
       }
 
@@ -64,10 +70,10 @@ export class PaymentMethodsService {
         transactionCount: method._count?.expenses + method._count?.incomes || 0,
         _count: undefined,
       }));
-      
+
       // Store in cache for future requests
       await this.cacheManager.set(cacheKey, result);
-      
+
       return result;
     } catch (error) {
       throw new BadRequestException('Failed to fetch payment methods');
@@ -76,7 +82,7 @@ export class PaymentMethodsService {
 
   async findOne(userId: string, id: string) {
     const paymentMethod = await this.prisma.paymentMethod.findFirst({
-      where: { 
+      where: {
         id,
         userId,
       },
@@ -91,7 +97,7 @@ export class PaymentMethodsService {
 
   async findByName(name: PaymentMethodEnum, userId: string) {
     return this.prisma.paymentMethod.findFirst({
-      where: { 
+      where: {
         name,
         userId,
       },
@@ -101,14 +107,16 @@ export class PaymentMethodsService {
   async create(userId: string, createPaymentMethodDto: CreatePaymentMethodDto) {
     // Check if payment method with this name already exists for this user
     const existingMethod = await this.prisma.paymentMethod.findFirst({
-      where: { 
+      where: {
         name: createPaymentMethodDto.name,
         userId,
       },
     });
 
     if (existingMethod) {
-      throw new ConflictException(`Payment method ${createPaymentMethodDto.name} already exists`);
+      throw new ConflictException(
+        `Payment method ${createPaymentMethodDto.name} already exists`,
+      );
     }
 
     return this.prisma.paymentMethod.create({
@@ -121,10 +129,14 @@ export class PaymentMethodsService {
     });
   }
 
-  async update(userId: string, id: string, updatePaymentMethodDto: UpdatePaymentMethodDto) {
+  async update(
+    userId: string,
+    id: string,
+    updatePaymentMethodDto: UpdatePaymentMethodDto,
+  ) {
     // Check if payment method exists and belongs to the user
     const paymentMethod = await this.prisma.paymentMethod.findFirst({
-      where: { 
+      where: {
         id,
         userId,
       },
@@ -146,7 +158,7 @@ export class PaymentMethodsService {
   async remove(userId: string, id: string) {
     // Check if payment method exists and belongs to the user
     const paymentMethod = await this.prisma.paymentMethod.findFirst({
-      where: { 
+      where: {
         id,
         userId,
       },
@@ -158,21 +170,23 @@ export class PaymentMethodsService {
 
     // Check if payment method is in use
     const expenseCount = await this.prisma.expense.count({
-      where: { 
+      where: {
         paymentMethodId: id,
         userId,
       },
     });
 
     const incomeCount = await this.prisma.income.count({
-      where: { 
+      where: {
         paymentMethodId: id,
         userId,
       },
     });
 
     if (expenseCount > 0 || incomeCount > 0) {
-      throw new ConflictException(`Payment method is in use and cannot be deleted`);
+      throw new ConflictException(
+        `Payment method is in use and cannot be deleted`,
+      );
     }
 
     return this.prisma.paymentMethod.delete({
@@ -204,4 +218,4 @@ export class PaymentMethodsService {
   async seedUserDefaultPaymentMethods(userId: string) {
     return this.paymentMethodsSeeder.seedDefaultPaymentMethods(userId);
   }
-} 
+}

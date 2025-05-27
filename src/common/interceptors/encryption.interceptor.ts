@@ -21,14 +21,17 @@ const SENSITIVE_FIELDS = [
   'passwordResetToken',
   'mfaSecret',
   'backupCodes',
-  'sensitiveField'
+  'sensitiveField',
 ];
 
 @Injectable()
 export class EncryptionInterceptor implements NestInterceptor {
   constructor(private readonly encryptionService: EncryptionService) {}
 
-  async intercept(context: ExecutionContext, next: CallHandler): Promise<Observable<any>> {
+  async intercept(
+    context: ExecutionContext,
+    next: CallHandler,
+  ): Promise<Observable<any>> {
     const request = context.switchToHttp().getRequest();
     const isRegisterEndpoint = request.path === '/api/v1/auth/register';
 
@@ -45,7 +48,7 @@ export class EncryptionInterceptor implements NestInterceptor {
         // For all responses, encrypt sensitive data
         const processedData = await this.encryptSensitiveData(data);
         return processedData;
-      })
+      }),
     );
   }
 
@@ -53,7 +56,7 @@ export class EncryptionInterceptor implements NestInterceptor {
     if (!data) return;
 
     if (Array.isArray(data)) {
-      await Promise.all(data.map(item => this.decryptSensitiveData(item)));
+      await Promise.all(data.map((item) => this.decryptSensitiveData(item)));
       return;
     }
 
@@ -62,8 +65,9 @@ export class EncryptionInterceptor implements NestInterceptor {
         if (typeof value === 'object' && value !== null) {
           await this.decryptSensitiveData(value);
         } else if (
-          typeof value === 'string' && 
-          (SENSITIVE_FIELDS.includes(key) || key.toLowerCase().includes('sensitive')) &&
+          typeof value === 'string' &&
+          (SENSITIVE_FIELDS.includes(key) ||
+            key.toLowerCase().includes('sensitive')) &&
           this.isEncrypted(value)
         ) {
           data[key] = await this.encryptionService.decrypt(value);
@@ -76,7 +80,7 @@ export class EncryptionInterceptor implements NestInterceptor {
     if (!data) return data;
 
     if (Array.isArray(data)) {
-      return Promise.all(data.map(item => this.encryptSensitiveData(item)));
+      return Promise.all(data.map((item) => this.encryptSensitiveData(item)));
     }
 
     if (typeof data === 'object') {
@@ -85,8 +89,9 @@ export class EncryptionInterceptor implements NestInterceptor {
         if (typeof value === 'object' && value !== null) {
           processed[key] = await this.encryptSensitiveData(value);
         } else if (
-          typeof value === 'string' && 
-          (SENSITIVE_FIELDS.includes(key) || key.toLowerCase().includes('sensitive')) &&
+          typeof value === 'string' &&
+          (SENSITIVE_FIELDS.includes(key) ||
+            key.toLowerCase().includes('sensitive')) &&
           !this.isEncrypted(value)
         ) {
           processed[key] = await this.encryptionService.encrypt(value);

@@ -29,4 +29,4 @@ export const getPasswordResetTemplate = (resetLink: string) => `
   </div>
 </body>
 </html>
-`; 
+`;

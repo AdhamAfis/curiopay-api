@@ -24,4 +24,4 @@ export class OAuthUserDto {
   @IsString()
   @IsOptional()
   photoUrl?: string;
-} 
+}

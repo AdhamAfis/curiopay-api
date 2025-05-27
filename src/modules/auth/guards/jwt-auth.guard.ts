@@ -1,4 +1,9 @@
-import { ExecutionContext, Injectable, Logger, UnauthorizedException } from '@nestjs/common';
+import {
+  ExecutionContext,
+  Injectable,
+  Logger,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { AuthGuard } from '@nestjs/passport';
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
@@ -23,7 +28,9 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
     }
 
     const request = context.switchToHttp().getRequest();
-    this.logger.debug(`Authenticating request to ${request.method} ${request.url}`);
+    this.logger.debug(
+      `Authenticating request to ${request.method} ${request.url}`,
+    );
 
     const hasToken = request.headers.authorization?.startsWith('Bearer ');
     if (!hasToken) {
@@ -45,9 +52,12 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
 
   handleRequest(err: any, user: any, info: any) {
     if (err || !user) {
-      this.logger.error('Authentication error:', err?.message || 'User not found');
+      this.logger.error(
+        'Authentication error:',
+        err?.message || 'User not found',
+      );
       throw err || new UnauthorizedException('Authentication failed');
     }
     return user;
   }
-} 
+}

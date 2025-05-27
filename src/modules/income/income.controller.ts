@@ -129,9 +129,13 @@ export class IncomeController extends BaseController {
 
   @Get(':id')
   @ApiOperation({ summary: 'Get an income record by ID' })
-  @ApiParam({ name: 'id', description: 'Income ID', example: '123e4567-e89b-12d3-a456-426614174000' })
-  @ApiResponse({ 
-    status: 200, 
+  @ApiParam({
+    name: 'id',
+    description: 'Income ID',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
+  @ApiResponse({
+    status: 200,
     description: 'Returns the income record.',
     schema: {
       type: 'object',
@@ -245,8 +249,18 @@ export class IncomeController extends BaseController {
       },
     },
   })
-  @ApiQuery({ name: 'startDate', required: true, type: 'string', description: 'Start date (YYYY-MM-DD)' })
-  @ApiQuery({ name: 'endDate', required: true, type: 'string', description: 'End date (YYYY-MM-DD)' })
+  @ApiQuery({
+    name: 'startDate',
+    required: true,
+    type: 'string',
+    description: 'Start date (YYYY-MM-DD)',
+  })
+  @ApiQuery({
+    name: 'endDate',
+    required: true,
+    type: 'string',
+    description: 'End date (YYYY-MM-DD)',
+  })
   @ApiResponse({ status: 400, description: 'Bad request - Missing date range' })
   async getIncomeTotalsByCategory(
     @Query() query: QueryIncomeDto,

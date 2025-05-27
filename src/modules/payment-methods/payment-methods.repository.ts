@@ -12,9 +12,12 @@ export class PaymentMethodsRepository {
     });
   }
 
-  async findByUserId(id: string, userId: string): Promise<PaymentMethod | null> {
+  async findByUserId(
+    id: string,
+    userId: string,
+  ): Promise<PaymentMethod | null> {
     return this.prisma.paymentMethod.findFirst({
-      where: { 
+      where: {
         id,
         userId,
       },
@@ -50,10 +53,7 @@ export class PaymentMethodsRepository {
             },
           },
         },
-        orderBy: [
-          { isDefault: 'desc' },
-          { name: 'asc' },
-        ],
+        orderBy: [{ isDefault: 'desc' }, { name: 'asc' }],
       }),
       this.prisma.paymentMethod.count({ where }),
     ]);
@@ -61,18 +61,18 @@ export class PaymentMethodsRepository {
     let filteredPaymentMethods = paymentMethods;
     if (search) {
       const searchLower = search.toLowerCase();
-      filteredPaymentMethods = paymentMethods.filter(method => 
-        method.name.toLowerCase().includes(searchLower)
+      filteredPaymentMethods = paymentMethods.filter((method) =>
+        method.name.toLowerCase().includes(searchLower),
       );
     }
 
-    return { 
-      paymentMethods: filteredPaymentMethods.map(method => ({
+    return {
+      paymentMethods: filteredPaymentMethods.map((method) => ({
         ...method,
         transactionCount: method._count?.expenses + method._count?.incomes || 0,
         _count: undefined,
       })),
-      total: search ? filteredPaymentMethods.length : total
+      total: search ? filteredPaymentMethods.length : total,
     };
   }
 
@@ -120,4 +120,4 @@ export class PaymentMethodsRepository {
       },
     });
   }
-} 
+}

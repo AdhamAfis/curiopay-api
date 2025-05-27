@@ -10,4 +10,4 @@ import { EncryptionService } from '../../common/services/encryption.service';
   providers: [ExportService, PrismaService, EmailService, EncryptionService],
   exports: [ExportService],
 })
-export class ExportModule {} 
+export class ExportModule {}

@@ -39,4 +39,4 @@ export class UserProfileResponseDto {
 
   @ApiProperty({ example: '2024-03-20T12:00:00Z' })
   updatedAt: Date;
-} 
+}

@@ -1,108 +1,107 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<html lang='en'>
+  <head>
+    <meta charset='UTF-8' />
+    <meta name='viewport' content='width=device-width, initial-scale=1.0' />
     <title>Expenses - CurioPay</title>
-    <link rel="stylesheet" href="assets/styles.css">
-</head>
-<body>
-    <div class="container">
-        <header class="header">
-            <h1>Expenses</h1>
-            <p>Generated on {{exportDate}}</p>
-        </header>
+    <link rel='stylesheet' href='assets/styles.css' />
+  </head>
+  <body>
+    <div class='container'>
+      <header class='header'>
+        <h1>Expenses</h1>
+        <p>Generated on {{exportDate}}</p>
+      </header>
 
-        <nav class="nav">
-            <a href="index.html">Overview</a>
-            <a href="expenses.html">Expenses</a>
-            <a href="income.html">Income</a>
-            <a href="categories.html">Categories</a>
-            <a href="preferences.html">Preferences</a>
-            <a href="newsletter.html">Newsletter</a>
-        </nav>
+      <nav class='nav'>
+        <a href='index.html'>Overview</a>
+        <a href='expenses.html'>Expenses</a>
+        <a href='income.html'>Income</a>
+        <a href='categories.html'>Categories</a>
+        <a href='preferences.html'>Preferences</a>
+        <a href='newsletter.html'>Newsletter</a>
+      </nav>
 
-        <main>
-            <div class="card">
-                <h2>Summary</h2>
-                <div class="summary">
-                    <div class="summary-item">
-                        <div class="label">Total Expenses</div>
-                        <div class="value">{{summary.total}}</div>
-                    </div>
-                    <div class="summary-item">
-                        <div class="label">Average per Month</div>
-                        <div class="value">{{summary.monthlyAverage}}</div>
-                    </div>
-                    <div class="summary-item">
-                        <div class="label">{{summary.highestMonth.label}}</div>
-                        <div class="value">{{summary.highestMonth.value}}</div>
-                        <div class="date">{{summary.highestMonth.date}}</div>
-                    </div>
-                    <div class="summary-item">
-                        <div class="label">{{summary.lowestMonth.label}}</div>
-                        <div class="value">{{summary.lowestMonth.value}}</div>
-                        <div class="date">{{summary.lowestMonth.date}}</div>
-                    </div>
-                </div>
+      <main>
+        <div class='card'>
+          <h2>Summary</h2>
+          <div class='summary'>
+            <div class='summary-item'>
+              <div class='label'>Total Expenses</div>
+              <div class='value'>{{summary.total}}</div>
             </div>
-
-            <div class="card">
-                <h2>Expenses by Category</h2>
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th>Category</th>
-                            <th>Total Amount</th>
-                            <th>Percentage</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {{#each categoryTotals}}
-                        <tr>
-                            <td>{{this.name}}</td>
-                            <td>{{this.amount}}</td>
-                            <td>{{this.percentage}}%</td>
-                        </tr>
-                        {{/each}}
-                    </tbody>
-                </table>
+            <div class='summary-item'>
+              <div class='label'>Average per Month</div>
+              <div class='value'>{{summary.monthlyAverage}}</div>
             </div>
-
-            <div class="card">
-                <h2>All Expenses</h2>
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th>Date</th>
-                            <th>Description</th>
-                            <th>Category</th>
-                            <th>Amount</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {{#each expenses}}
-                        <tr>
-                            <td>{{this.date}}</td>
-                            <td>{{this.description}}</td>
-                            <td>{{this.category.name}}</td>
-                            <td>{{this.amount}}</td>
-                            <td>
-                                <span class="badge badge-{{this.status}}">
-                                    {{this.status}}
-                                </span>
-                            </td>
-                        </tr>
-                        {{/each}}
-                    </tbody>
-                </table>
+            <div class='summary-item'>
+              <div class='label'>{{summary.highestMonth.label}}</div>
+              <div class='value'>{{summary.highestMonth.value}}</div>
+              <div class='date'>{{summary.highestMonth.date}}</div>
             </div>
-        </main>
-        
-        <footer class="footer">
-            <p>CurioPay Data Export - User Data</p>
-        </footer>
+            <div class='summary-item'>
+              <div class='label'>{{summary.lowestMonth.label}}</div>
+              <div class='value'>{{summary.lowestMonth.value}}</div>
+              <div class='date'>{{summary.lowestMonth.date}}</div>
+            </div>
+          </div>
+        </div>
+
+        <div class='card'>
+          <h2>Expenses by Category</h2>
+          <table class='table'>
+            <thead>
+              <tr>
+                <th>Category</th>
+                <th>Total Amount</th>
+                <th>Percentage</th>
+              </tr>
+            </thead>
+            <tbody>
+              {{#each categoryTotals}}
+                <tr>
+                  <td>{{this.name}}</td>
+                  <td>{{this.amount}}</td>
+                  <td>{{this.percentage}}%</td>
+                </tr>
+              {{/each}}
+            </tbody>
+          </table>
+        </div>
+
+        <div class='card'>
+          <h2>All Expenses</h2>
+          <table class='table'>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Description</th>
+                <th>Category</th>
+                <th>Amount</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {{#each expenses}}
+                <tr>
+                  <td>{{this.date}}</td>
+                  <td>{{this.description}}</td>
+                  <td>{{this.category.name}}</td>
+                  <td>{{this.amount}}</td>
+                  <td>
+                    <span class='badge badge-{{this.status}}'>
+                      {{this.status}}
+                    </span>
+                  </td>
+                </tr>
+              {{/each}}
+            </tbody>
+          </table>
+        </div>
+      </main>
+
+      <footer class='footer'>
+        <p>CurioPay Data Export - User Data</p>
+      </footer>
     </div>
-</body>
-</html> 
+  </body>
+</html>

@@ -1,11 +1,39 @@
-import { Controller, Post, Body, HttpCode, UseGuards, Get, UseInterceptors, Req, Res, Param } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  HttpCode,
+  UseGuards,
+  Get,
+  UseInterceptors,
+  Req,
+  Res,
+  Param,
+} from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
-import { RequestPasswordResetDto, ResetPasswordDto } from './dto/reset-password.dto';
-import { EnableMfaDto, VerifyMfaDto, DisableMfaDto, CompleteLoginWithMfaDto } from './dto/mfa.dto';
-import { VerifyEmailDto, RequestEmailVerificationDto } from './dto/verify-email.dto';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  RequestPasswordResetDto,
+  ResetPasswordDto,
+} from './dto/reset-password.dto';
+import {
+  EnableMfaDto,
+  VerifyMfaDto,
+  DisableMfaDto,
+  CompleteLoginWithMfaDto,
+} from './dto/mfa.dto';
+import {
+  VerifyEmailDto,
+  RequestEmailVerificationDto,
+} from './dto/verify-email.dto';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
+import { SensitiveThrottle } from '../../common/decorators/throttle.decorator';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { CurrentUser } from './decorators/current-user.decorator';
 import { Public } from './decorators/public.decorator';
@@ -29,10 +57,11 @@ export class AuthController extends BaseController {
 
   @Public()
   @Post('login')
+  @SensitiveThrottle()
   @HttpCode(200)
   @ApiOperation({ summary: 'Login user' })
-  @ApiResponse({ 
-    status: 200, 
+  @ApiResponse({
+    status: 200,
     description: 'Login successful',
     schema: {
       type: 'object',
@@ -40,17 +69,18 @@ export class AuthController extends BaseController {
         accessToken: {
           type: 'string',
           example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
-          description: 'JWT token to be used for authenticated requests. Extended expiration if rememberMe is true.',
+          description:
+            'JWT token to be used for authenticated requests. Extended expiration if rememberMe is true.',
         },
         requireMfa: {
           type: 'boolean',
           example: 'false',
-          description: 'Whether MFA verification is required to complete login'
+          description: 'Whether MFA verification is required to complete login',
         },
         tempToken: {
           type: 'string',
           example: 'eyJhbGciOiJIUzI1...',
-          description: 'Temporary token to be used for MFA verification'
+          description: 'Temporary token to be used for MFA verification',
         },
         user: {
           type: 'object',
@@ -73,10 +103,11 @@ export class AuthController extends BaseController {
 
   @Public()
   @Post('login/mfa/complete')
+  @SensitiveThrottle()
   @HttpCode(200)
   @ApiOperation({ summary: 'Complete login with MFA verification' })
-  @ApiResponse({ 
-    status: 200, 
+  @ApiResponse({
+    status: 200,
     description: 'MFA verification successful and login completed',
     schema: {
       type: 'object',
@@ -107,10 +138,11 @@ export class AuthController extends BaseController {
 
   @Public()
   @Post('register')
+  @SensitiveThrottle()
   @HttpCode(201)
   @ApiOperation({ summary: 'Register new user' })
-  @ApiResponse({ 
-    status: 201, 
+  @ApiResponse({
+    status: 201,
     description: 'User created successfully',
     schema: {
       type: 'object',
@@ -136,26 +168,33 @@ export class AuthController extends BaseController {
   @ApiResponse({ status: 409, description: 'Email already registered' })
   async register(@Body() registerDto: RegisterDto, @Req() req) {
     try {
-      console.log('Register Request DTO:', JSON.stringify(registerDto, null, 2));
+      console.log(
+        'Register Request DTO:',
+        JSON.stringify(registerDto, null, 2),
+      );
       const result = await this.authService.register(registerDto);
       console.log('Registration successful for:', registerDto.email);
       return result;
     } catch (error) {
       // Log error but ensure we're passing the original error type through
-      console.error(`Registration failed for ${registerDto.email}:`, error.message);
-      
+      console.error(
+        `Registration failed for ${registerDto.email}:`,
+        error.message,
+      );
+
       // Keep the original error status code and message
       if (error.status === 409) {
         // This is a conflict error (email already registered)
         throw error;
       }
-      
+
       throw error;
     }
   }
 
   @Public()
   @Post('password-reset/request')
+  @SensitiveThrottle()
   @HttpCode(200)
   @ApiOperation({ summary: 'Request password reset' })
   @ApiResponse({ status: 200, description: 'Reset instructions sent' })
@@ -165,6 +204,7 @@ export class AuthController extends BaseController {
 
   @Public()
   @Post('password-reset/reset')
+  @SensitiveThrottle()
   @HttpCode(200)
   @ApiOperation({ summary: 'Reset password using token' })
   @ApiResponse({ status: 200, description: 'Password reset successful' })
@@ -175,8 +215,8 @@ export class AuthController extends BaseController {
 
   @Get('mfa/generate')
   @ApiOperation({ summary: 'Generate MFA secret and QR code' })
-  @ApiResponse({ 
-    status: 200, 
+  @ApiResponse({
+    status: 200,
     description: 'Returns MFA secret and QR code',
     schema: {
       type: 'object',
@@ -191,6 +231,7 @@ export class AuthController extends BaseController {
   }
 
   @Post('mfa/enable')
+  @SensitiveThrottle()
   @HttpCode(200)
   @ApiOperation({ summary: 'Enable MFA' })
   @ApiResponse({ status: 200, description: 'MFA enabled successfully' })
@@ -200,6 +241,7 @@ export class AuthController extends BaseController {
   }
 
   @Post('mfa/verify')
+  @SensitiveThrottle()
   @HttpCode(200)
   @ApiOperation({ summary: 'Verify MFA code' })
   @ApiResponse({ status: 200, description: 'MFA code verified' })
@@ -209,6 +251,7 @@ export class AuthController extends BaseController {
   }
 
   @Post('mfa/disable')
+  @SensitiveThrottle()
   @HttpCode(200)
   @ApiOperation({ summary: 'Disable MFA' })
   @ApiResponse({ status: 200, description: 'MFA disabled successfully' })
@@ -220,12 +263,13 @@ export class AuthController extends BaseController {
   @Public()
   @Post('email/request-verification')
   @HttpCode(200)
-  @ApiOperation({ 
-    summary: 'Request email verification for any email address (public)', 
-    description: 'Sends a verification email if the account exists and is not already verified'
+  @ApiOperation({
+    summary: 'Request email verification for any email address (public)',
+    description:
+      'Sends a verification email if the account exists and is not already verified',
   })
-  @ApiResponse({ 
-    status: 200, 
+  @ApiResponse({
+    status: 200,
     description: 'Request processed successfully',
     schema: {
       type: 'object',
@@ -233,9 +277,9 @@ export class AuthController extends BaseController {
         success: { type: 'boolean', example: true },
         verified: { type: 'boolean', example: false },
         message: { type: 'string' },
-        verifiedAt: { type: 'string', format: 'date-time', nullable: true }
-      }
-    }
+        verifiedAt: { type: 'string', format: 'date-time', nullable: true },
+      },
+    },
   })
   async requestEmailVerification(@Body() dto: RequestEmailVerificationDto) {
     return this.authService.requestEmailVerification(dto);
@@ -244,12 +288,13 @@ export class AuthController extends BaseController {
   @Post('email/request-verification/current')
   @UseGuards(JwtAuthGuard)
   @HttpCode(200)
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Request email verification for the current authenticated user',
-    description: 'Sends a verification email only if the current user\'s email is not already verified'
+    description:
+      "Sends a verification email only if the current user's email is not already verified",
   })
-  @ApiResponse({ 
-    status: 200, 
+  @ApiResponse({
+    status: 200,
     description: 'Request processed successfully',
     schema: {
       type: 'object',
@@ -257,9 +302,9 @@ export class AuthController extends BaseController {
         success: { type: 'boolean', example: true },
         verified: { type: 'boolean', example: false },
         message: { type: 'string' },
-        verifiedAt: { type: 'string', format: 'date-time', nullable: true }
-      }
-    }
+        verifiedAt: { type: 'string', format: 'date-time', nullable: true },
+      },
+    },
   })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   async requestVerificationForCurrentUser(@CurrentUser() user) {
@@ -268,6 +313,7 @@ export class AuthController extends BaseController {
 
   @Public()
   @Post('email/verify')
+  @SensitiveThrottle()
   @HttpCode(200)
   @ApiOperation({ summary: 'Verify email with token' })
   @ApiResponse({ status: 200, description: 'Email verified successfully' })
@@ -278,18 +324,20 @@ export class AuthController extends BaseController {
 
   @Get('email/verification-status')
   @UseGuards(JwtAuthGuard)
-  @ApiOperation({ summary: 'Check email verification status for the current user' })
-  @ApiResponse({ 
-    status: 200, 
-    description: 'Email verification status', 
+  @ApiOperation({
+    summary: 'Check email verification status for the current user',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Email verification status',
     schema: {
       type: 'object',
       properties: {
         email: { type: 'string' },
         verified: { type: 'boolean' },
         verifiedAt: { type: 'string', format: 'date-time', nullable: true },
-      }
-    }
+      },
+    },
   })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   async getEmailVerificationStatus(@CurrentUser() user) {
@@ -310,8 +358,8 @@ export class AuthController extends BaseController {
   @Get('google/callback')
   @UseGuards(AuthGuard('google'))
   @ApiOperation({ summary: 'Google OAuth callback' })
-  @ApiResponse({ 
-    status: 200, 
+  @ApiResponse({
+    status: 200,
     description: 'Google login successful',
     schema: {
       type: 'object',
@@ -331,16 +379,25 @@ export class AuthController extends BaseController {
           },
         },
       },
-    }
+    },
   })
   async googleAuthCallback(@Req() req, @Res() res) {
-    const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
+    const frontendUrl =
+      this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
     try {
-      const { accessToken, user } = await this.authService.oauthLogin(req.user, req.ip, req.headers['user-agent']);
+      const { accessToken, user } = await this.authService.oauthLogin(
+        req.user,
+        req.ip,
+        req.headers['user-agent'],
+      );
       // Redirect to frontend with token - using dashboard path instead of /auth/callback
-      return res.redirect(`${frontendUrl}/dashboard?token=${accessToken}&userId=${user.id}`);
+      return res.redirect(
+        `${frontendUrl}/dashboard?token=${accessToken}&userId=${user.id}`,
+      );
     } catch (error) {
-      return res.redirect(`${frontendUrl}/login?error=${encodeURIComponent(error.message)}`);
+      return res.redirect(
+        `${frontendUrl}/login?error=${encodeURIComponent(error.message)}`,
+      );
     }
   }
 
@@ -351,10 +408,19 @@ export class AuthController extends BaseController {
   @ApiResponse({ status: 200, description: 'Account linked successfully' })
   @ApiResponse({ status: 400, description: 'Invalid request or provider' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  async linkAccount(@CurrentUser() user: User, @Body() linkAccountDto: LinkAccountDto, @Req() req) {
+  async linkAccount(
+    @CurrentUser() user: User,
+    @Body() linkAccountDto: LinkAccountDto,
+    @Req() req,
+  ) {
     const ipAddress = req.ip || 'unknown';
     const userAgent = req.headers['user-agent'] || 'unknown';
-    return this.authService.linkAccount(user.id, linkAccountDto, ipAddress, userAgent);
+    return this.authService.linkAccount(
+      user.id,
+      linkAccountDto,
+      ipAddress,
+      userAgent,
+    );
   }
 
   @Post('unlink-provider/:provider')
@@ -362,12 +428,24 @@ export class AuthController extends BaseController {
   @HttpCode(200)
   @ApiOperation({ summary: 'Unlink an OAuth provider from current account' })
   @ApiResponse({ status: 200, description: 'Provider unlinked successfully' })
-  @ApiResponse({ status: 400, description: 'Invalid request or cannot unlink last login method' })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid request or cannot unlink last login method',
+  })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  async unlinkProvider(@CurrentUser() user: User, @Param('provider') provider: string, @Req() req) {
+  async unlinkProvider(
+    @CurrentUser() user: User,
+    @Param('provider') provider: string,
+    @Req() req,
+  ) {
     const ipAddress = req.ip || 'unknown';
     const userAgent = req.headers['user-agent'] || 'unknown';
-    return this.authService.unlinkProvider(user.id, provider, ipAddress, userAgent);
+    return this.authService.unlinkProvider(
+      user.id,
+      provider,
+      ipAddress,
+      userAgent,
+    );
   }
 
   @Public()
@@ -384,8 +462,8 @@ export class AuthController extends BaseController {
   @Get('github/callback')
   @UseGuards(AuthGuard('github'))
   @ApiOperation({ summary: 'GitHub OAuth callback' })
-  @ApiResponse({ 
-    status: 200, 
+  @ApiResponse({
+    status: 200,
     description: 'GitHub login successful',
     schema: {
       type: 'object',
@@ -408,13 +486,22 @@ export class AuthController extends BaseController {
     },
   })
   async githubAuthCallback(@Req() req, @Res() res) {
-    const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
+    const frontendUrl =
+      this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
     try {
-      const { accessToken, user } = await this.authService.oauthLogin(req.user, req.ip, req.headers['user-agent']);
+      const { accessToken, user } = await this.authService.oauthLogin(
+        req.user,
+        req.ip,
+        req.headers['user-agent'],
+      );
       // Redirect to frontend with token - using dashboard path instead of /auth/callback
-      return res.redirect(`${frontendUrl}/dashboard?token=${accessToken}&userId=${user.id}`);
+      return res.redirect(
+        `${frontendUrl}/dashboard?token=${accessToken}&userId=${user.id}`,
+      );
     } catch (error) {
-      return res.redirect(`${frontendUrl}/login?error=${encodeURIComponent(error.message)}`);
+      return res.redirect(
+        `${frontendUrl}/login?error=${encodeURIComponent(error.message)}`,
+      );
     }
   }
 

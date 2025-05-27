@@ -1,8 +1,16 @@
 import { Body, Controller, Get, Patch, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { UserPreferencesService } from './user-preferences.service';
-import { UpdateUserPreferencesDto, UserPreferencesResponseDto } from './dto/user-preferences.dto';
+import {
+  UpdateUserPreferencesDto,
+  UserPreferencesResponseDto,
+} from './dto/user-preferences.dto';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { IUser } from './interfaces/user.interface';
 
@@ -11,7 +19,9 @@ import { IUser } from './interfaces/user.interface';
 @UseGuards(JwtAuthGuard)
 @Controller('user-preferences')
 export class UserPreferencesController {
-  constructor(private readonly userPreferencesService: UserPreferencesService) {}
+  constructor(
+    private readonly userPreferencesService: UserPreferencesService,
+  ) {}
 
   @Get()
   @ApiOperation({ summary: 'Get user preferences' })
@@ -35,7 +45,10 @@ export class UserPreferencesController {
     @CurrentUser() user: IUser,
     @Body() updateUserPreferencesDto: UpdateUserPreferencesDto,
   ) {
-    return this.userPreferencesService.updateUserPreferences(user.id, updateUserPreferencesDto);
+    return this.userPreferencesService.updateUserPreferences(
+      user.id,
+      updateUserPreferencesDto,
+    );
   }
 
   @Get('toggle-ai-features')
@@ -96,4 +109,4 @@ export class UserPreferencesController {
   async getPreferenceOptions() {
     return this.userPreferencesService.getPreferenceOptions();
   }
-} 
+}

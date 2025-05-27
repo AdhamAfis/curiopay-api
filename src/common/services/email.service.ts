@@ -34,9 +34,11 @@ export class EmailService {
     } else {
       // Use ethereal email for testing/development
       try {
-        this.logger.warn('SMTP settings not found, using ethereal email for testing');
+        this.logger.warn(
+          'SMTP settings not found, using ethereal email for testing',
+        );
         this.testAccount = await nodemailer.createTestAccount();
-        
+
         this.transporter = nodemailer.createTransport({
           host: 'smtp.ethereal.email',
           port: 587,
@@ -46,16 +48,18 @@ export class EmailService {
             pass: this.testAccount.pass,
           },
         });
-        
+
         this.logger.log(`Test email account created: ${this.testAccount.user}`);
       } catch (error) {
         this.logger.error('Failed to create test email account', error);
         // Create a fake transporter that logs instead of sending
         this.transporter = {
           sendMail: async (mailOptions) => {
-            this.logger.warn(`Email would be sent: ${JSON.stringify(mailOptions)}`);
+            this.logger.warn(
+              `Email would be sent: ${JSON.stringify(mailOptions)}`,
+            );
             return { messageId: 'fake-message-id' };
-          }
+          },
         } as any;
       }
     }
@@ -63,9 +67,10 @@ export class EmailService {
 
   async sendPasswordResetEmail(email: string, token: string): Promise<void> {
     const resetLink = `${this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000'}/reset-password?token=${token}`;
-    
+
     const info = await this.transporter.sendMail({
-      from: this.configService.get<string>('SMTP_FROM') || 'noreply@curiopay.com',
+      from:
+        this.configService.get<string>('SMTP_FROM') || 'noreply@curiopay.com',
       to: email,
       subject: 'Password Reset Request',
       html: `
@@ -79,13 +84,20 @@ export class EmailService {
 
     // Log preview URL for ethereal emails
     if (this.testAccount) {
-      this.logger.log(`Password reset email preview URL: ${nodemailer.getTestMessageUrl(info)}`);
+      this.logger.log(
+        `Password reset email preview URL: ${nodemailer.getTestMessageUrl(info)}`,
+      );
     }
   }
 
-  async sendMfaSetupEmail(email: string, qrCodeUrl: string, secret: string): Promise<void> {
+  async sendMfaSetupEmail(
+    email: string,
+    qrCodeUrl: string,
+    secret: string,
+  ): Promise<void> {
     const info = await this.transporter.sendMail({
-      from: this.configService.get<string>('SMTP_FROM') || 'noreply@curiopay.com',
+      from:
+        this.configService.get<string>('SMTP_FROM') || 'noreply@curiopay.com',
       to: email,
       subject: 'Multi-Factor Authentication Setup',
       html: `
@@ -101,7 +113,9 @@ export class EmailService {
 
     // Log preview URL for ethereal emails
     if (this.testAccount) {
-      this.logger.log(`MFA setup email preview URL: ${nodemailer.getTestMessageUrl(info)}`);
+      this.logger.log(
+        `MFA setup email preview URL: ${nodemailer.getTestMessageUrl(info)}`,
+      );
     }
   }
 
@@ -137,9 +151,11 @@ export class EmailService {
 
     // Log preview URL for ethereal emails
     if (this.testAccount) {
-      this.logger.log(`Miss you email preview URL: ${nodemailer.getTestMessageUrl(info)}`);
+      this.logger.log(
+        `Miss you email preview URL: ${nodemailer.getTestMessageUrl(info)}`,
+      );
     }
-    
+
     return info;
   }
 
@@ -180,20 +196,23 @@ export class EmailService {
 
     // Log preview URL for ethereal emails
     if (this.testAccount) {
-      this.logger.log(`Newsletter email preview URL: ${nodemailer.getTestMessageUrl(info)}`);
+      this.logger.log(
+        `Newsletter email preview URL: ${nodemailer.getTestMessageUrl(info)}`,
+      );
     }
-    
+
     return info;
   }
 
   async sendEmailVerificationLink(email: string, token: string): Promise<void> {
     try {
       const verificationLink = `${this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000'}/verify-email?token=${token}`;
-      
+
       this.logger.log(`Sending verification email to ${email}`);
-      
+
       const info = await this.transporter.sendMail({
-        from: this.configService.get<string>('SMTP_FROM') || 'noreply@curiopay.com',
+        from:
+          this.configService.get<string>('SMTP_FROM') || 'noreply@curiopay.com',
         to: email,
         subject: 'Verify Your Email Address',
         html: `
@@ -215,20 +234,31 @@ export class EmailService {
 
       // Log preview URL for ethereal emails
       if (this.testAccount) {
-        this.logger.log(`Email verification preview URL: ${nodemailer.getTestMessageUrl(info)}`);
+        this.logger.log(
+          `Email verification preview URL: ${nodemailer.getTestMessageUrl(info)}`,
+        );
       } else {
-        this.logger.log(`Verification email sent to ${email} (MessageId: ${info.messageId})`);
+        this.logger.log(
+          `Verification email sent to ${email} (MessageId: ${info.messageId})`,
+        );
       }
     } catch (error) {
-      this.logger.error(`Failed to send verification email to ${email}: ${error.message}`);
-      // We don't want to throw the error since verification email 
+      this.logger.error(
+        `Failed to send verification email to ${email}: ${error.message}`,
+      );
+      // We don't want to throw the error since verification email
       // failure shouldn't break the registration process
     }
   }
 
-  async sendDataExportEmail(email: string, firstName: string, attachmentBuffer: Buffer): Promise<void> {
+  async sendDataExportEmail(
+    email: string,
+    firstName: string,
+    attachmentBuffer: Buffer,
+  ): Promise<void> {
     const info = await this.transporter.sendMail({
-      from: this.configService.get<string>('SMTP_FROM') || 'noreply@curiopay.com',
+      from:
+        this.configService.get<string>('SMTP_FROM') || 'noreply@curiopay.com',
       to: email,
       subject: 'Your CurioPay Data Export',
       html: `
@@ -251,7 +281,9 @@ export class EmailService {
 
     // Log preview URL for ethereal emails
     if (this.testAccount) {
-      this.logger.log(`Data export email preview URL: ${nodemailer.getTestMessageUrl(info)}`);
+      this.logger.log(
+        `Data export email preview URL: ${nodemailer.getTestMessageUrl(info)}`,
+      );
     }
   }
-} 
+}

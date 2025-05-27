@@ -19,16 +19,19 @@ const SENSITIVE_FIELDS = [
   'passwordResetToken',
   'mfaSecret',
   'backupCodes',
-  'sensitiveField'
+  'sensitiveField',
 ];
 
 @Injectable()
 export class PostValidationEncryptionInterceptor implements NestInterceptor {
   constructor(private readonly encryptionService: EncryptionService) {}
 
-  async intercept(context: ExecutionContext, next: CallHandler): Promise<Observable<any>> {
+  async intercept(
+    context: ExecutionContext,
+    next: CallHandler,
+  ): Promise<Observable<any>> {
     const request = context.switchToHttp().getRequest();
-    
+
     // Only encrypt after validation has passed
     if (request.body) {
       const encryptedBody = await this.encryptSensitiveData(request.body);
@@ -43,7 +46,7 @@ export class PostValidationEncryptionInterceptor implements NestInterceptor {
 
     // Handle arrays
     if (Array.isArray(data)) {
-      return Promise.all(data.map(item => this.encryptSensitiveData(item)));
+      return Promise.all(data.map((item) => this.encryptSensitiveData(item)));
     }
 
     // Handle objects
@@ -53,8 +56,9 @@ export class PostValidationEncryptionInterceptor implements NestInterceptor {
         if (typeof value === 'object' && value !== null) {
           processed[key] = await this.encryptSensitiveData(value);
         } else if (
-          typeof value === 'string' && 
-          (SENSITIVE_FIELDS.includes(key) || key.toLowerCase().includes('sensitive')) &&
+          typeof value === 'string' &&
+          (SENSITIVE_FIELDS.includes(key) ||
+            key.toLowerCase().includes('sensitive')) &&
           !this.isEncrypted(value)
         ) {
           processed[key] = await this.encryptionService.encrypt(value);
@@ -70,4 +74,4 @@ export class PostValidationEncryptionInterceptor implements NestInterceptor {
     if (!value || typeof value !== 'string') return false;
     return value.startsWith('encrypted_');
   }
-} 
+}

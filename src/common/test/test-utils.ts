@@ -8,22 +8,22 @@ import { ContextType } from '@nestjs/common/interfaces/features/arguments-host.i
 export const mockExecutionContext = (request: any): ExecutionContext => ({
   switchToHttp: () => ({
     getRequest: () => request,
-    getResponse: () => ({} as any),
-    getNext: () => ({} as any),
+    getResponse: () => ({}) as any,
+    getNext: () => ({}) as any,
   }),
   getType: <TContext extends string = ContextType>() => 'http' as TContext,
-  getClass: () => ({} as Type<any>),
+  getClass: () => ({}) as Type<any>,
   getHandler: () => (() => {}) as Function,
   getArgs: <T extends Array<any> = any[]>() => [request] as T,
   getArgByIndex: <T = any>(index: number): T => [request][index] as T,
   switchToRpc: () => ({
-    getContext: () => ({} as any),
-    getData: () => ({} as any),
+    getContext: () => ({}) as any,
+    getData: () => ({}) as any,
   }),
   switchToWs: () => ({
-    getClient: () => ({} as any),
-    getData: () => ({} as any),
-    getPattern: () => ({} as any),
+    getClient: () => ({}) as any,
+    getData: () => ({}) as any,
+    getPattern: () => ({}) as any,
   }),
 });
 
@@ -71,7 +71,9 @@ export const mockEncryptionService = {
   decryptObject: jest.fn(),
 };
 
-export const createTestingModule = async (providers: any[]): Promise<TestingModule> => {
+export const createTestingModule = async (
+  providers: any[],
+): Promise<TestingModule> => {
   return Test.createTestingModule({
     providers: [
       ...providers,
@@ -126,4 +128,4 @@ export const mockIncome = {
   categoryId: mockCategory.id,
   userId: mockUser.id,
   paymentMethodId: 'test-payment-method-id',
-}; 
+};

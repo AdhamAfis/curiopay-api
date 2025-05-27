@@ -16,4 +16,4 @@ export class NewsletterPreferencesDto {
   @IsBoolean()
   @IsOptional()
   productUpdates?: boolean;
-} 
+}

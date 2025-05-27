@@ -18,7 +18,7 @@ export class UpdatePaymentMethodDto {
   @IsString()
   @IsOptional()
   icon?: string;
-  
+
   @ApiPropertyOptional({
     example: false,
     description: 'Whether this is a default payment method',
@@ -26,4 +26,4 @@ export class UpdatePaymentMethodDto {
   @IsBoolean()
   @IsOptional()
   isDefault?: boolean;
-} 
+}

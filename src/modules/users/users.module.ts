@@ -32,8 +32,12 @@ export class PreferencesInitializer implements OnModuleInit {
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
-        secret: configService.get<string>('JWT_SECRET') || 'fallback-secret-key-not-for-production',
-        signOptions: { expiresIn: configService.get<string>('JWT_EXPIRES_IN') || '1d' },
+        secret:
+          configService.get<string>('JWT_SECRET') ||
+          'fallback-secret-key-not-for-production',
+        signOptions: {
+          expiresIn: configService.get<string>('JWT_EXPIRES_IN') || '1d',
+        },
       }),
     }),
     forwardRef(() => AuthModule),

@@ -11,7 +11,17 @@ export class AppController {
   @Get()
   @Public()
   @ApiOperation({ summary: 'Health check endpoint' })
-  @ApiResponse({ status: 200, description: 'API is healthy and reachable.', schema: { example: { status: 'ok', message: 'CurioPay API is healthy.', timestamp: '2024-05-01T12:00:00.000Z' } } })
+  @ApiResponse({
+    status: 200,
+    description: 'API is healthy and reachable.',
+    schema: {
+      example: {
+        status: 'ok',
+        message: 'CurioPay API is healthy.',
+        timestamp: '2024-05-01T12:00:00.000Z',
+      },
+    },
+  })
   getHello(): object {
     return {
       status: 'ok',

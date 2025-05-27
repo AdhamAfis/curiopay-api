@@ -89,7 +89,9 @@ describe('EncryptionInterceptor', () => {
 
       expect(request.body.user.firstName).toBe('encrypted_John');
       expect(request.body.user.lastName).toBe('encrypted_Doe');
-      expect(request.body.details.description).toBe('encrypted_Test description');
+      expect(request.body.details.description).toBe(
+        'encrypted_Test description',
+      );
     });
 
     it('should not encrypt already encrypted data', async () => {
@@ -153,12 +155,16 @@ describe('EncryptionInterceptor', () => {
     it('should encrypt sensitive data in the response', async () => {
       const data = { sensitiveField: 'test', normalField: 'normal' };
       const encryptedValue = 'encrypted';
-      
-      jest.spyOn(encryptionService, 'encrypt')
+
+      jest
+        .spyOn(encryptionService, 'encrypt')
         .mockImplementation(() => Promise.resolve(encryptedValue));
       const next = { handle: () => of(data) };
 
-      const observable = await interceptor.intercept(mockExecutionContext({}), next);
+      const observable = await interceptor.intercept(
+        mockExecutionContext({}),
+        next,
+      );
       const result = await firstValueFrom(observable);
 
       expect(result).toEqual({
@@ -168,4 +174,4 @@ describe('EncryptionInterceptor', () => {
       expect(encryptionService.encrypt).toHaveBeenCalledWith('test');
     });
   });
-}); 
+});

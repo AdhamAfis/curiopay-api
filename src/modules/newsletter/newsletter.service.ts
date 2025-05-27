@@ -56,7 +56,10 @@ export class NewsletterService {
     });
   }
 
-  async updatePreferences(userId: string, preferences: NewsletterPreferencesDto) {
+  async updatePreferences(
+    userId: string,
+    preferences: NewsletterPreferencesDto,
+  ) {
     const subscription = await this.prisma.newsletterSubscription.findUnique({
       where: { userId },
     });
@@ -109,20 +112,21 @@ export class NewsletterService {
     userAgent: string,
   ) {
     try {
-      const activeSubscriptions = await this.prisma.newsletterSubscription.findMany({
-        where: {
-          unsubscribedAt: null,
-          weeklyDigest: true,
-        },
-        include: {
-          user: {
-            select: {
-              email: true,
-              firstName: true,
+      const activeSubscriptions =
+        await this.prisma.newsletterSubscription.findMany({
+          where: {
+            unsubscribedAt: null,
+            weeklyDigest: true,
+          },
+          include: {
+            user: {
+              select: {
+                email: true,
+                firstName: true,
+              },
             },
           },
-        },
-      });
+        });
 
       const results = await Promise.allSettled(
         activeSubscriptions.map((subscription) =>
@@ -221,4 +225,4 @@ export class NewsletterService {
       throw error;
     }
   }
-} 
+}

@@ -9,7 +9,7 @@ export class CategoriesSeeder {
   async seedDefaultCategories(userId: string) {
     // Create category types if they don't exist
     const categoryTypes = await Promise.all(
-      [...new Set(DEFAULT_CATEGORIES.map(cat => cat.type))].map(type =>
+      [...new Set(DEFAULT_CATEGORIES.map((cat) => cat.type))].map((type) =>
         this.prisma.categoryType.upsert({
           where: { name: type },
           update: {},
@@ -17,15 +17,15 @@ export class CategoriesSeeder {
             name: type,
             icon: type === 'INCOME' ? '💰' : '💸',
           },
-        })
-      )
+        }),
+      ),
     );
 
     // Create default categories for the user
-    const typeMap = new Map(categoryTypes.map(type => [type.name, type.id]));
+    const typeMap = new Map(categoryTypes.map((type) => [type.name, type.id]));
 
     await Promise.all(
-      DEFAULT_CATEGORIES.map(category =>
+      DEFAULT_CATEGORIES.map((category) =>
         this.prisma.category.upsert({
           where: {
             userId_name: {
@@ -43,8 +43,8 @@ export class CategoriesSeeder {
             typeId: typeMap.get(category.type)!,
             userId,
           },
-        })
-      )
+        }),
+      ),
     );
   }
-} 
+}

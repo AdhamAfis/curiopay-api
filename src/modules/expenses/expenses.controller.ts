@@ -34,8 +34,8 @@ export class ExpensesController extends BaseController {
 
   @Post()
   @ApiOperation({ summary: 'Create a new expense' })
-  @ApiResponse({ 
-    status: 201, 
+  @ApiResponse({
+    status: 201,
     description: 'Expense created successfully.',
     schema: {
       type: 'object',
@@ -95,20 +95,49 @@ export class ExpensesController extends BaseController {
       },
     },
   })
-  @ApiQuery({ name: 'page', required: false, type: 'number', description: 'Page number' })
-  @ApiQuery({ name: 'limit', required: false, type: 'number', description: 'Items per page' })
-  @ApiQuery({ name: 'startDate', required: false, type: 'string', description: 'Start date (YYYY-MM-DD)' })
-  @ApiQuery({ name: 'endDate', required: false, type: 'string', description: 'End date (YYYY-MM-DD)' })
-  @ApiQuery({ name: 'categoryId', required: false, type: 'string', description: 'Category ID' })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: 'number',
+    description: 'Page number',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: 'number',
+    description: 'Items per page',
+  })
+  @ApiQuery({
+    name: 'startDate',
+    required: false,
+    type: 'string',
+    description: 'Start date (YYYY-MM-DD)',
+  })
+  @ApiQuery({
+    name: 'endDate',
+    required: false,
+    type: 'string',
+    description: 'End date (YYYY-MM-DD)',
+  })
+  @ApiQuery({
+    name: 'categoryId',
+    required: false,
+    type: 'string',
+    description: 'Category ID',
+  })
   async findAll(@CurrentUser() user: IUser, @Query() query: QueryExpenseDto) {
     return this.expensesService.findAll(user.id, query);
   }
 
   @Get(':id')
   @ApiOperation({ summary: 'Get an expense by ID' })
-  @ApiParam({ name: 'id', description: 'Expense ID', example: '123e4567-e89b-12d3-a456-426614174000' })
-  @ApiResponse({ 
-    status: 200, 
+  @ApiParam({
+    name: 'id',
+    description: 'Expense ID',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
+  @ApiResponse({
+    status: 200,
     description: 'Returns the expense.',
     schema: {
       type: 'object',
@@ -131,8 +160,8 @@ export class ExpensesController extends BaseController {
 
   @Put()
   @ApiOperation({ summary: 'Update an expense' })
-  @ApiResponse({ 
-    status: 200, 
+  @ApiResponse({
+    status: 200,
     description: 'Expense updated successfully.',
     schema: {
       type: 'object',
@@ -160,7 +189,12 @@ export class ExpensesController extends BaseController {
   @ApiOperation({ summary: 'Delete an expense' })
   @ApiResponse({ status: 200, description: 'Expense deleted successfully' })
   @ApiResponse({ status: 404, description: 'Expense not found' })
-  @ApiQuery({ name: 'id', required: true, type: 'string', description: 'Expense ID to delete' })
+  @ApiQuery({
+    name: 'id',
+    required: true,
+    type: 'string',
+    description: 'Expense ID to delete',
+  })
   async remove(
     @CurrentUser() user: IUser,
     @Query() voidExpenseDto: VoidExpenseDto,
@@ -186,8 +220,18 @@ export class ExpensesController extends BaseController {
       },
     },
   })
-  @ApiQuery({ name: 'startDate', required: true, type: 'string', description: 'Start date (YYYY-MM-DD)' })
-  @ApiQuery({ name: 'endDate', required: true, type: 'string', description: 'End date (YYYY-MM-DD)' })
+  @ApiQuery({
+    name: 'startDate',
+    required: true,
+    type: 'string',
+    description: 'Start date (YYYY-MM-DD)',
+  })
+  @ApiQuery({
+    name: 'endDate',
+    required: true,
+    type: 'string',
+    description: 'End date (YYYY-MM-DD)',
+  })
   @ApiResponse({ status: 400, description: 'Bad request - Missing date range' })
   async getExpenseTotalsByCategory(
     @Query() query: QueryExpenseDto,

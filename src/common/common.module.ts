@@ -10,4 +10,4 @@ import { PrismaService } from '../prisma/prisma.service';
   providers: [EmailService, AuditService, PrismaService],
   exports: [EmailService, AuditService],
 })
-export class CommonModule {} 
+export class CommonModule {}

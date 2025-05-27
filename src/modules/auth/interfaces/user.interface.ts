@@ -9,5 +9,5 @@ export interface User {
   lastLoginAt?: Date | null;
   provider?: string | null;
   providerAccountId?: string | null;
-  [key: string]: any;  // Allow for additional properties
-} 
+  [key: string]: any; // Allow for additional properties
+}

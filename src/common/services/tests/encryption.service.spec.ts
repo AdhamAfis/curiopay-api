@@ -6,7 +6,7 @@ describe('EncryptionService', () => {
 
   beforeEach(async () => {
     process.env.ENCRYPTION_KEY = 'test-encryption-key-32-bytes-long!!';
-    
+
     const module = await Test.createTestingModule({
       providers: [EncryptionService],
     }).compile();
@@ -60,9 +60,9 @@ describe('EncryptionService', () => {
     it('should throw error for invalid encrypted data', async () => {
       const invalidData = 'invalid-base64-data';
 
-      await expect(service.decrypt(invalidData))
-        .rejects
-        .toThrow('Decryption failed');
+      await expect(service.decrypt(invalidData)).rejects.toThrow(
+        'Decryption failed',
+      );
     });
   });
 
@@ -70,8 +70,9 @@ describe('EncryptionService', () => {
     it('should throw error if ENCRYPTION_KEY is not set', () => {
       delete process.env.ENCRYPTION_KEY;
 
-      expect(() => new EncryptionService())
-        .toThrow('ENCRYPTION_KEY environment variable must be set');
+      expect(() => new EncryptionService()).toThrow(
+        'ENCRYPTION_KEY environment variable must be set',
+      );
     });
   });
-}); 
+});

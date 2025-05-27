@@ -6,7 +6,15 @@ import { PaymentMethodsSeeder } from './seeds/payment-methods.seeder';
 
 @Module({
   controllers: [PaymentMethodsController],
-  providers: [PaymentMethodsService, PaymentMethodsRepository, PaymentMethodsSeeder],
-  exports: [PaymentMethodsService, PaymentMethodsRepository, PaymentMethodsSeeder],
+  providers: [
+    PaymentMethodsService,
+    PaymentMethodsRepository,
+    PaymentMethodsSeeder,
+  ],
+  exports: [
+    PaymentMethodsService,
+    PaymentMethodsRepository,
+    PaymentMethodsSeeder,
+  ],
 })
-export class PaymentMethodsModule {} 
+export class PaymentMethodsModule {}

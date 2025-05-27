@@ -1,8 +1,17 @@
-import { Injectable, CanActivate, ExecutionContext, ForbiddenException, Type, mixin } from '@nestjs/common';
+import {
+  Injectable,
+  CanActivate,
+  ExecutionContext,
+  ForbiddenException,
+  Type,
+  mixin,
+} from '@nestjs/common';
 import { Role } from '@prisma/client';
 
 // Factory function to create a guard with specified restricted properties
-export function AdminPropertiesGuard(restrictedProperties: string[] = ['isDefault', 'isSystem']): Type<CanActivate> {
+export function AdminPropertiesGuard(
+  restrictedProperties: string[] = ['isDefault', 'isSystem'],
+): Type<CanActivate> {
   @Injectable()
   class AdminPropertiesGuardMixin implements CanActivate {
     canActivate(context: ExecutionContext): boolean {
@@ -16,8 +25,8 @@ export function AdminPropertiesGuard(restrictedProperties: string[] = ['isDefaul
       }
 
       // Check if any restricted properties are being set
-      const hasRestrictedProperties = restrictedProperties.some(prop => 
-        body[prop] !== undefined
+      const hasRestrictedProperties = restrictedProperties.some(
+        (prop) => body[prop] !== undefined,
       );
 
       // If no restricted properties being set, always allow
@@ -31,11 +40,12 @@ export function AdminPropertiesGuard(restrictedProperties: string[] = ['isDefaul
       }
 
       // Check if user has admin permissions
-      const isAdmin = user.role === Role.ADMIN || user.role === Role.SUPER_ADMIN;
-      
+      const isAdmin =
+        user.role === Role.ADMIN || user.role === Role.SUPER_ADMIN;
+
       if (!isAdmin) {
         throw new ForbiddenException(
-          `Only administrators can set the following properties: ${restrictedProperties.join(', ')}`
+          `Only administrators can set the following properties: ${restrictedProperties.join(', ')}`,
         );
       }
 
@@ -44,4 +54,4 @@ export function AdminPropertiesGuard(restrictedProperties: string[] = ['isDefaul
   }
 
   return mixin(AdminPropertiesGuardMixin);
-} 
+}

@@ -40,13 +40,21 @@ export class PaymentMethodsController {
   @Post()
   @UseGuards(AdminPropertiesGuard())
   @HttpCode(201)
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Create a new payment method',
-    description: 'Creates a new payment method. Note: Setting isDefault or isSystem to true requires admin privileges.'
+    description:
+      'Creates a new payment method. Note: Setting isDefault or isSystem to true requires admin privileges.',
   })
-  @ApiResponse({ status: 201, description: 'Payment method created successfully.' })
+  @ApiResponse({
+    status: 201,
+    description: 'Payment method created successfully.',
+  })
   @ApiResponse({ status: 400, description: 'Bad request.' })
-  @ApiResponse({ status: 403, description: 'Forbidden. Admin privileges required for setting isDefault or isSystem.' })
+  @ApiResponse({
+    status: 403,
+    description:
+      'Forbidden. Admin privileges required for setting isDefault or isSystem.',
+  })
   @ApiResponse({ status: 409, description: 'Payment method already exists.' })
   async create(
     @CurrentUser() user: IUser,
@@ -59,7 +67,10 @@ export class PaymentMethodsController {
   @UseInterceptors(CacheInterceptor)
   @Header('Cache-Control', 'public, max-age=60')
   @ApiOperation({ summary: 'Get all payment methods' })
-  @ApiResponse({ status: 200, description: 'Returns a list of payment methods.' })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns a list of payment methods.',
+  })
   @ApiQuery({
     name: 'search',
     required: false,
@@ -95,13 +106,21 @@ export class PaymentMethodsController {
 
   @Patch(':id')
   @UseGuards(AdminPropertiesGuard())
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Update a payment method',
-    description: 'Updates a payment method. Note: Setting isDefault or isSystem to true requires admin privileges.'
+    description:
+      'Updates a payment method. Note: Setting isDefault or isSystem to true requires admin privileges.',
   })
-  @ApiResponse({ status: 200, description: 'Payment method updated successfully.' })
+  @ApiResponse({
+    status: 200,
+    description: 'Payment method updated successfully.',
+  })
   @ApiResponse({ status: 400, description: 'Bad request.' })
-  @ApiResponse({ status: 403, description: 'Forbidden. Admin privileges required for setting isDefault or isSystem.' })
+  @ApiResponse({
+    status: 403,
+    description:
+      'Forbidden. Admin privileges required for setting isDefault or isSystem.',
+  })
   @ApiResponse({ status: 404, description: 'Payment method not found.' })
   @ApiParam({ name: 'id', description: 'Payment method ID' })
   async update(
@@ -109,12 +128,19 @@ export class PaymentMethodsController {
     @Param('id') id: string,
     @Body() updatePaymentMethodDto: UpdatePaymentMethodDto,
   ) {
-    return this.paymentMethodsService.update(user.id, id, updatePaymentMethodDto);
+    return this.paymentMethodsService.update(
+      user.id,
+      id,
+      updatePaymentMethodDto,
+    );
   }
 
   @Delete(':id')
   @ApiOperation({ summary: 'Delete a payment method' })
-  @ApiResponse({ status: 200, description: 'Payment method deleted successfully.' })
+  @ApiResponse({
+    status: 200,
+    description: 'Payment method deleted successfully.',
+  })
   @ApiResponse({
     status: 400,
     description: 'Bad request or payment method has associated transactions.',
@@ -144,4 +170,4 @@ export class PaymentMethodsController {
   findSystemPaymentMethods() {
     return this.paymentMethodsService.findSystemPaymentMethods();
   }
-} 
+}

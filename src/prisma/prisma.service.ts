@@ -1,4 +1,9 @@
-import { Injectable, OnModuleInit, OnModuleDestroy, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  OnModuleInit,
+  OnModuleDestroy,
+  Logger,
+} from '@nestjs/common';
 import { PrismaClient, Prisma } from '@prisma/client';
 
 @Injectable()
@@ -7,7 +12,7 @@ export class PrismaService
   implements OnModuleInit, OnModuleDestroy
 {
   private readonly logger = new Logger(PrismaService.name);
-  
+
   constructor() {
     super({
       log:
@@ -23,7 +28,7 @@ export class PrismaService
       this.logger.log('Connecting to database...');
       await this.$connect();
       this.logger.log('Successfully connected to database');
-      
+
       // Enable query performance logging in development
       if (process.env.NODE_ENV === 'development') {
         this.$use(async (params, next) => {
@@ -31,13 +36,14 @@ export class PrismaService
           const result = await next(params);
           const after = Date.now();
           const executionTime = after - before;
-          
-          if (executionTime > 500) { // Log slow queries (>500ms)
+
+          if (executionTime > 500) {
+            // Log slow queries (>500ms)
             this.logger.warn(
-              `Slow query detected (${executionTime}ms): ${params.model}.${params.action}`
+              `Slow query detected (${executionTime}ms): ${params.model}.${params.action}`,
             );
           }
-          
+
           return result;
         });
       }
@@ -61,8 +67,8 @@ export class PrismaService
     callback: (prisma: Prisma.TransactionClient) => Promise<T>,
   ): Promise<T> {
     return this.$transaction(callback, {
-      maxWait: 5000,  // Max time to wait for a transaction (ms)
-      timeout: 10000   // Max time for transaction to complete (ms)
+      maxWait: 5000, // Max time to wait for a transaction (ms)
+      timeout: 10000, // Max time for transaction to complete (ms)
     });
   }
 }

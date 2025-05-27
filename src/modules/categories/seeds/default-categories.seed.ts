@@ -50,4 +50,4 @@ export const DEFAULT_CATEGORIES: DefaultCategory[] = [
     color: '#F5FF33',
     type: CategoryTypeEnum.INCOME,
   },
-]; 
+];

@@ -68,7 +68,7 @@ describe('ExpensesService', () => {
       jest.spyOn(prismaService.expense, 'findMany').mockResolvedValue(expenses);
 
       const result = await service.findAll(mockUser.id, { page: 1, limit: 10 });
-      
+
       expect(result).toEqual(expenses);
       expect(prismaService.expense.findMany).toHaveBeenCalledWith({
         where: { userId: mockUser.id, isVoid: false },
@@ -87,10 +87,12 @@ describe('ExpensesService', () => {
 
   describe('findOne', () => {
     it('should return a single expense', async () => {
-      jest.spyOn(prismaService.expense, 'findUnique').mockResolvedValue(mockExpense);
+      jest
+        .spyOn(prismaService.expense, 'findUnique')
+        .mockResolvedValue(mockExpense);
 
       const result = await service.findOne(mockExpense.id, mockUser.id);
-      
+
       expect(result).toEqual(mockExpense);
       expect(prismaService.expense.findUnique).toHaveBeenCalledWith({
         where: { id: mockExpense.id },
@@ -107,9 +109,9 @@ describe('ExpensesService', () => {
     it('should throw NotFoundException if expense not found', async () => {
       jest.spyOn(prismaService.expense, 'findUnique').mockResolvedValue(null);
 
-      await expect(service.findOne('non-existent-id', mockUser.id))
-        .rejects
-        .toThrow(NotFoundException);
+      await expect(
+        service.findOne('non-existent-id', mockUser.id),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -125,10 +127,12 @@ describe('ExpensesService', () => {
 
     it('should create a new expense', async () => {
       const createdExpense = { ...mockExpense, notes: createExpenseData.notes };
-      jest.spyOn(prismaService.expense, 'create').mockResolvedValue(createdExpense);
+      jest
+        .spyOn(prismaService.expense, 'create')
+        .mockResolvedValue(createdExpense);
 
       const result = await service.create(createExpenseData, mockUser.id);
-      
+
       expect(result).toEqual(createdExpense);
       expect(prismaService.expense.create).toHaveBeenCalledWith({
         data: {
@@ -145,16 +149,22 @@ describe('ExpensesService', () => {
           },
         },
       });
-      expect(encryptionService.encrypt).toHaveBeenCalledWith(createExpenseData.description);
-      expect(encryptionService.encrypt).toHaveBeenCalledWith(createExpenseData.notes);
+      expect(encryptionService.encrypt).toHaveBeenCalledWith(
+        createExpenseData.description,
+      );
+      expect(encryptionService.encrypt).toHaveBeenCalledWith(
+        createExpenseData.notes,
+      );
     });
 
     it('should throw BadRequestException if creation fails', async () => {
-      jest.spyOn(prismaService.expense, 'create').mockRejectedValue(new Error('Database error'));
+      jest
+        .spyOn(prismaService.expense, 'create')
+        .mockRejectedValue(new Error('Database error'));
 
-      await expect(service.create(createExpenseData, mockUser.id))
-        .rejects
-        .toThrow(BadRequestException);
+      await expect(
+        service.create(createExpenseData, mockUser.id),
+      ).rejects.toThrow(BadRequestException);
     });
   });
 
@@ -167,11 +177,15 @@ describe('ExpensesService', () => {
 
     it('should update an expense', async () => {
       const updatedExpense = { ...mockExpense, ...updateExpenseData };
-      jest.spyOn(prismaService.expense, 'findUnique').mockResolvedValue(mockExpense);
-      jest.spyOn(prismaService.expense, 'update').mockResolvedValue(updatedExpense);
+      jest
+        .spyOn(prismaService.expense, 'findUnique')
+        .mockResolvedValue(mockExpense);
+      jest
+        .spyOn(prismaService.expense, 'update')
+        .mockResolvedValue(updatedExpense);
 
       const result = await service.update(mockExpense.id, updateExpenseData);
-      
+
       expect(result).toEqual(updatedExpense);
       expect(prismaService.expense.update).toHaveBeenCalledWith({
         where: { id: mockExpense.id },
@@ -192,20 +206,24 @@ describe('ExpensesService', () => {
     it('should throw NotFoundException if expense not found', async () => {
       jest.spyOn(prismaService.expense, 'findUnique').mockResolvedValue(null);
 
-      await expect(service.update(mockExpense.id, updateExpenseData))
-        .rejects
-        .toThrow(NotFoundException);
+      await expect(
+        service.update(mockExpense.id, updateExpenseData),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 
   describe('remove', () => {
     it('should soft delete an expense', async () => {
       const deletedExpense = { ...mockExpense, isVoid: true };
-      jest.spyOn(prismaService.expense, 'findUnique').mockResolvedValue(mockExpense);
-      jest.spyOn(prismaService.expense, 'update').mockResolvedValue(deletedExpense);
+      jest
+        .spyOn(prismaService.expense, 'findUnique')
+        .mockResolvedValue(mockExpense);
+      jest
+        .spyOn(prismaService.expense, 'update')
+        .mockResolvedValue(deletedExpense);
 
       const result = await service.remove(mockExpense.id, mockUser.id);
-      
+
       expect(result).toEqual(deletedExpense);
       expect(prismaService.expense.update).toHaveBeenCalledWith({
         where: { id: mockExpense.id },
@@ -216,9 +234,9 @@ describe('ExpensesService', () => {
     it('should throw NotFoundException if expense not found', async () => {
       jest.spyOn(prismaService.expense, 'findUnique').mockResolvedValue(null);
 
-      await expect(service.remove('non-existent-id', mockUser.id))
-        .rejects
-        .toThrow(NotFoundException);
+      await expect(
+        service.remove('non-existent-id', mockUser.id),
+      ).rejects.toThrow(NotFoundException);
     });
   });
-}); 
+});

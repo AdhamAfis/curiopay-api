@@ -1,4 +1,10 @@
-import { IsNotEmpty, IsString, IsOptional, IsUUID, ValidateIf } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsString,
+  IsOptional,
+  IsUUID,
+  ValidateIf,
+} from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class VerifyEmailDto {
@@ -13,22 +19,23 @@ export class VerifyEmailDto {
 
 export class RequestEmailVerificationDto {
   @ApiProperty({
-    description: 'Email address to send verification link to (for unauthenticated users)',
+    description:
+      'Email address to send verification link to (for unauthenticated users)',
     example: 'user@example.com',
-    required: false
+    required: false,
   })
   @IsString()
   @IsOptional()
-  @ValidateIf(o => !o.userId)
+  @ValidateIf((o) => !o.userId)
   email?: string;
 
   @ApiProperty({
     description: 'User ID (for authenticated users)',
     example: 'e0b9f5c4-3d2e-4c9d-b2c3-2a9a3f8c6e5b',
-    required: false
+    required: false,
   })
   @IsString()
   @IsOptional()
-  @ValidateIf(o => !o.email)
+  @ValidateIf((o) => !o.email)
   userId?: string;
-} 
+}

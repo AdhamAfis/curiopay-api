@@ -1,4 +1,9 @@
-import { Injectable, CanActivate, ExecutionContext, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  CanActivate,
+  ExecutionContext,
+  ForbiddenException,
+} from '@nestjs/common';
 import { Role } from '@prisma/client';
 
 @Injectable()
@@ -14,11 +19,13 @@ export class AdminOnlyGuard implements CanActivate {
 
     // Check if user has admin permissions
     const isAdmin = user.role === Role.ADMIN || user.role === Role.SUPER_ADMIN;
-    
+
     if (!isAdmin) {
-      throw new ForbiddenException('This action requires administrator privileges');
+      throw new ForbiddenException(
+        'This action requires administrator privileges',
+      );
     }
 
     return true;
   }
-} 
+}

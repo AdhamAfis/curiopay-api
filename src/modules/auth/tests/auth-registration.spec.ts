@@ -48,7 +48,7 @@ describe('AuthService - Registration and Password Reset', () => {
     isDeleted: false,
     createdAt: new Date(),
     updatedAt: new Date(),
-    securityAuditLog: null
+    securityAuditLog: null,
   };
 
   beforeEach(async () => {
@@ -87,8 +87,14 @@ describe('AuthService - Registration and Password Reset', () => {
         {
           provide: EncryptionService,
           useValue: {
-            encrypt: jest.fn().mockImplementation((val) => Promise.resolve(`encrypted_${val}`)),
-            decrypt: jest.fn().mockImplementation((val) => Promise.resolve(val.replace('encrypted_', ''))),
+            encrypt: jest
+              .fn()
+              .mockImplementation((val) => Promise.resolve(`encrypted_${val}`)),
+            decrypt: jest
+              .fn()
+              .mockImplementation((val) =>
+                Promise.resolve(val.replace('encrypted_', '')),
+              ),
           },
         },
         {
@@ -139,37 +145,41 @@ describe('AuthService - Registration and Password Reset', () => {
         lastName: expect.any(String),
         role: 'USER',
       });
-      expect(usersRepository.create).toHaveBeenCalledWith(expect.objectContaining({
-        email: registerDto.email,
-        firstName: expect.any(String),
-        lastName: expect.any(String),
-        role: 'USER',
-        isActive: true,
-        auth: {
-          create: {
-            password: 'hashed-password',
-            passwordSalt: 'generated-salt',
+      expect(usersRepository.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          email: registerDto.email,
+          firstName: expect.any(String),
+          lastName: expect.any(String),
+          role: 'USER',
+          isActive: true,
+          auth: {
+            create: {
+              password: 'hashed-password',
+              passwordSalt: 'generated-salt',
+            },
           },
-        },
-      }));
+        }),
+      );
     });
 
     it('should throw ConflictException if user already exists', async () => {
       jest.spyOn(usersService, 'findByEmail').mockResolvedValue(mockUser);
 
-      await expect(authService.register(registerDto))
-        .rejects
-        .toThrow(ConflictException);
+      await expect(authService.register(registerDto)).rejects.toThrow(
+        ConflictException,
+      );
       expect(usersRepository.create).not.toHaveBeenCalled();
     });
 
     it('should throw Error if user creation fails', async () => {
       jest.spyOn(usersService, 'findByEmail').mockResolvedValue(null);
-      jest.spyOn(usersRepository, 'create').mockRejectedValue(new Error('Database error'));
+      jest
+        .spyOn(usersRepository, 'create')
+        .mockRejectedValue(new Error('Database error'));
 
-      await expect(authService.register(registerDto))
-        .rejects
-        .toThrow('Failed to create user');
+      await expect(authService.register(registerDto)).rejects.toThrow(
+        'Failed to create user',
+      );
     });
   });
 
@@ -211,7 +221,8 @@ describe('AuthService - Registration and Password Reset', () => {
       const result = await authService.requestPasswordReset(resetDto);
 
       expect(result).toEqual({
-        message: 'If your email is registered, you will receive a password reset link',
+        message:
+          'If your email is registered, you will receive a password reset link',
       });
       expect(usersRepository.updateUserAuth).not.toHaveBeenCalled();
       expect(emailService.sendPasswordResetEmail).not.toHaveBeenCalled();
@@ -236,7 +247,8 @@ describe('AuthService - Registration and Password Reset', () => {
         passwordResetExpires: new Date(Date.now() + 3600000), // 1 hour from now
       };
 
-      jest.spyOn(usersRepository, 'findUserAuthByResetToken')
+      jest
+        .spyOn(usersRepository, 'findUserAuthByResetToken')
         .mockResolvedValue(mockUserAuthWithToken);
 
       const result = await authService.resetPassword(resetDto);
@@ -257,12 +269,13 @@ describe('AuthService - Registration and Password Reset', () => {
     });
 
     it('should throw BadRequestException if token not found', async () => {
-      jest.spyOn(usersRepository, 'findUserAuthByResetToken')
+      jest
+        .spyOn(usersRepository, 'findUserAuthByResetToken')
         .mockResolvedValue(null);
 
-      await expect(authService.resetPassword(resetDto))
-        .rejects
-        .toThrow(BadRequestException);
+      await expect(authService.resetPassword(resetDto)).rejects.toThrow(
+        BadRequestException,
+      );
       expect(usersRepository.updateUserAuth).not.toHaveBeenCalled();
     });
 
@@ -273,13 +286,14 @@ describe('AuthService - Registration and Password Reset', () => {
         passwordResetExpires: new Date(Date.now() - 3600000), // 1 hour ago
       };
 
-      jest.spyOn(usersRepository, 'findUserAuthByResetToken')
+      jest
+        .spyOn(usersRepository, 'findUserAuthByResetToken')
         .mockResolvedValue(mockUserAuthWithExpiredToken);
 
-      await expect(authService.resetPassword(resetDto))
-        .rejects
-        .toThrow(BadRequestException);
+      await expect(authService.resetPassword(resetDto)).rejects.toThrow(
+        BadRequestException,
+      );
       expect(usersRepository.updateUserAuth).not.toHaveBeenCalled();
     });
   });
-}); 
+});

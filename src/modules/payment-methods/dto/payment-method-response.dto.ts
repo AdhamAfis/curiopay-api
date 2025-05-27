@@ -57,4 +57,4 @@ export class PaymentMethodResponseDto {
     example: '2025-04-30T10:24:20.261Z',
   })
   updatedAt: Date;
-} 
+}

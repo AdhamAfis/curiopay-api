@@ -21,4 +21,4 @@ import { ApiBearerAuth, ApiUnauthorizedResponse } from '@nestjs/swagger';
     },
   },
 })
-export class BaseController {} 
+export class BaseController {}

@@ -33,7 +33,7 @@ export class UserPreferencesRepository {
     const defaultCurrency = await this.prisma.currency.findFirst({
       where: { code: 'USD' },
     });
-    
+
     if (!defaultCurrency) {
       // Create default currency if it doesn't exist
       return this.prisma.currency.create({
@@ -44,7 +44,7 @@ export class UserPreferencesRepository {
         },
       });
     }
-    
+
     return defaultCurrency;
   }
 
@@ -52,7 +52,7 @@ export class UserPreferencesRepository {
     const defaultLanguage = await this.prisma.language.findFirst({
       where: { code: 'en' },
     });
-    
+
     if (!defaultLanguage) {
       // Create default language if it doesn't exist
       return this.prisma.language.create({
@@ -62,7 +62,7 @@ export class UserPreferencesRepository {
         },
       });
     }
-    
+
     return defaultLanguage;
   }
 
@@ -70,7 +70,7 @@ export class UserPreferencesRepository {
     const defaultTheme = await this.prisma.theme.findFirst({
       where: { name: 'light' },
     });
-    
+
     if (!defaultTheme) {
       // Create default theme if it doesn't exist
       return this.prisma.theme.create({
@@ -79,7 +79,7 @@ export class UserPreferencesRepository {
         },
       });
     }
-    
+
     return defaultTheme;
   }
 
@@ -99,7 +99,7 @@ export class UserPreferencesRepository {
       themeId: data.themeId || defaultTheme.id,
       monthlyBudget: data.monthlyBudget || 0,
     };
-    
+
     if (data.enableAiFeatures !== undefined) {
       createData.enableAiFeatures = data.enableAiFeatures;
     }
@@ -116,7 +116,7 @@ export class UserPreferencesRepository {
 
   async findOrCreate(userId: string) {
     const existingPreferences = await this.findByUserId(userId);
-    
+
     if (existingPreferences) {
       return existingPreferences;
     }
@@ -172,7 +172,7 @@ export class UserPreferencesRepository {
       let defaultCurrency = await this.prisma.currency.findFirst({
         where: { code: 'USD' },
       });
-      
+
       if (!defaultCurrency) {
         defaultCurrency = await this.prisma.currency.create({
           data: {
@@ -188,7 +188,7 @@ export class UserPreferencesRepository {
       let defaultLanguage = await this.prisma.language.findFirst({
         where: { code: 'en' },
       });
-      
+
       if (!defaultLanguage) {
         defaultLanguage = await this.prisma.language.create({
           data: {
@@ -203,7 +203,7 @@ export class UserPreferencesRepository {
       let defaultTheme = await this.prisma.theme.findFirst({
         where: { name: 'light' },
       });
-      
+
       if (!defaultTheme) {
         defaultTheme = await this.prisma.theme.create({
           data: {
@@ -212,12 +212,12 @@ export class UserPreferencesRepository {
         });
         console.log('Created default theme');
       }
-      
+
       // Add dark theme as well
       let darkTheme = await this.prisma.theme.findFirst({
         where: { name: 'dark' },
       });
-      
+
       if (!darkTheme) {
         darkTheme = await this.prisma.theme.create({
           data: {
@@ -226,11 +226,11 @@ export class UserPreferencesRepository {
         });
         console.log('Created dark theme');
       }
-      
+
       return { defaultCurrency, defaultLanguage, defaultTheme, darkTheme };
     } catch (error) {
       console.error('Error creating default preferences:', error);
       throw error;
     }
   }
-} 
+}

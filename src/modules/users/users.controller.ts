@@ -46,7 +46,10 @@ export class UsersController {
   @ApiResponse({ status: 201, description: 'User created successfully' })
   @ApiResponse({ status: 400, description: 'Invalid input' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiResponse({ status: 403, description: 'Forbidden - Admin access required' })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - Admin access required',
+  })
   async createUser(@Body() createUserDto: RegisterDto) {
     return this.usersService.createUser(createUserDto);
   }
@@ -56,7 +59,10 @@ export class UsersController {
   @ApiOperation({ summary: 'Get all users (Admin only)' })
   @ApiResponse({ status: 200, description: 'Returns list of users' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiResponse({ status: 403, description: 'Forbidden - Admin access required' })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - Admin access required',
+  })
   async getAllUsers() {
     return this.usersService.findAll();
   }
@@ -84,7 +90,10 @@ export class UsersController {
   @ApiResponse({ status: 200, description: 'User role updated successfully' })
   @ApiResponse({ status: 400, description: 'Invalid input' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiResponse({ status: 403, description: 'Forbidden - Admin access required' })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - Admin access required',
+  })
   @ApiResponse({ status: 404, description: 'User not found' })
   async updateUserRole(
     @Param('id') id: string,
@@ -101,9 +110,14 @@ export class UsersController {
     description: 'User status has been toggled successfully.',
   })
   @ApiResponse({ status: 404, description: 'User not found.' })
-  async toggleActive(@Param('id') id: string, @CurrentUser() currentUser: IUser) {
+  async toggleActive(
+    @Param('id') id: string,
+    @CurrentUser() currentUser: IUser,
+  ) {
     if (currentUser.id !== id) {
-      throw new ForbiddenException('You can only toggle your own account status');
+      throw new ForbiddenException(
+        'You can only toggle your own account status',
+      );
     }
     return this.usersService.toggleActive(id);
   }
@@ -113,7 +127,7 @@ export class UsersController {
   @ApiResponse({
     status: 200,
     description: 'Returns the current user profile with decrypted data.',
-    type: UserProfileResponseDto
+    type: UserProfileResponseDto,
   })
   async getProfile(@CurrentUser() user: IUser) {
     return this.usersService.getProfile(user.id);
@@ -121,7 +135,9 @@ export class UsersController {
 
   @Delete('me/delete-account')
   @UseGuards(EmailVerifiedGuard)
-  @ApiOperation({ summary: 'Delete current user account and all associated data' })
+  @ApiOperation({
+    summary: 'Delete current user account and all associated data',
+  })
   @ApiResponse({
     status: 200,
     description: 'Account successfully deleted.',

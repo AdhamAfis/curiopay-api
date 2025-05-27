@@ -41,23 +41,23 @@ export class AuditService {
         userAgent: this.sanitizeUserAgent(logData.userAgent || 'unknown'),
         details: this.sanitizeDetails(logData.details),
       };
-      
+
       // Generate integrity hash for log verification
       const logHash = this.generateLogIntegrityHash(enhancedLogData);
-      
+
       // Add server timestamp
       const timestamp = new Date();
-      
+
       // Check if userId is valid (not 'unknown' and not empty) before inserting into db
       if (!enhancedLogData.userId || enhancedLogData.userId === 'unknown') {
         // If userId is missing or 'unknown', just log to application logs
         this.logger.log(
           `Audit event without user: ${enhancedLogData.category}:${enhancedLogData.action} - ${enhancedLogData.status}`,
-          { ...enhancedLogData, timestamp }
+          { ...enhancedLogData, timestamp },
         );
         return null;
       }
-      
+
       return await this.prisma.auditLog.create({
         data: {
           userId: enhancedLogData.userId,
@@ -73,8 +73,11 @@ export class AuditService {
         },
       });
     } catch (error) {
-      this.logger.error(`Failed to create audit log: ${error.message}`, error.stack);
-      
+      this.logger.error(
+        `Failed to create audit log: ${error.message}`,
+        error.stack,
+      );
+
       // For critical security logs, ensure they're at least recorded in application logs
       if (logData.isCritical) {
         this.logger.warn('CRITICAL SECURITY LOG FAILED TO PERSIST', {
@@ -82,7 +85,7 @@ export class AuditService {
           error: error.message,
         });
       }
-      
+
       // Don't throw error to prevent breaking the main flow
       return null;
     }
@@ -95,7 +98,7 @@ export class AuditService {
    */
   private anonymizeIpAddress(ip: string): string {
     if (!ip || ip === 'unknown') return 'unknown';
-    
+
     try {
       // Check for IPv6
       if (ip.includes(':')) {
@@ -108,17 +111,17 @@ export class AuditService {
       return 'anonymization-failed';
     }
   }
-  
+
   /**
    * Sanitize user agent string to remove potentially identifying information
    */
   private sanitizeUserAgent(userAgent: string): string {
     if (!userAgent || userAgent === 'unknown') return 'unknown';
-    
+
     try {
       // Remove version numbers and detailed OS info that could be used for fingerprinting
       return userAgent
-        .replace(/\/[\d\.]+/g, '/x.x.x')  // Replace version numbers
+        .replace(/\/[\d\.]+/g, '/x.x.x') // Replace version numbers
         .replace(/\([^)]+\)/, '(details-redacted)'); // Replace OS details
     } catch (error) {
       return 'browser';
@@ -130,38 +133,52 @@ export class AuditService {
    */
   private sanitizeDetails(details: any): any {
     if (!details) return null;
-    
+
     try {
       // Create a deep copy
       const sanitized = JSON.parse(JSON.stringify(details));
-      
+
       // List of sensitive fields to redact
       const sensitiveFields = [
-        'password', 'token', 'secret', 'credit_card', 'card', 
-        'ssn', 'social', 'auth', 'key', 'credential', 
-        'cvv', 'pin', 'security_question'
+        'password',
+        'token',
+        'secret',
+        'credit_card',
+        'card',
+        'ssn',
+        'social',
+        'auth',
+        'key',
+        'credential',
+        'cvv',
+        'pin',
+        'security_question',
       ];
-      
+
       // Recursively sanitize object
       const redact = (obj: any) => {
         if (!obj || typeof obj !== 'object') return;
-        
-        Object.keys(obj).forEach(key => {
+
+        Object.keys(obj).forEach((key) => {
           const lowerKey = key.toLowerCase();
-          
+
           if (typeof obj[key] === 'object' && obj[key] !== null) {
             redact(obj[key]);
-          } else if (sensitiveFields.some(field => lowerKey.includes(field))) {
+          } else if (
+            sensitiveFields.some((field) => lowerKey.includes(field))
+          ) {
             obj[key] = '***REDACTED***';
           }
           // Redact email addresses except domain part
-          else if (typeof obj[key] === 'string' && 
-                  /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(obj[key])) {
+          else if (
+            typeof obj[key] === 'string' &&
+            /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(obj[key])
+          ) {
             obj[key] = obj[key].replace(/^[^@]+/, '***');
           }
         });
       };
-      
+
       redact(sanitized);
       return sanitized;
     } catch (error) {
@@ -169,7 +186,7 @@ export class AuditService {
       return { sanitized: 'error-during-sanitization' };
     }
   }
-  
+
   /**
    * Generate a cryptographic hash to ensure log integrity
    */
@@ -196,11 +213,12 @@ export class AuditService {
     isCritical?: boolean;
   }) {
     // Authentication events are often security-critical
-    const isCritical = data.isCritical ?? 
+    const isCritical =
+      data.isCritical ??
       ['LOGIN_FAILED', 'PASSWORD_RESET', 'MFA', 'PERMISSION_DENIED'].some(
-        term => data.action.toUpperCase().includes(term)
+        (term) => data.action.toUpperCase().includes(term),
       );
-    
+
     return this.log({
       ...data,
       category: 'AUTHENTICATION',
@@ -223,11 +241,12 @@ export class AuditService {
     isCritical?: boolean;
   }) {
     // Account changes are often security-critical
-    const isCritical = data.isCritical ?? 
+    const isCritical =
+      data.isCritical ??
       ['ROLE', 'PERMISSION', 'PASSWORD', 'EMAIL', 'ADMIN', 'DELETE'].some(
-        term => data.action.toUpperCase().includes(term)
+        (term) => data.action.toUpperCase().includes(term),
       );
-    
+
     return this.log({
       ...data,
       category: 'ACCOUNT',
@@ -236,7 +255,7 @@ export class AuditService {
       isCritical,
     });
   }
-  
+
   /**
    * Log newsletter operations
    */
@@ -257,7 +276,7 @@ export class AuditService {
       isCritical: data.isCritical || false,
     });
   }
-  
+
   /**
    * Log data access events (for GDPR compliance)
    */
@@ -282,42 +301,45 @@ export class AuditService {
    * Get audit logs for a specific user with pagination
    * Includes filtering capabilities and sensitive data handling
    */
-  async getUserLogs(userId: string, options: {
-    limit?: number; 
-    offset?: number;
-    category?: string;
-    startDate?: Date;
-    endDate?: Date;
-    includeDetails?: boolean; // Whether to include potentially sensitive details
-    onlyCritical?: boolean;
-  } = {}) {
-    const { 
-      limit = 50, 
+  async getUserLogs(
+    userId: string,
+    options: {
+      limit?: number;
+      offset?: number;
+      category?: string;
+      startDate?: Date;
+      endDate?: Date;
+      includeDetails?: boolean; // Whether to include potentially sensitive details
+      onlyCritical?: boolean;
+    } = {},
+  ) {
+    const {
+      limit = 50,
       offset = 0,
       category,
       startDate,
       endDate,
       includeDetails = false,
-      onlyCritical = false
+      onlyCritical = false,
     } = options;
-    
+
     // Build where clause
     const where: any = { userId };
-    
+
     if (category) {
       where.category = category;
     }
-    
+
     if (startDate || endDate) {
       where.timestamp = {};
       if (startDate) where.timestamp.gte = startDate;
       if (endDate) where.timestamp.lte = endDate;
     }
-    
+
     if (onlyCritical) {
       where.isCritical = true;
     }
-    
+
     const logs = await this.prisma.auditLog.findMany({
       where,
       orderBy: {
@@ -326,70 +348,74 @@ export class AuditService {
       take: limit,
       skip: offset,
     });
-    
+
     // Optionally remove details for privacy
     if (!includeDetails) {
-      return logs.map(log => {
+      return logs.map((log) => {
         const { details, ...rest } = log;
         return rest;
       });
     }
-    
+
     return logs;
   }
-  
+
   /**
    * Purge old audit logs based on retention policy
    */
-  async pruneOldLogs(options: {
-    standardRetentionDays?: number;
-    securityRetentionDays?: number;
-    complianceRetentionDays?: number;
-    dryRun?: boolean;
-  } = {}) {
+  async pruneOldLogs(
+    options: {
+      standardRetentionDays?: number;
+      securityRetentionDays?: number;
+      complianceRetentionDays?: number;
+      dryRun?: boolean;
+    } = {},
+  ) {
     const {
       standardRetentionDays = RETENTION_PERIODS.DEFAULT,
       securityRetentionDays = RETENTION_PERIODS.SECURITY,
       complianceRetentionDays = RETENTION_PERIODS.COMPLIANCE,
       dryRun = false,
     } = options;
-    
+
     // Standard logs cutoff date
     const standardCutoff = new Date();
     standardCutoff.setDate(standardCutoff.getDate() - standardRetentionDays);
-    
+
     // Security logs cutoff date
     const securityCutoff = new Date();
     securityCutoff.setDate(securityCutoff.getDate() - securityRetentionDays);
-    
+
     // Compliance logs cutoff date
     const complianceCutoff = new Date();
-    complianceCutoff.setDate(complianceCutoff.getDate() - complianceRetentionDays);
-    
+    complianceCutoff.setDate(
+      complianceCutoff.getDate() - complianceRetentionDays,
+    );
+
     // Count logs that would be deleted (for reporting)
     const standardLogsCount = await this.prisma.auditLog.count({
       where: {
         timestamp: { lt: standardCutoff },
         isCritical: false,
-        category: { notIn: ['DATA_ACCESS', 'GDPR', 'COMPLIANCE'] }
-      }
+        category: { notIn: ['DATA_ACCESS', 'GDPR', 'COMPLIANCE'] },
+      },
     });
-    
+
     const securityLogsCount = await this.prisma.auditLog.count({
       where: {
         timestamp: { lt: securityCutoff },
         isCritical: true,
-        category: { notIn: ['DATA_ACCESS', 'GDPR', 'COMPLIANCE'] }
-      }
+        category: { notIn: ['DATA_ACCESS', 'GDPR', 'COMPLIANCE'] },
+      },
     });
-    
+
     const complianceLogsCount = await this.prisma.auditLog.count({
       where: {
         timestamp: { lt: complianceCutoff },
-        category: { in: ['DATA_ACCESS', 'GDPR', 'COMPLIANCE'] }
-      }
+        category: { in: ['DATA_ACCESS', 'GDPR', 'COMPLIANCE'] },
+      },
     });
-    
+
     // If this is just a dry run, return the counts without deleting
     if (dryRun) {
       return {
@@ -397,47 +423,47 @@ export class AuditService {
         securityLogs: securityLogsCount,
         complianceLogs: complianceLogsCount,
         totalLogs: standardLogsCount + securityLogsCount + complianceLogsCount,
-        deleted: false
+        deleted: false,
       };
     }
-    
+
     // Delete logs in separate batches
     let deletedStandard = 0;
     let deletedSecurity = 0;
     let deletedCompliance = 0;
-    
+
     if (standardLogsCount > 0) {
       const result = await this.prisma.auditLog.deleteMany({
         where: {
           timestamp: { lt: standardCutoff },
           isCritical: false,
-          category: { notIn: ['DATA_ACCESS', 'GDPR', 'COMPLIANCE'] }
-        }
+          category: { notIn: ['DATA_ACCESS', 'GDPR', 'COMPLIANCE'] },
+        },
       });
       deletedStandard = result.count;
     }
-    
+
     if (securityLogsCount > 0) {
       const result = await this.prisma.auditLog.deleteMany({
         where: {
           timestamp: { lt: securityCutoff },
           isCritical: true,
-          category: { notIn: ['DATA_ACCESS', 'GDPR', 'COMPLIANCE'] }
-        }
+          category: { notIn: ['DATA_ACCESS', 'GDPR', 'COMPLIANCE'] },
+        },
       });
       deletedSecurity = result.count;
     }
-    
+
     if (complianceLogsCount > 0) {
       const result = await this.prisma.auditLog.deleteMany({
         where: {
           timestamp: { lt: complianceCutoff },
-          category: { in: ['DATA_ACCESS', 'GDPR', 'COMPLIANCE'] }
-        }
+          category: { in: ['DATA_ACCESS', 'GDPR', 'COMPLIANCE'] },
+        },
       });
       deletedCompliance = result.count;
     }
-    
+
     // Log the deletion event itself
     await this.log({
       userId: 'system',
@@ -454,19 +480,19 @@ export class AuditService {
         standardRetentionDays,
         securityRetentionDays,
         complianceRetentionDays,
-        pruneDate: new Date()
-      }
+        pruneDate: new Date(),
+      },
     });
-    
+
     return {
       standardLogs: deletedStandard,
       securityLogs: deletedSecurity,
       complianceLogs: deletedCompliance,
       totalLogs: deletedStandard + deletedSecurity + deletedCompliance,
-      deleted: true
+      deleted: true,
     };
   }
-  
+
   /**
    * Export logs for a user (for GDPR data subject access requests)
    */
@@ -475,7 +501,7 @@ export class AuditService {
       where: { userId },
       orderBy: { timestamp: 'asc' },
     });
-    
+
     // Log this export for compliance
     await this.logDataAccess({
       userId: 'system', // Or the admin user ID who initiated the export
@@ -484,48 +510,50 @@ export class AuditService {
       details: {
         targetUserId: userId,
         recordCount: logs.length,
-        exportDate: new Date()
-      }
+        exportDate: new Date(),
+      },
     });
-    
+
     return logs;
   }
-  
+
   /**
    * Verify the integrity of audit logs
    * Returns the number of logs with compromised integrity
    */
-  async verifyLogIntegrity(options: { 
-    limit?: number, 
-    offset?: number,
-    category?: string 
-  } = {}): Promise<{ 
-    verified: number, 
-    compromised: number,
-    total: number 
+  async verifyLogIntegrity(
+    options: {
+      limit?: number;
+      offset?: number;
+      category?: string;
+    } = {},
+  ): Promise<{
+    verified: number;
+    compromised: number;
+    total: number;
   }> {
     const { limit = 1000, offset = 0, category } = options;
-    
+
     const where: any = {};
     if (category) where.category = category;
-    
+
     const logs = await this.prisma.auditLog.findMany({
       where,
       orderBy: { timestamp: 'desc' },
       take: limit,
       skip: offset,
     });
-    
+
     let verified = 0;
     let compromised = 0;
-    
+
     for (const log of logs) {
       // Skip logs without integrity hash (older logs)
       if (!log.logIntegrityHash) {
         compromised++;
         continue;
       }
-      
+
       // We can't fully verify the hash since it includes a timestamp component
       // In a real implementation, you might use a more sophisticated approach
       // like signing logs with a private key
@@ -535,11 +563,11 @@ export class AuditService {
         compromised++;
       }
     }
-    
+
     return {
       verified,
       compromised,
-      total: logs.length
+      total: logs.length,
     };
   }
-} 
+}

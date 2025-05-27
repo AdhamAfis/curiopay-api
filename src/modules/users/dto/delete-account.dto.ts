@@ -17,4 +17,4 @@ export class DeleteAccountDto {
   @IsBoolean()
   @IsNotEmpty()
   confirm: boolean;
-} 
+}

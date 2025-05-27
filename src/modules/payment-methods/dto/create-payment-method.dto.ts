@@ -19,10 +19,11 @@ export class CreatePaymentMethodDto {
   @IsString()
   @IsOptional()
   icon?: string;
-  
+
   @ApiPropertyOptional({
     example: false,
-    description: 'Whether this is a default payment method. Note: Requires admin privileges to set to true.',
+    description:
+      'Whether this is a default payment method. Note: Requires admin privileges to set to true.',
     default: false,
   })
   @IsBoolean()
@@ -31,10 +32,11 @@ export class CreatePaymentMethodDto {
 
   @ApiPropertyOptional({
     example: false,
-    description: 'Whether this is a system payment method. Note: Requires admin privileges to set to true.',
+    description:
+      'Whether this is a system payment method. Note: Requires admin privileges to set to true.',
     default: false,
   })
   @IsBoolean()
   @IsOptional()
   isSystem?: boolean;
-} 
+}
