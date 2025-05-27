@@ -24,8 +24,49 @@ export const RETENTION_PERIODS = {
 @Injectable()
 export class AuditService {
   private readonly logger = new Logger(AuditService.name);
+  private privateKey: string = '';
+  private publicKey: string = '';
 
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) {
+    this.initializeKeys();
+  }
+
+  private initializeKeys() {
+    // Try to load keys from environment variables
+    const envPrivateKey = process.env.AUDIT_PRIVATE_KEY;
+    const envPublicKey = process.env.AUDIT_PUBLIC_KEY;
+
+    // If keys are provided in environment, use them
+    if (envPrivateKey && envPublicKey) {
+      this.privateKey = envPrivateKey;
+      this.publicKey = envPublicKey;
+      this.logger.log(
+        'Using audit log signing keys from environment variables',
+      );
+      return;
+    }
+
+    // If keys are not provided in environment, generate temporary ones
+    // In production, keys should be managed securely and provided via environment
+    this.logger.warn(
+      'Audit log signing keys not found in environment. Generating temporary keys - NOT RECOMMENDED for production!',
+    );
+
+    const { privateKey, publicKey } = crypto.generateKeyPairSync('rsa', {
+      modulusLength: 2048,
+      publicKeyEncoding: {
+        type: 'spki',
+        format: 'pem',
+      },
+      privateKeyEncoding: {
+        type: 'pkcs8',
+        format: 'pem',
+      },
+    });
+
+    this.privateKey = privateKey;
+    this.publicKey = publicKey;
+  }
 
   /**
    * Log an audit event to the database with privacy and security enhancements
@@ -121,9 +162,10 @@ export class AuditService {
     try {
       // Remove version numbers and detailed OS info that could be used for fingerprinting
       return userAgent
-        .replace(/\/[\d\.]+/g, '/x.x.x') // Replace version numbers
+        .replace(/\/[\d.]+/g, '/x.x.x') // Replace version numbers
         .replace(/\([^)]+\)/, '(details-redacted)'); // Replace OS details
-    } catch (error) {
+    } catch {
+      // Ignore error and return generic value
       return 'browser';
     }
   }
@@ -192,11 +234,22 @@ export class AuditService {
    */
   private generateLogIntegrityHash(logData: any): string {
     try {
-      const dataString = JSON.stringify(logData) + Date.now().toString();
-      return crypto.createHash('sha256').update(dataString).digest('hex');
+      // Create a deterministic string representation of the log data
+      const logString = JSON.stringify(logData, Object.keys(logData).sort());
+
+      // Create a signature using the private key
+      const sign = crypto.createSign('SHA256');
+      sign.update(logString);
+      sign.end();
+      const signature = sign.sign(this.privateKey, 'hex');
+
+      return signature;
     } catch (error) {
-      this.logger.warn(`Failed to generate integrity hash: ${error.message}`);
-      return 'hash-generation-failed';
+      this.logger.error('Failed to generate log integrity hash', error);
+      return crypto
+        .createHash('sha256')
+        .update(Date.now().toString())
+        .digest('hex');
     }
   }
 
@@ -352,7 +405,8 @@ export class AuditService {
     // Optionally remove details for privacy
     if (!includeDetails) {
       return logs.map((log) => {
-        const { details, ...rest } = log;
+        // Destructure and omit the details field
+        const { details: _omitted, ...rest } = log;
         return rest;
       });
     }
@@ -554,12 +608,29 @@ export class AuditService {
         continue;
       }
 
-      // We can't fully verify the hash since it includes a timestamp component
-      // In a real implementation, you might use a more sophisticated approach
-      // like signing logs with a private key
-      if (log.logIntegrityHash.length === 64) {
-        verified++;
-      } else {
+      try {
+        // Create a deterministic string representation of the log data without the hash
+        const { logIntegrityHash, ...logDataWithoutHash } = log;
+        const logString = JSON.stringify(
+          logDataWithoutHash,
+          Object.keys(logDataWithoutHash).sort(),
+        );
+
+        // Verify the signature using the public key
+        const verify = crypto.createVerify('SHA256');
+        verify.update(logString);
+        verify.end();
+
+        if (verify.verify(this.publicKey, logIntegrityHash, 'hex')) {
+          verified++;
+        } else {
+          compromised++;
+        }
+      } catch (error) {
+        this.logger.error(
+          `Failed to verify log integrity for log ID ${log.id}`,
+          error,
+        );
         compromised++;
       }
     }

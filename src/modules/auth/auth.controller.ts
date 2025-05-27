@@ -9,6 +9,7 @@ import {
   Req,
   Res,
   Param,
+  Response,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
@@ -43,6 +44,7 @@ import { AuthGuard } from '@nestjs/passport';
 import { ConfigService } from '@nestjs/config';
 import { User } from './interfaces/user.interface';
 import { LinkAccountDto } from './dto/link-account.dto';
+import { Response as ExpressResponse } from 'express';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -166,28 +168,16 @@ export class AuthController extends BaseController {
   })
   @ApiResponse({ status: 400, description: 'Invalid input' })
   @ApiResponse({ status: 409, description: 'Email already registered' })
-  async register(@Body() registerDto: RegisterDto, @Req() req) {
+  async register(@Body() registerDto: RegisterDto) {
     try {
-      console.log(
-        'Register Request DTO:',
-        JSON.stringify(registerDto, null, 2),
-      );
       const result = await this.authService.register(registerDto);
-      console.log('Registration successful for:', registerDto.email);
       return result;
     } catch (error) {
-      // Log error but ensure we're passing the original error type through
-      console.error(
-        `Registration failed for ${registerDto.email}:`,
-        error.message,
-      );
-
       // Keep the original error status code and message
       if (error.status === 409) {
         // This is a conflict error (email already registered)
         throw error;
       }
-
       throw error;
     }
   }
@@ -381,7 +371,10 @@ export class AuthController extends BaseController {
       },
     },
   })
-  async googleAuthCallback(@Req() req, @Res() res) {
+  async googleAuthCallback(
+    @Req() req,
+    @Res() res: ExpressResponse,
+  ): Promise<void> {
     const frontendUrl =
       this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
     try {
@@ -391,11 +384,11 @@ export class AuthController extends BaseController {
         req.headers['user-agent'],
       );
       // Redirect to frontend with token - using dashboard path instead of /auth/callback
-      return res.redirect(
+      res.redirect(
         `${frontendUrl}/dashboard?token=${accessToken}&userId=${user.id}`,
       );
     } catch (error) {
-      return res.redirect(
+      res.redirect(
         `${frontendUrl}/login?error=${encodeURIComponent(error.message)}`,
       );
     }
@@ -485,7 +478,10 @@ export class AuthController extends BaseController {
       },
     },
   })
-  async githubAuthCallback(@Req() req, @Res() res) {
+  async githubAuthCallback(
+    @Req() req,
+    @Res() res: ExpressResponse,
+  ): Promise<void> {
     const frontendUrl =
       this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
     try {
@@ -495,14 +491,31 @@ export class AuthController extends BaseController {
         req.headers['user-agent'],
       );
       // Redirect to frontend with token - using dashboard path instead of /auth/callback
-      return res.redirect(
+      res.redirect(
         `${frontendUrl}/dashboard?token=${accessToken}&userId=${user.id}`,
       );
     } catch (error) {
-      return res.redirect(
+      res.redirect(
         `${frontendUrl}/login?error=${encodeURIComponent(error.message)}`,
       );
     }
+  }
+
+  @Post('logout')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Logout user' })
+  @ApiResponse({ status: 200, description: 'Logout successful' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiBearerAuth('JWT-auth')
+  async logout(@Req() req, @CurrentUser() user) {
+    const token = req.headers.authorization;
+    const ipAddress = req.ip || 'unknown';
+    const userAgent = req.headers['user-agent'] || 'unknown';
+
+    await this.authService.logout(token, user.id, ipAddress, userAgent);
+
+    return { success: true, message: 'Logged out successfully' };
   }
 
   /*

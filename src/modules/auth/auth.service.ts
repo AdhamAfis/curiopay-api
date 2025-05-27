@@ -3,8 +3,9 @@ import {
   UnauthorizedException,
   BadRequestException,
   ConflictException,
-  InternalServerErrorException,
   NotFoundException,
+  Inject,
+  Logger,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service';
@@ -30,9 +31,14 @@ import { toDataURL } from 'qrcode';
 import { CategoriesService } from '../categories/categories.service';
 import { PaymentMethodsService } from '../payment-methods/payment-methods.service';
 import { PrismaService } from '../../prisma/prisma.service';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { Cache } from 'cache-manager';
+import axios from 'axios';
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     private usersService: UsersService,
     private usersRepository: UsersRepository,
@@ -44,6 +50,7 @@ export class AuthService {
     private paymentMethodsService: PaymentMethodsService,
     private auditService: AuditService,
     private prisma: PrismaService,
+    @Inject(CACHE_MANAGER) private cacheManager: Cache,
   ) {}
 
   async login(
@@ -423,6 +430,8 @@ export class AuthService {
         },
       };
     } catch (error) {
+      // Log the error but don't expose details to the client
+      console.error('Failed to create user:', error);
       throw new Error('Failed to create user');
     }
   }
@@ -1152,7 +1161,7 @@ export class AuthService {
     }
 
     // Validate the provider
-    const validProviders = ['google', 'facebook', 'apple'];
+    const validProviders = ['google', 'facebook', 'apple', 'github'];
     if (!validProviders.includes(linkAccountDto.provider)) {
       // Log the invalid provider
       await this.auditService.logAccountChange({
@@ -1170,8 +1179,57 @@ export class AuthService {
       throw new BadRequestException('Invalid provider');
     }
 
-    // In a real implementation, you might need to verify the OAuth token here
-    // by making a request to the provider's API
+    // Verify the OAuth token with the provider
+    if (linkAccountDto.accessToken) {
+      try {
+        const isValid = await this.verifyOAuthToken(
+          linkAccountDto.provider,
+          linkAccountDto.accessToken,
+          linkAccountDto.providerAccountId,
+        );
+
+        if (!isValid) {
+          // Log the invalid token
+          await this.auditService.logAccountChange({
+            userId,
+            action: 'MANUAL_ACCOUNT_LINKING',
+            status: 'FAILURE',
+            ipAddress,
+            userAgent,
+            details: {
+              provider: linkAccountDto.provider,
+              reason: 'Invalid OAuth token',
+            },
+          });
+
+          throw new BadRequestException('Invalid or expired OAuth token');
+        }
+      } catch (error) {
+        this.logger.error(
+          `Failed to verify OAuth token: ${error.message}`,
+          error.stack,
+        );
+
+        // Log the verification failure
+        await this.auditService.logAccountChange({
+          userId,
+          action: 'MANUAL_ACCOUNT_LINKING',
+          status: 'FAILURE',
+          ipAddress,
+          userAgent,
+          details: {
+            provider: linkAccountDto.provider,
+            reason: `Token verification failed: ${error.message}`,
+          },
+        });
+
+        throw new BadRequestException('Failed to verify OAuth token');
+      }
+    } else {
+      this.logger.warn(
+        `Account linking attempt without token verification for user ${userId} with provider ${linkAccountDto.provider}`,
+      );
+    }
 
     // Update user with the provider info
     const updatedUser = await this.usersRepository.update(userId, {
@@ -1202,6 +1260,151 @@ export class AuthService {
         provider: updatedUser.provider,
       },
     };
+  }
+
+  /**
+   * Verify OAuth token with the respective provider
+   * @param provider The OAuth provider (google, github, etc.)
+   * @param token The access token to verify
+   * @param providerAccountId The provider account ID to match
+   * @returns boolean indicating if the token is valid
+   */
+  private async verifyOAuthToken(
+    provider: string,
+    token: string,
+    providerAccountId?: string,
+  ): Promise<boolean> {
+    try {
+      let response;
+
+      // Each provider has a different endpoint and response format
+      switch (provider.toLowerCase()) {
+        case 'google':
+          // Google's token info endpoint
+          response = await axios.get(
+            `https://www.googleapis.com/oauth2/v3/tokeninfo?access_token=${token}`,
+          );
+
+          // Verify the token is valid and matches the user ID if provided
+          if (response.status !== 200) {
+            return false;
+          }
+
+          // If we have a provider account ID, verify it matches
+          if (
+            providerAccountId &&
+            response.data.sub &&
+            response.data.sub !== providerAccountId
+          ) {
+            this.logger.warn(
+              `Google account ID mismatch: ${providerAccountId} vs ${response.data.sub}`,
+            );
+            return false;
+          }
+
+          return true;
+
+        case 'github':
+          // GitHub API to get the authenticated user
+          response = await axios.get('https://api.github.com/user', {
+            headers: {
+              Authorization: `token ${token}`,
+              Accept: 'application/vnd.github.v3+json',
+            },
+          });
+
+          // Verify the token is valid and matches the user ID if provided
+          if (response.status !== 200) {
+            return false;
+          }
+
+          // If we have a provider account ID, verify it matches
+          if (
+            providerAccountId &&
+            response.data.id &&
+            response.data.id.toString() !== providerAccountId
+          ) {
+            this.logger.warn(
+              `GitHub account ID mismatch: ${providerAccountId} vs ${response.data.id}`,
+            );
+            return false;
+          }
+
+          return true;
+
+        case 'facebook':
+          // Facebook's debug token endpoint
+          response = await axios.get(
+            `https://graph.facebook.com/debug_token?input_token=${token}&access_token=${process.env.FACEBOOK_APP_ID}|${process.env.FACEBOOK_APP_SECRET}`,
+          );
+
+          // Verify the token is valid and matches the user ID if provided
+          if (!response.data.data || !response.data.data.is_valid) {
+            return false;
+          }
+
+          // If we have a provider account ID, verify it matches
+          if (
+            providerAccountId &&
+            response.data.data.user_id &&
+            response.data.data.user_id !== providerAccountId
+          ) {
+            this.logger.warn(
+              `Facebook account ID mismatch: ${providerAccountId} vs ${response.data.data.user_id}`,
+            );
+            return false;
+          }
+
+          return true;
+
+        case 'apple':
+          // Apple's token verification requires a JWT verification
+          // This is a simplified version - in production would need more robust verification
+          try {
+            // Verify the token (would use a JWT library in production)
+            const appleTokenParts = token.split('.');
+            if (appleTokenParts.length !== 3) {
+              return false;
+            }
+
+            // Decode the payload (middle part)
+            const payload = JSON.parse(
+              Buffer.from(appleTokenParts[1], 'base64').toString(),
+            );
+
+            // Check if token is expired
+            if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) {
+              return false;
+            }
+
+            // If we have a provider account ID, verify it matches
+            if (
+              providerAccountId &&
+              payload.sub &&
+              payload.sub !== providerAccountId
+            ) {
+              this.logger.warn(
+                `Apple account ID mismatch: ${providerAccountId} vs ${payload.sub}`,
+              );
+              return false;
+            }
+
+            return true;
+          } catch (error) {
+            this.logger.error(`Error verifying Apple token: ${error.message}`);
+            return false;
+          }
+
+        default:
+          this.logger.warn(
+            `Unsupported provider for token verification: ${provider}`,
+          );
+          return false;
+      }
+    } catch (error) {
+      this.logger.error(`Error verifying ${provider} token: ${error.message}`);
+      throw error;
+    }
   }
 
   /**
@@ -1373,5 +1576,55 @@ export class AuthService {
       verified: user.emailVerified ? true : false,
       verifiedAt: user.emailVerified,
     };
+  }
+
+  // Add this method to verify if a token is blacklisted
+  private async isTokenBlacklisted(token: string): Promise<boolean> {
+    return !!(await this.cacheManager.get(`blacklisted_token:${token}`));
+  }
+
+  // Add this method to blacklist a token
+  private async blacklistToken(
+    token: string,
+    expiryTime: number,
+  ): Promise<void> {
+    // Store the token in the blacklist with TTL until it expires
+    const ttl = expiryTime * 1000 - Date.now();
+    if (ttl > 0) {
+      await this.cacheManager.set(`blacklisted_token:${token}`, true, ttl);
+    }
+  }
+
+  // Add logout method with error handling
+  async logout(
+    token: string,
+    userId: string,
+    ipAddress = 'unknown',
+    userAgent = 'unknown',
+  ): Promise<void> {
+    try {
+      // Verify and decode the token
+      const decoded = this.jwtService.verify(token.replace('Bearer ', ''));
+
+      // Check if token is already blacklisted
+      if (await this.isTokenBlacklisted(token)) {
+        return;
+      }
+
+      // Add token to blacklist until its expiration
+      await this.blacklistToken(token, decoded.exp);
+
+      // Log logout action
+      await this.auditService.logAuth({
+        userId,
+        action: 'LOGOUT',
+        status: 'SUCCESS',
+        ipAddress,
+        userAgent,
+      });
+    } catch (error) {
+      // Token is invalid or already expired, nothing to do
+      console.debug('Error during logout (safe to ignore):', error.message);
+    }
   }
 }

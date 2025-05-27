@@ -7,12 +7,20 @@ import {
 import { Reflector } from '@nestjs/core';
 import { AuthGuard } from '@nestjs/passport';
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { Inject } from '@nestjs/common';
+import { Cache } from 'cache-manager';
+import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
 export class JwtAuthGuard extends AuthGuard('jwt') {
   private readonly logger = new Logger(JwtAuthGuard.name);
 
-  constructor(private reflector: Reflector) {
+  constructor(
+    private reflector: Reflector,
+    @Inject(CACHE_MANAGER) private cacheManager: Cache,
+    private jwtService: JwtService,
+  ) {
     super();
   }
 
@@ -32,10 +40,29 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
       `Authenticating request to ${request.method} ${request.url}`,
     );
 
-    const hasToken = request.headers.authorization?.startsWith('Bearer ');
+    const authHeader = request.headers.authorization;
+    const hasToken = authHeader?.startsWith('Bearer ');
     if (!hasToken) {
       this.logger.warn('No Bearer token found in request');
       throw new UnauthorizedException('Missing authentication token');
+    }
+
+    // Check if token is blacklisted
+    try {
+      const token = authHeader.split(' ')[1];
+      const isBlacklisted = await this.cacheManager.get(
+        `blacklisted_token:${token}`,
+      );
+
+      if (isBlacklisted) {
+        this.logger.warn('Attempt to use blacklisted token');
+        throw new UnauthorizedException('Token has been revoked');
+      }
+    } catch (error) {
+      if (error instanceof UnauthorizedException) {
+        throw error;
+      }
+      // Continue with regular token validation if there's an error checking the blacklist
     }
 
     try {

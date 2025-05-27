@@ -11,6 +11,8 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { CommonModule } from '../../common/common.module';
 import { CategoriesModule } from '../categories/categories.module';
 import { PaymentMethodsModule } from '../payment-methods/payment-methods.module';
+import { APP_GUARD } from '@nestjs/core';
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
 
 @Module({
   imports: [
@@ -18,11 +20,19 @@ import { PaymentMethodsModule } from '../payment-methods/payment-methods.module'
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (configService: ConfigService) => ({
-        secret:
-          configService.get<string>('JWT_SECRET') ||
-          'fallback-secret-key-not-for-production',
-      }),
+      useFactory: (configService: ConfigService) => {
+        const secret = configService.get<string>('JWT_SECRET');
+        if (!secret) {
+          throw new Error('JWT_SECRET is not defined in environment variables');
+        }
+        return {
+          secret,
+          signOptions: {
+            expiresIn: configService.get<string>('JWT_EXPIRES_IN') || '1h',
+          },
+        };
+      },
+      global: true,
     }),
     forwardRef(() => UsersModule),
     CommonModule,
@@ -36,6 +46,10 @@ import { PaymentMethodsModule } from '../payment-methods/payment-methods.module'
     GoogleStrategy,
     GitHubStrategy,
     // MicrosoftStrategy, // Commented out
+    {
+      provide: APP_GUARD,
+      useClass: JwtAuthGuard,
+    },
   ],
   exports: [AuthService, JwtModule],
 })

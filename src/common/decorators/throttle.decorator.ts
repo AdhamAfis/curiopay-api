@@ -9,10 +9,10 @@ import { Throttle as NestThrottle } from '@nestjs/throttler';
  * @param name - Optional name of the throttle configuration to use from global config
  */
 export const Throttle = (limit: number, ttl: number, name?: string) => {
-  const options = name 
-    ? { [name]: { limit, ttl } } 
+  const options = name
+    ? { [name]: { limit, ttl } }
     : { default: { limit, ttl } };
-    
+
   return NestThrottle(options);
 };
 
@@ -26,7 +26,7 @@ export const SkipThrottle = () => SetMetadata('skipThrottle', true);
  */
 export const ShortThrottle = () =>
   NestThrottle({
-    short: { limit: 30, ttl: 60000 }
+    short: { limit: 30, ttl: 60000 },
   });
 
 /**
@@ -34,7 +34,7 @@ export const ShortThrottle = () =>
  */
 export const MediumThrottle = () =>
   NestThrottle({
-    medium: { limit: 100, ttl: 900000 }
+    medium: { limit: 100, ttl: 900000 },
   });
 
 /**
@@ -42,7 +42,7 @@ export const MediumThrottle = () =>
  */
 export const LongThrottle = () =>
   NestThrottle({
-    long: { limit: 1000, ttl: 3600000 }
+    long: { limit: 1000, ttl: 3600000 },
   });
 
 /**
@@ -51,5 +51,5 @@ export const LongThrottle = () =>
  */
 export const SensitiveThrottle = () =>
   NestThrottle({
-    sensitive: { limit: 5, ttl: 900000 }
+    sensitive: { limit: 5, ttl: 900000 },
   });

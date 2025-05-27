@@ -12,7 +12,6 @@ import { ExpensesModule } from './modules/expenses/expenses.module';
 import { CategoriesModule } from './modules/categories/categories.module';
 import { IncomeModule } from './modules/income/income.module';
 import { EncryptionModule } from './common/encryption.module';
-import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
 import { Reflector } from '@nestjs/core';
 import { NewsletterModule } from './modules/newsletter/newsletter.module';
 import { ExportModule } from './modules/export/export.module';
@@ -68,11 +67,6 @@ import { ThrottlerGuard } from './common/guards/throttler.guard';
   controllers: [AppController],
   providers: [
     AppService,
-    {
-      provide: APP_GUARD,
-      useFactory: (reflector) => new JwtAuthGuard(reflector),
-      inject: [Reflector],
-    },
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,
