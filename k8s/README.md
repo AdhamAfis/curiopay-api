@@ -1,5 +1,7 @@
 # Kubernetes Deployment for CurioPay API
 
+> **⚠️ SECURITY WARNING**: This configuration contains example credentials and placeholder values. NEVER deploy to production without replacing all default credentials and secrets with secure values. Use Sealed Secrets or other secure methods to manage sensitive information.
+
 This directory contains Kubernetes manifests for deploying the CurioPay API application to a Kubernetes cluster following GitOps practices.
 
 ## Structure

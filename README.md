@@ -1,59 +1,127 @@
 # CurioPay API
 
-Backend REST API for the CurioPay financial management platform. This API is currently under development.
+[![Build Status](https://img.shields.io/github/actions/workflow/status/adhamafis/curiopay-api/nodejs.yml?branch=main&label=build&style=flat-square)](https://github.com/adhamafis/curiopay-api/actions)
+[![License](https://img.shields.io/github/license/adhamafis/curiopay-api?style=flat-square)](LICENSE)
+[![NPM Version](https://img.shields.io/npm/v/curiopay-api?style=flat-square)](https://www.npmjs.com/package/curiopay-api)
+[![Node.js](https://img.shields.io/node/v/curiopay-api?style=flat-square)](https://nodejs.org/)
+[![Coverage Status](https://img.shields.io/codecov/c/github/adhamafis/curiopay-api?style=flat-square)](https://codecov.io/gh/adhamafis/curiopay-api)
+[![Open Issues](https://img.shields.io/github/issues/adhamafis/curiopay-api?style=flat-square)](https://github.com/adhamafis/curiopay-api/issues)
+
+---
 
 ## Overview
 
-CurioPay API provides secure endpoints for financial data management, user authentication, expense tracking, and reporting functionality.
+**CurioPay API** is the newly refactored backend REST API for the existing CurioPay financial management web application. It is designed to provide a secure, performant, and scalable service layer for user authentication, financial data management, expense tracking, and reporting.
+
+This new backend improves upon the previous system by implementing modern security best practices, optimized database interactions, and a modular architecture to support future features such as AI-powered insights.
+
+---
 
 ## Key Features
 
-### Security
+### 🔐 Security
 
-- **JWT Authentication** with secure token management and proper expiration policies
-- **OAuth Integration** with multiple providers (Google, GitHub)
-- **Audit Logging** with cryptographic integrity verification using RSA digital signatures
-- **Data Encryption** for sensitive information at rest and in transit
-- **Rate Limiting** to prevent brute force and DDoS attacks
-- **Environment-Based Configuration** with strict validation
-- **Input Validation** on all endpoints to prevent injection attacks
+- **JWT Authentication** with secure token management and expiration policies
+- **OAuth Integration** supporting multiple providers (Google, GitHub)
+- **Audit Logging** with RSA digital signature verification for integrity
+- **Data Encryption** in transit and at rest
+- **Rate Limiting** to mitigate brute force and DDoS attacks
+- **Environment-Based Configuration** with strict validation to prevent misconfiguration
+- **Comprehensive Input Validation** to prevent injection and other common attacks
 - **CORS Protection** with configurable allowed origins
 
-### Performance
+### ⚡ Performance
 
-- **Database Connection Pooling** for optimized query performance
-- **Performance Indexes** for faster data retrieval
-- **Efficient Data Processing** with optimized algorithms
-- **Caching Strategies** to reduce database load
-- **Optimized Query Patterns** to minimize database operations
+- **Database Connection Pooling** for efficient queries
+- **Performance Indexes** for optimized data retrieval
+- **Efficient Data Processing** via optimized algorithms and data structures
+- **Caching Strategies** to minimize database load and improve response times
+- **Optimized Query Patterns** to reduce redundant operations
 
-### Planned Features
+### 🚀 Planned Features
 
-- **LLM Integration:** Restore and enhance AI-powered insights and analytics.
-- **Comprehensive Automated Testing:** Expand test coverage and reliability.
-- **CI/CD with GitHub Workflows:** Automate builds, tests, and deployments for faster, safer releases.
+- **LLM Integration:** Enhance AI-powered insights and analytics
+- **Comprehensive Automated Testing:** Improve test coverage and reliability
+- **CI/CD with GitHub Workflows:** Automate builds, tests, and deployments
+- **Detailed Mk-docs:** Documentation for the project
+
+---
 
 ## Getting Started
 
-1. Clone the repository
-2. Install dependencies: `npm install`
-3. Configure environment variables (see `.env.example`)
-4. Run development server: `npm run start:dev`
+### Prerequisites
 
-## Environment Setup
+- [Node.js](https://nodejs.org/) v16 or higher
+- Database (PostgreSQL)
 
-Set up your environment variables according to `.env.example`. For production, ensure all security-related variables use strong, unique values stored securely.
+### Installation
+
+```bash
+git clone https://github.com/adhamafis/curiopay-api.git
+cd curiopay-api
+npm install
+```
+
+### Configuration
+
+Copy the example environment file and configure your environment variables:
+
+```bash
+cp .env.example .env
+```
+
+> For production, ensure all secrets and keys are strong and stored securely.
+
+### Running the Development Server
+
+```bash
+npm run start:dev
+```
+
+---
+
+## Deployment
+
+CurioPay API supports deployment using both Kubernetes and Helm:
+
+### Kubernetes Deployment
+
+For deploying directly with Kubernetes manifests, including GitOps-friendly secret management:
+
+- [Kubernetes Deployment Guide](./k8s/README.md)
+
+### Helm Deployment
+
+For deploying with Helm (includes PostgreSQL and Prisma integration):
+
+- [Helm Deployment Guide](./helm/curiopay-api/README.md)
+
+Both deployment methods include:
+
+- PostgreSQL database setup
+- Automatic Prisma migrations
+- High availability configuration
+- Horizontal scaling
+
+> **⚠️ SECURITY WARNING**: Both deployment configurations contain example credentials. Always replace all default credentials and secrets before deploying to production.
+
+---
 
 ## Contributing & Feature Requests
 
-- **Feature Requests:** Please open an issue describing your feature idea or enhancement. Include as much detail as possible.
-- **Forking:**
-  1. Click the "Fork" button at the top right of this repository.
-  2. Clone your fork: `git clone https://github.com/adhamafis/curiopay-api.git`
-  3. Create a new branch for your feature or fix: `git checkout -b my-feature`
-  4. Make your changes and commit them.
-  5. Push to your fork: `git push origin my-feature`
-  6. Open a pull request to the main repository.
+We welcome your contributions!
+
+- **Feature Requests:** Open an issue detailing your idea.
+- **Forking Workflow:**
+
+  1. Fork the repo
+  2. Clone your fork
+  3. Create a feature branch
+  4. Commit your changes
+  5. Push to your fork
+  6. Open a Pull Request to the main repo
+
+---
 
 ## License
 

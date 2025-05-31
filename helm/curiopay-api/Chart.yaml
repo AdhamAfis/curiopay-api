@@ -1,0 +1,11 @@
+apiVersion: v2
+name: curiopay-api
+description: A Helm chart for CurioPay API application
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+dependencies:
+  - name: postgresql
+    version: "12.5.7"
+    repository: "https://charts.bitnami.com/bitnami"
+    condition: postgresql.enabled 

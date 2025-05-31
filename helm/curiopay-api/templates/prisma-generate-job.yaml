@@ -1,0 +1,28 @@
+{{- if .Values.prisma.enabled -}}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "curiopay-api.fullname" . }}-prisma-generate
+  labels:
+    {{- include "curiopay-api.labels" . | nindent 4 }}
+  annotations:
+    {{- with .Values.prisma.annotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  template:
+    metadata:
+      labels:
+        {{- include "curiopay-api.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: prisma-generate
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: prisma-generate
+          image: "{{ .Values.prisma.image.repository }}:{{ .Values.prisma.image.tag | default .Chart.AppVersion }}"
+          command: {{ .Values.prisma.generateClient.command }}
+          env:
+            - name: DATABASE_URL
+              value: postgresql://{{ .Values.postgresql.auth.username }}:{{ .Values.postgresql.auth.password }}@{{ include "curiopay-api.fullname" . }}-postgresql:5432/{{ .Values.postgresql.auth.database }}
+  backoffLimit: 3
+{{- end }} 
