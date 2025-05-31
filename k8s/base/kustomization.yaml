@@ -1,0 +1,22 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - deployment.yaml
+  - service.yaml
+  - configmap.yaml
+  - ingress.yaml
+  - hpa.yaml
+  # Secrets are removed from base and will be managed separately in environment overlays
+
+commonLabels:
+  app.kubernetes.io/name: curiopay-api
+  app.kubernetes.io/part-of: curiopay
+  app.kubernetes.io/managed-by: kustomize
+
+# Namespace where resources will be deployed
+# namespace: curiopay-api
+
+# Patch to replace placeholder variables with environment-specific values
+# patchesStrategicMerge:
+#  - patch-deployment.yaml 

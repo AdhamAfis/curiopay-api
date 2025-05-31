@@ -1,0 +1,27 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: curiopay-api-ingress
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    # Add cert-manager annotations if using it for TLS
+    # cert-manager.io/cluster-issuer: "letsencrypt-prod"
+spec:
+  # Enable TLS in production
+  # tls:
+  # - hosts:
+  #   - api.curiopay.com
+  #   secretName: curiopay-api-tls
+  rules:
+  - host: api.curiopay.com  # Replace with your domain
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: curiopay-api
+            port:
+              number: 80 

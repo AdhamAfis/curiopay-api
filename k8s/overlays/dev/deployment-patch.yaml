@@ -1,0 +1,18 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: curiopay-api
+spec:
+  replicas: 1  # Fewer replicas for dev
+  template:
+    spec:
+      containers:
+      - name: curiopay-api
+        image: curiopay/api:dev  # Development tag
+        resources:
+          requests:
+            cpu: "50m"
+            memory: "128Mi"
+          limits:
+            cpu: "200m"
+            memory: "256Mi" 
