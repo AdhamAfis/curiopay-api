@@ -48,6 +48,7 @@ k8s/
 This project uses Bitnami Sealed Secrets for GitOps-friendly secret management:
 
 1. **Install the Sealed Secrets Controller**:
+
    ```bash
    # Using Helm
    helm repo add sealed-secrets https://bitnami-labs.github.io/sealed-secrets
@@ -55,10 +56,11 @@ This project uses Bitnami Sealed Secrets for GitOps-friendly secret management:
    ```
 
 2. **Install the kubeseal CLI**:
+
    ```bash
    # MacOS
    brew install kubeseal
-   
+
    # Linux
    wget https://github.com/bitnami-labs/sealed-secrets/releases/download/v0.23.0/kubeseal-0.23.0-linux-amd64.tar.gz
    tar -xvzf kubeseal-0.23.0-linux-amd64.tar.gz
@@ -66,6 +68,7 @@ This project uses Bitnami Sealed Secrets for GitOps-friendly secret management:
    ```
 
 3. **Create a regular Kubernetes Secret**:
+
    ```bash
    # Create a temporary secret file (DO NOT COMMIT THIS)
    cat <<EOF > temp-secret.yaml
@@ -85,10 +88,11 @@ This project uses Bitnami Sealed Secrets for GitOps-friendly secret management:
    ```
 
 4. **Seal the Secret**:
+
    ```bash
    # Encrypt the secret
    kubeseal --format yaml < temp-secret.yaml > k8s/overlays/dev/sealed-secrets.yaml
-   
+
    # Delete the temporary secret file
    rm temp-secret.yaml
    ```
@@ -156,4 +160,4 @@ If you encounter issues:
 1. Check pod status: `kubectl describe pod -l app=curiopay-api`
 2. View logs: `kubectl logs -l app=curiopay-api`
 3. Check events: `kubectl get events --sort-by='.lastTimestamp'`
-4. Verify sealed secrets: `kubectl get sealedsecret -n curiopay-dev` 
+4. Verify sealed secrets: `kubectl get sealedsecret -n curiopay-dev`

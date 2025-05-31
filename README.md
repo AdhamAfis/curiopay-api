@@ -11,7 +11,7 @@ CurioPay API provides secure endpoints for financial data management, user authe
 ### Security
 
 - **JWT Authentication** with secure token management and proper expiration policies
-- **OAuth Integration** with multiple providers (Google, GitHub, Facebook, Apple)
+- **OAuth Integration** with multiple providers (Google, GitHub)
 - **Audit Logging** with cryptographic integrity verification using RSA digital signatures
 - **Data Encryption** for sensitive information at rest and in transit
 - **Rate Limiting** to prevent brute force and DDoS attacks
@@ -56,4 +56,5 @@ Set up your environment variables according to `.env.example`. For production, e
   6. Open a pull request to the main repository.
 
 ## License
+
 This project is licensed under the [Apache License 2.0](LICENSE).
