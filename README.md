@@ -1,10 +1,12 @@
 # CurioPay API
 
-[![Build Status](https://img.shields.io/github/actions/workflow/status/adhamafis/curiopay-api/nodejs.yml?branch=main&label=build&style=flat-square)](https://github.com/adhamafis/curiopay-api/actions)
-[![License](https://img.shields.io/github/license/adhamafis/curiopay-api?style=flat-square)](LICENSE)
-[![NPM Version](https://img.shields.io/npm/v/curiopay-api?style=flat-square)](https://www.npmjs.com/package/curiopay-api)
-[![Node.js](https://img.shields.io/node/v/curiopay-api?style=flat-square)](https://nodejs.org/)
-[![Coverage Status](https://img.shields.io/codecov/c/github/adhamafis/curiopay-api?style=flat-square)](https://codecov.io/gh/adhamafis/curiopay-api)
+[![Build Status](https://img.shields.io/github/actions/workflow/status/adhamafis/curiopay-api/test-build.yml?branch=main&label=build&style=flat-square)](https://github.com/adhamafis/curiopay-api/actions/workflows/test-build.yml)
+[![License](https://img.shields.io/github/license/adhamafis/curiopay-api?style=flat-square)](https://github.com/adhamafis/curiopay-api/blob/main/LICENSE)
+[![NPM Version](https://img.shields.io/npm/v/nest-backend?style=flat-square)](https://www.npmjs.com/package/nest-backend)
+[![Node.js](https://img.shields.io/node/v/nest-backend?style=flat-square)](https://nodejs.org/)
+
+<!-- [![Coverage Status](https://img.shields.io/codecov/c/github/adhamafis/curiopay-api?style=flat-square)](https://codecov.io/gh/adhamafis/curiopay-api) -->
+
 [![Open Issues](https://img.shields.io/github/issues/adhamafis/curiopay-api?style=flat-square)](https://github.com/adhamafis/curiopay-api/issues)
 
 ---
@@ -14,6 +16,8 @@
 **CurioPay API** is the newly refactored backend REST API for the existing CurioPay financial management web application. It is designed to provide a secure, performant, and scalable service layer for user authentication, financial data management, expense tracking, and reporting.
 
 This new backend improves upon the previous system by implementing modern security best practices, optimized database interactions, and a modular architecture to support future features such as AI-powered insights.
+
+> **🚧 Development Status**: This backend is currently under active development. I am working on implementing a comprehensive migration plan to seamlessly transition from the existing legacy backend to this new refactored system. The migration strategy includes data migration utilities, API compatibility layers, and gradual feature rollout to ensure zero downtime during the transition.
 
 ---
 
