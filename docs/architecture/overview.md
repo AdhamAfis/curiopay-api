@@ -2,24 +2,6 @@
 
 CurioPay API is built using NestJS, a progressive Node.js framework for building efficient and scalable server-side applications.
 
-## High-Level Architecture
-
-```
-┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
-│                 │     │                 │     │                 │
-│  Client Apps    │────▶│  CurioPay API   │────▶│    Database     │
-│                 │     │                 │     │                 │
-└─────────────────┘     └─────────────────┘     └─────────────────┘
-                              │
-                              │
-                              ▼
-                        ┌─────────────────┐
-                        │                 │
-                        │ External APIs   │
-                        │                 │
-                        └─────────────────┘
-```
-
 ## Tech Stack
 
 - **Framework**: NestJS
@@ -69,4 +51,4 @@ Several cross-cutting concerns are handled via NestJS mechanisms:
 
 ## Infrastructure
 
-The application is deployed in a Kubernetes cluster with separate environments for development, staging, and production. Helm charts define the deployment configuration, and Kustomize manages environment-specific settings. 
+The application is deployed in a Kubernetes cluster with separate environments for development, staging, and production. Helm charts define the deployment configuration, and Kustomize manages environment-specific settings.

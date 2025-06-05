@@ -112,4 +112,4 @@ Invalidate the current token:
 ```http
 POST /auth/logout
 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-``` 
+```

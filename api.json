@@ -1,179 +1,144 @@
 {
   "openapi": "3.0.0",
   "paths": {
+    "/api/v1": {
+      "get": {
+        "operationId": "AppController_getHello",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "API is healthy and reachable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "status": "ok",
+                    "message": "CurioPay API is healthy.",
+                    "timestamp": "2024-05-01T12:00:00.000Z"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "Health check endpoint",
+        "tags": ["app"],
+        "security": [{ "JWT-auth": [] }]
+      }
+    },
     "/api/v1/users": {
       "post": {
-        "operationId": "createUser",
+        "operationId": "UsersController_createUser",
         "parameters": [],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/RegisterDto"
-              }
+              "schema": { "$ref": "#/components/schemas/RegisterDto" }
             }
           }
         },
         "responses": {
-          "201": {
-            "description": "User created successfully"
-          },
-          "400": {
-            "description": "Invalid input"
-          },
-          "401": {
-            "description": "Unauthorized"
-          },
-          "403": {
-            "description": "Forbidden - Admin access required"
-          }
+          "201": { "description": "User created successfully" },
+          "400": { "description": "Invalid input" },
+          "401": { "description": "Unauthorized" },
+          "403": { "description": "Forbidden - Admin access required" }
         },
-        "security": [
-          {
-            "JWT-auth": []
-          }
-        ],
+        "security": [{ "JWT-auth": [] }],
         "summary": "Create a new user (Admin only)",
         "tags": ["users"]
       },
       "get": {
-        "operationId": "getAllUsers",
+        "operationId": "UsersController_getAllUsers",
         "parameters": [],
         "responses": {
-          "200": {
-            "description": "Returns list of users"
-          },
-          "401": {
-            "description": "Unauthorized"
-          },
-          "403": {
-            "description": "Forbidden - Admin access required"
-          }
+          "200": { "description": "Returns list of users" },
+          "401": { "description": "Unauthorized" },
+          "403": { "description": "Forbidden - Admin access required" }
         },
-        "security": [
-          {
-            "JWT-auth": []
-          }
-        ],
+        "security": [{ "JWT-auth": [] }],
         "summary": "Get all users (Admin only)",
         "tags": ["users"]
       }
     },
     "/api/v1/users/{id}": {
       "get": {
-        "operationId": "findOne",
+        "operationId": "UsersController_findOne",
         "parameters": [
           {
             "name": "id",
             "required": true,
             "in": "path",
             "description": "User ID",
-            "schema": {
-              "type": "string"
-            }
+            "schema": { "type": "string" }
           }
         ],
         "responses": {
-          "200": {
-            "description": "Returns the user."
-          },
-          "404": {
-            "description": "User not found."
-          }
+          "200": { "description": "Returns the user." },
+          "404": { "description": "User not found." }
         },
-        "security": [
-          {
-            "JWT-auth": []
-          }
-        ],
+        "security": [{ "JWT-auth": [] }],
         "summary": "Get user by ID (Admin only)",
         "tags": ["users"]
       }
     },
     "/api/v1/users/{id}/role": {
       "patch": {
-        "operationId": "updateUserRole",
+        "operationId": "UsersController_updateUserRole",
         "parameters": [
           {
             "name": "id",
             "required": true,
             "in": "path",
-            "schema": {
-              "type": "string"
-            }
+            "schema": { "type": "string" }
           }
         ],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateUserRoleDto"
-              }
+              "schema": { "$ref": "#/components/schemas/UpdateUserRoleDto" }
             }
           }
         },
         "responses": {
-          "200": {
-            "description": "User role updated successfully"
-          },
-          "400": {
-            "description": "Invalid input"
-          },
-          "401": {
-            "description": "Unauthorized"
-          },
-          "403": {
-            "description": "Forbidden - Admin access required"
-          },
-          "404": {
-            "description": "User not found"
-          }
+          "200": { "description": "User role updated successfully" },
+          "400": { "description": "Invalid input" },
+          "401": { "description": "Unauthorized" },
+          "403": { "description": "Forbidden - Admin access required" },
+          "404": { "description": "User not found" }
         },
-        "security": [
-          {
-            "JWT-auth": []
-          }
-        ],
+        "security": [{ "JWT-auth": [] }],
         "summary": "Update user role (Admin only)",
         "tags": ["users"]
       }
     },
     "/api/v1/users/{id}/toggle-active": {
       "patch": {
-        "operationId": "toggleActive",
+        "operationId": "UsersController_toggleActive",
         "parameters": [
           {
             "name": "id",
             "required": true,
             "in": "path",
             "description": "User ID",
-            "schema": {
-              "type": "string"
-            }
+            "schema": { "type": "string" }
           }
         ],
         "responses": {
           "200": {
             "description": "User status has been toggled successfully."
           },
-          "404": {
-            "description": "User not found."
-          }
+          "404": { "description": "User not found." }
         },
-        "security": [
-          {
-            "JWT-auth": []
-          }
-        ],
+        "security": [{ "JWT-auth": [] }],
         "summary": "Toggle user active status",
         "tags": ["users"]
       }
     },
     "/api/v1/users/me/profile": {
       "get": {
-        "operationId": "getProfile",
+        "operationId": "UsersController_getProfile",
         "parameters": [],
         "responses": {
           "200": {
@@ -187,60 +152,171 @@
             }
           }
         },
-        "security": [
-          {
-            "JWT-auth": []
-          }
-        ],
+        "security": [{ "JWT-auth": [] }],
         "summary": "Get current user profile",
         "tags": ["users"]
       }
     },
     "/api/v1/users/me/delete-account": {
       "delete": {
-        "operationId": "deleteAccount",
+        "operationId": "UsersController_deleteAccount",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/DeleteAccountDto" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Account successfully deleted." },
+          "400": {
+            "description": "Invalid request or confirmation not provided."
+          },
+          "401": { "description": "Invalid password or email not verified." }
+        },
+        "security": [{ "JWT-auth": [] }],
+        "summary": "Delete current user account and all associated data",
+        "tags": ["users"]
+      }
+    },
+    "/api/v1/user-preferences": {
+      "get": {
+        "operationId": "UserPreferencesController_getUserPreferences",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Returns user preferences",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserPreferencesResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [{ "JWT-auth": [] }],
+        "summary": "Get user preferences",
+        "tags": ["user-preferences"]
+      },
+      "patch": {
+        "operationId": "UserPreferencesController_updateUserPreferences",
         "parameters": [],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/DeleteAccountDto"
+                "$ref": "#/components/schemas/UpdateUserPreferencesDto"
               }
             }
           }
         },
         "responses": {
           "200": {
-            "description": "Account successfully deleted."
-          },
-          "400": {
-            "description": "Invalid request or confirmation not provided."
-          },
-          "401": {
-            "description": "Invalid password."
+            "description": "Updates user preferences",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserPreferencesResponseDto"
+                }
+              }
+            }
           }
         },
-        "security": [
-          {
-            "JWT-auth": []
+        "security": [{ "JWT-auth": [] }],
+        "summary": "Update user preferences",
+        "tags": ["user-preferences"]
+      }
+    },
+    "/api/v1/user-preferences/toggle-ai-features": {
+      "get": {
+        "operationId": "UserPreferencesController_toggleAiFeatures",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Toggles AI features",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserPreferencesResponseDto"
+                }
+              }
+            }
           }
-        ],
-        "summary": "Delete current user account and all associated data",
-        "tags": ["users"]
+        },
+        "security": [{ "JWT-auth": [] }],
+        "summary": "Toggle AI features",
+        "tags": ["user-preferences"]
+      }
+    },
+    "/api/v1/user-preferences/options": {
+      "get": {
+        "operationId": "UserPreferencesController_getPreferenceOptions",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Returns all available options for preferences",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "currencies": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": { "type": "string" },
+                          "code": { "type": "string" },
+                          "symbol": { "type": "string" },
+                          "name": { "type": "string" }
+                        }
+                      }
+                    },
+                    "languages": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": { "type": "string" },
+                          "code": { "type": "string" },
+                          "name": { "type": "string" }
+                        }
+                      }
+                    },
+                    "themes": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": { "type": "string" },
+                          "name": { "type": "string" }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [{ "JWT-auth": [] }],
+        "summary": "Get preference options",
+        "tags": ["user-preferences"]
       }
     },
     "/api/v1/auth/login": {
       "post": {
-        "operationId": "login",
+        "operationId": "AuthController_login",
         "parameters": [],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/LoginDto"
-              }
+              "schema": { "$ref": "#/components/schemas/LoginDto" }
             }
           }
         },
@@ -255,23 +331,25 @@
                     "accessToken": {
                       "type": "string",
                       "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-                      "description": "JWT token to be used for authenticated requests"
+                      "description": "JWT token to be used for authenticated requests. Extended expiration if rememberMe is true."
+                    },
+                    "requireMfa": {
+                      "type": "boolean",
+                      "example": "false",
+                      "description": "Whether MFA verification is required to complete login"
+                    },
+                    "tempToken": {
+                      "type": "string",
+                      "example": "eyJhbGciOiJIUzI1...",
+                      "description": "Temporary token to be used for MFA verification"
                     },
                     "user": {
                       "type": "object",
                       "properties": {
-                        "id": {
-                          "type": "string"
-                        },
-                        "email": {
-                          "type": "string"
-                        },
-                        "firstName": {
-                          "type": "string"
-                        },
-                        "lastName": {
-                          "type": "string"
-                        }
+                        "id": { "type": "string" },
+                        "email": { "type": "string" },
+                        "firstName": { "type": "string" },
+                        "lastName": { "type": "string" }
                       }
                     }
                   }
@@ -279,30 +357,70 @@
               }
             }
           },
-          "401": {
-            "description": "Invalid credentials"
-          }
+          "401": { "description": "Invalid credentials" }
         },
-        "security": [
-          {
-            "JWT-auth": []
-          }
-        ],
+        "security": [{ "JWT-auth": [] }],
         "summary": "Login user",
         "tags": ["auth"]
       }
     },
-    "/api/v1/auth/register": {
+    "/api/v1/auth/login/mfa/complete": {
       "post": {
-        "operationId": "register",
+        "operationId": "AuthController_completeLoginWithMfa",
         "parameters": [],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/RegisterDto"
+                "$ref": "#/components/schemas/CompleteLoginWithMfaDto"
               }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "MFA verification successful and login completed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "accessToken": {
+                      "type": "string",
+                      "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+                      "description": "JWT token to be used for authenticated requests"
+                    },
+                    "user": {
+                      "type": "object",
+                      "properties": {
+                        "id": { "type": "string" },
+                        "email": { "type": "string" },
+                        "firstName": { "type": "string" },
+                        "lastName": { "type": "string" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "Invalid MFA code or token" }
+        },
+        "security": [{ "JWT-auth": [] }],
+        "summary": "Complete login with MFA verification",
+        "tags": ["auth"]
+      }
+    },
+    "/api/v1/auth/register": {
+      "post": {
+        "operationId": "AuthController_register",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/RegisterDto" }
             }
           }
         },
@@ -322,18 +440,10 @@
                     "user": {
                       "type": "object",
                       "properties": {
-                        "id": {
-                          "type": "string"
-                        },
-                        "email": {
-                          "type": "string"
-                        },
-                        "firstName": {
-                          "type": "string"
-                        },
-                        "lastName": {
-                          "type": "string"
-                        }
+                        "id": { "type": "string" },
+                        "email": { "type": "string" },
+                        "firstName": { "type": "string" },
+                        "lastName": { "type": "string" }
                       }
                     }
                   }
@@ -341,9 +451,7 @@
               }
             }
           },
-          "400": {
-            "description": "Invalid input"
-          },
+          "400": { "description": "Invalid input" },
           "401": {
             "description": "Unauthorized - Valid JWT token is required",
             "content": {
@@ -351,39 +459,24 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "message": {
-                      "type": "string",
-                      "example": "Unauthorized"
-                    },
-                    "statusCode": {
-                      "type": "number",
-                      "example": 401
-                    },
-                    "error": {
-                      "type": "string",
-                      "example": "Unauthorized"
-                    }
+                    "message": { "type": "string", "example": "Unauthorized" },
+                    "statusCode": { "type": "number", "example": 401 },
+                    "error": { "type": "string", "example": "Unauthorized" }
                   }
                 }
               }
             }
           },
-          "409": {
-            "description": "User already exists"
-          }
+          "409": { "description": "Email already registered" }
         },
-        "security": [
-          {
-            "JWT-auth": []
-          }
-        ],
+        "security": [{ "JWT-auth": [] }],
         "summary": "Register new user",
         "tags": ["auth"]
       }
     },
     "/api/v1/auth/password-reset/request": {
       "post": {
-        "operationId": "requestPasswordReset",
+        "operationId": "AuthController_requestPasswordReset",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -396,9 +489,7 @@
           }
         },
         "responses": {
-          "200": {
-            "description": "Reset instructions sent"
-          },
+          "200": { "description": "Reset instructions sent" },
           "401": {
             "description": "Unauthorized - Valid JWT token is required",
             "content": {
@@ -406,54 +497,35 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "message": {
-                      "type": "string",
-                      "example": "Unauthorized"
-                    },
-                    "statusCode": {
-                      "type": "number",
-                      "example": 401
-                    },
-                    "error": {
-                      "type": "string",
-                      "example": "Unauthorized"
-                    }
+                    "message": { "type": "string", "example": "Unauthorized" },
+                    "statusCode": { "type": "number", "example": 401 },
+                    "error": { "type": "string", "example": "Unauthorized" }
                   }
                 }
               }
             }
           }
         },
-        "security": [
-          {
-            "JWT-auth": []
-          }
-        ],
+        "security": [{ "JWT-auth": [] }],
         "summary": "Request password reset",
         "tags": ["auth"]
       }
     },
     "/api/v1/auth/password-reset/reset": {
       "post": {
-        "operationId": "resetPassword",
+        "operationId": "AuthController_resetPassword",
         "parameters": [],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ResetPasswordDto"
-              }
+              "schema": { "$ref": "#/components/schemas/ResetPasswordDto" }
             }
           }
         },
         "responses": {
-          "200": {
-            "description": "Password reset successful"
-          },
-          "400": {
-            "description": "Invalid or expired token"
-          },
+          "200": { "description": "Password reset successful" },
+          "400": { "description": "Invalid or expired token" },
           "401": {
             "description": "Unauthorized - Valid JWT token is required",
             "content": {
@@ -461,36 +533,23 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "message": {
-                      "type": "string",
-                      "example": "Unauthorized"
-                    },
-                    "statusCode": {
-                      "type": "number",
-                      "example": 401
-                    },
-                    "error": {
-                      "type": "string",
-                      "example": "Unauthorized"
-                    }
+                    "message": { "type": "string", "example": "Unauthorized" },
+                    "statusCode": { "type": "number", "example": 401 },
+                    "error": { "type": "string", "example": "Unauthorized" }
                   }
                 }
               }
             }
           }
         },
-        "security": [
-          {
-            "JWT-auth": []
-          }
-        ],
+        "security": [{ "JWT-auth": [] }],
         "summary": "Reset password using token",
         "tags": ["auth"]
       }
     },
     "/api/v1/auth/mfa/generate": {
       "get": {
-        "operationId": "generateMfaSecret",
+        "operationId": "AuthController_generateMfaSecret",
         "parameters": [],
         "responses": {
           "200": {
@@ -500,12 +559,8 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "secret": {
-                      "type": "string"
-                    },
-                    "qrCode": {
-                      "type": "string"
-                    }
+                    "secret": { "type": "string" },
+                    "qrCode": { "type": "string" }
                   }
                 }
               }
@@ -518,54 +573,35 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "message": {
-                      "type": "string",
-                      "example": "Unauthorized"
-                    },
-                    "statusCode": {
-                      "type": "number",
-                      "example": 401
-                    },
-                    "error": {
-                      "type": "string",
-                      "example": "Unauthorized"
-                    }
+                    "message": { "type": "string", "example": "Unauthorized" },
+                    "statusCode": { "type": "number", "example": 401 },
+                    "error": { "type": "string", "example": "Unauthorized" }
                   }
                 }
               }
             }
           }
         },
-        "security": [
-          {
-            "JWT-auth": []
-          }
-        ],
+        "security": [{ "JWT-auth": [] }],
         "summary": "Generate MFA secret and QR code",
         "tags": ["auth"]
       }
     },
     "/api/v1/auth/mfa/enable": {
       "post": {
-        "operationId": "enableMfa",
+        "operationId": "AuthController_enableMfa",
         "parameters": [],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/EnableMfaDto"
-              }
+              "schema": { "$ref": "#/components/schemas/EnableMfaDto" }
             }
           }
         },
         "responses": {
-          "200": {
-            "description": "MFA enabled successfully"
-          },
-          "400": {
-            "description": "Invalid MFA code"
-          },
+          "200": { "description": "MFA enabled successfully" },
+          "400": { "description": "Invalid MFA code" },
           "401": {
             "description": "Unauthorized - Valid JWT token is required",
             "content": {
@@ -573,54 +609,35 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "message": {
-                      "type": "string",
-                      "example": "Unauthorized"
-                    },
-                    "statusCode": {
-                      "type": "number",
-                      "example": 401
-                    },
-                    "error": {
-                      "type": "string",
-                      "example": "Unauthorized"
-                    }
+                    "message": { "type": "string", "example": "Unauthorized" },
+                    "statusCode": { "type": "number", "example": 401 },
+                    "error": { "type": "string", "example": "Unauthorized" }
                   }
                 }
               }
             }
           }
         },
-        "security": [
-          {
-            "JWT-auth": []
-          }
-        ],
+        "security": [{ "JWT-auth": [] }],
         "summary": "Enable MFA",
         "tags": ["auth"]
       }
     },
     "/api/v1/auth/mfa/verify": {
       "post": {
-        "operationId": "verifyMfa",
+        "operationId": "AuthController_verifyMfa",
         "parameters": [],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/VerifyMfaDto"
-              }
+              "schema": { "$ref": "#/components/schemas/VerifyMfaDto" }
             }
           }
         },
         "responses": {
-          "200": {
-            "description": "MFA code verified"
-          },
-          "400": {
-            "description": "Invalid MFA code"
-          },
+          "200": { "description": "MFA code verified" },
+          "400": { "description": "Invalid MFA code" },
           "401": {
             "description": "Unauthorized - Valid JWT token is required",
             "content": {
@@ -628,53 +645,91 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "message": {
-                      "type": "string",
-                      "example": "Unauthorized"
-                    },
-                    "statusCode": {
-                      "type": "number",
-                      "example": 401
-                    },
-                    "error": {
-                      "type": "string",
-                      "example": "Unauthorized"
-                    }
+                    "message": { "type": "string", "example": "Unauthorized" },
+                    "statusCode": { "type": "number", "example": 401 },
+                    "error": { "type": "string", "example": "Unauthorized" }
                   }
                 }
               }
             }
           }
         },
-        "security": [
-          {
-            "JWT-auth": []
-          }
-        ],
+        "security": [{ "JWT-auth": [] }],
         "summary": "Verify MFA code",
         "tags": ["auth"]
       }
     },
     "/api/v1/auth/mfa/disable": {
       "post": {
-        "operationId": "disableMfa",
+        "operationId": "AuthController_disableMfa",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/DisableMfaDto" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "MFA disabled successfully" },
+          "400": { "description": "Invalid request" },
+          "401": {
+            "description": "Unauthorized - Valid JWT token is required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": { "type": "string", "example": "Unauthorized" },
+                    "statusCode": { "type": "number", "example": 401 },
+                    "error": { "type": "string", "example": "Unauthorized" }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [{ "JWT-auth": [] }],
+        "summary": "Disable MFA",
+        "tags": ["auth"]
+      }
+    },
+    "/api/v1/auth/email/request-verification": {
+      "post": {
+        "description": "Sends a verification email if the account exists and is not already verified",
+        "operationId": "AuthController_requestEmailVerification",
         "parameters": [],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/DisableMfaDto"
+                "$ref": "#/components/schemas/RequestEmailVerificationDto"
               }
             }
           }
         },
         "responses": {
           "200": {
-            "description": "MFA disabled successfully"
-          },
-          "400": {
-            "description": "Invalid request"
+            "description": "Request processed successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "verified": { "type": "boolean", "example": false },
+                    "message": { "type": "string" },
+                    "verifiedAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "nullable": true
+                    }
+                  }
+                }
+              }
+            }
           },
           "401": {
             "description": "Unauthorized - Valid JWT token is required",
@@ -683,44 +738,686 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "message": {
-                      "type": "string",
-                      "example": "Unauthorized"
-                    },
-                    "statusCode": {
-                      "type": "number",
-                      "example": 401
-                    },
-                    "error": {
-                      "type": "string",
-                      "example": "Unauthorized"
-                    }
+                    "message": { "type": "string", "example": "Unauthorized" },
+                    "statusCode": { "type": "number", "example": 401 },
+                    "error": { "type": "string", "example": "Unauthorized" }
                   }
                 }
               }
             }
           }
         },
-        "security": [
-          {
-            "JWT-auth": []
-          }
-        ],
-        "summary": "Disable MFA",
+        "security": [{ "JWT-auth": [] }],
+        "summary": "Request email verification for any email address (public)",
         "tags": ["auth"]
       }
     },
-    "/api/v1/expenses": {
+    "/api/v1/auth/email/request-verification/current": {
       "post": {
-        "operationId": "create",
+        "description": "Sends a verification email only if the current user's email is not already verified",
+        "operationId": "AuthController_requestVerificationForCurrentUser",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Request processed successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "verified": { "type": "boolean", "example": false },
+                    "message": { "type": "string" },
+                    "verifiedAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "nullable": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "Unauthorized" }
+        },
+        "security": [{ "JWT-auth": [] }],
+        "summary": "Request email verification for the current authenticated user",
+        "tags": ["auth"]
+      }
+    },
+    "/api/v1/auth/email/verify": {
+      "post": {
+        "operationId": "AuthController_verifyEmail",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/VerifyEmailDto" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Email verified successfully" },
+          "400": { "description": "Invalid or expired token" },
+          "401": {
+            "description": "Unauthorized - Valid JWT token is required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": { "type": "string", "example": "Unauthorized" },
+                    "statusCode": { "type": "number", "example": 401 },
+                    "error": { "type": "string", "example": "Unauthorized" }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [{ "JWT-auth": [] }],
+        "summary": "Verify email with token",
+        "tags": ["auth"]
+      }
+    },
+    "/api/v1/auth/email/verification-status": {
+      "get": {
+        "operationId": "AuthController_getEmailVerificationStatus",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Email verification status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "email": { "type": "string" },
+                    "verified": { "type": "boolean" },
+                    "verifiedAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "nullable": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "Unauthorized" }
+        },
+        "security": [{ "JWT-auth": [] }],
+        "summary": "Check email verification status for the current user",
+        "tags": ["auth"]
+      }
+    },
+    "/api/v1/auth/google": {
+      "get": {
+        "operationId": "AuthController_googleAuth",
+        "parameters": [],
+        "responses": {
+          "200": { "description": "Redirects to Google login" },
+          "401": {
+            "description": "Unauthorized - Valid JWT token is required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": { "type": "string", "example": "Unauthorized" },
+                    "statusCode": { "type": "number", "example": 401 },
+                    "error": { "type": "string", "example": "Unauthorized" }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [{ "JWT-auth": [] }],
+        "summary": "Google OAuth login",
+        "tags": ["auth"]
+      }
+    },
+    "/api/v1/auth/google/callback": {
+      "get": {
+        "operationId": "AuthController_googleAuthCallback",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Google login successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "accessToken": {
+                      "type": "string",
+                      "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+                      "description": "JWT token to be used for authenticated requests"
+                    },
+                    "user": {
+                      "type": "object",
+                      "properties": {
+                        "id": { "type": "string" },
+                        "email": { "type": "string" },
+                        "firstName": { "type": "string" },
+                        "lastName": { "type": "string" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Valid JWT token is required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": { "type": "string", "example": "Unauthorized" },
+                    "statusCode": { "type": "number", "example": 401 },
+                    "error": { "type": "string", "example": "Unauthorized" }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [{ "JWT-auth": [] }],
+        "summary": "Google OAuth callback",
+        "tags": ["auth"]
+      }
+    },
+    "/api/v1/auth/link-account": {
+      "post": {
+        "operationId": "AuthController_linkAccount",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/LinkAccountDto" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Account linked successfully" },
+          "400": { "description": "Invalid request or provider" },
+          "401": { "description": "Unauthorized" }
+        },
+        "security": [{ "JWT-auth": [] }],
+        "summary": "Link current account with OAuth provider",
+        "tags": ["auth"]
+      }
+    },
+    "/api/v1/auth/unlink-provider/{provider}": {
+      "post": {
+        "operationId": "AuthController_unlinkProvider",
+        "parameters": [
+          {
+            "name": "provider",
+            "required": true,
+            "in": "path",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Provider unlinked successfully" },
+          "400": {
+            "description": "Invalid request or cannot unlink last login method"
+          },
+          "401": { "description": "Unauthorized" }
+        },
+        "security": [{ "JWT-auth": [] }],
+        "summary": "Unlink an OAuth provider from current account",
+        "tags": ["auth"]
+      }
+    },
+    "/api/v1/auth/github": {
+      "get": {
+        "operationId": "AuthController_githubAuth",
+        "parameters": [],
+        "responses": {
+          "200": { "description": "Redirects to GitHub login" },
+          "401": {
+            "description": "Unauthorized - Valid JWT token is required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": { "type": "string", "example": "Unauthorized" },
+                    "statusCode": { "type": "number", "example": 401 },
+                    "error": { "type": "string", "example": "Unauthorized" }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [{ "JWT-auth": [] }],
+        "summary": "GitHub OAuth login",
+        "tags": ["auth"]
+      }
+    },
+    "/api/v1/auth/github/callback": {
+      "get": {
+        "operationId": "AuthController_githubAuthCallback",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "GitHub login successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "accessToken": {
+                      "type": "string",
+                      "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+                      "description": "JWT token to be used for authenticated requests"
+                    },
+                    "user": {
+                      "type": "object",
+                      "properties": {
+                        "id": { "type": "string" },
+                        "email": { "type": "string" },
+                        "firstName": { "type": "string" },
+                        "lastName": { "type": "string" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Valid JWT token is required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": { "type": "string", "example": "Unauthorized" },
+                    "statusCode": { "type": "number", "example": 401 },
+                    "error": { "type": "string", "example": "Unauthorized" }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [{ "JWT-auth": [] }],
+        "summary": "GitHub OAuth callback",
+        "tags": ["auth"]
+      }
+    },
+    "/api/v1/auth/logout": {
+      "post": {
+        "operationId": "AuthController_logout",
+        "parameters": [],
+        "responses": {
+          "200": { "description": "Logout successful" },
+          "401": { "description": "Unauthorized" }
+        },
+        "security": [{ "JWT-auth": [] }],
+        "summary": "Logout user",
+        "tags": ["auth"]
+      }
+    },
+    "/api/v1/categories": {
+      "post": {
+        "description": "Creates a new category. Note: Setting isDefault or isSystem to true requires admin privileges.",
+        "operationId": "CategoriesController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CreateCategoryDto" }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Category created successfully." },
+          "400": { "description": "Bad request." },
+          "403": {
+            "description": "Forbidden. Admin privileges required for setting isDefault or isSystem."
+          },
+          "409": { "description": "Category already exists." }
+        },
+        "security": [{ "JWT-auth": [] }],
+        "summary": "Create a new category",
+        "tags": ["categories"]
+      },
+      "get": {
+        "operationId": "CategoriesController_findAll",
+        "parameters": [
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "description": "Search by name",
+            "schema": { "example": "Groceries", "type": "string" }
+          },
+          {
+            "name": "type",
+            "required": false,
+            "in": "query",
+            "description": "Filter by type",
+            "schema": {
+              "example": "EXPENSE",
+              "type": "string",
+              "enum": ["INCOME", "EXPENSE"]
+            }
+          },
+          {
+            "name": "isDefault",
+            "required": false,
+            "in": "query",
+            "description": "Filter by default flag",
+            "schema": { "example": true, "type": "boolean" }
+          },
+          {
+            "name": "isSystem",
+            "required": false,
+            "in": "query",
+            "description": "Filter by system flag",
+            "schema": { "example": true, "type": "boolean" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Returns a list of categories." }
+        },
+        "security": [{ "JWT-auth": [] }],
+        "summary": "Get all categories",
+        "tags": ["categories"]
+      }
+    },
+    "/api/v1/categories/{id}": {
+      "get": {
+        "operationId": "CategoriesController_findOne",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Category ID",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Returns the category." },
+          "404": { "description": "Category not found." }
+        },
+        "security": [{ "JWT-auth": [] }],
+        "summary": "Get a category by ID",
+        "tags": ["categories"]
+      },
+      "patch": {
+        "description": "Updates a category. Note: Setting isDefault or isSystem to true requires admin privileges.",
+        "operationId": "CategoriesController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Category ID",
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/UpdateCategoryDto" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Category updated successfully." },
+          "400": { "description": "Bad request." },
+          "403": {
+            "description": "Forbidden. Admin privileges required for setting isDefault or isSystem."
+          },
+          "404": { "description": "Category not found." }
+        },
+        "security": [{ "JWT-auth": [] }],
+        "summary": "Update a category",
+        "tags": ["categories"]
+      },
+      "delete": {
+        "operationId": "CategoriesController_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Category ID",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Category deleted successfully." },
+          "400": {
+            "description": "Bad request or category has associated transactions."
+          },
+          "404": { "description": "Category not found." }
+        },
+        "security": [{ "JWT-auth": [] }],
+        "summary": "Delete a category",
+        "tags": ["categories"]
+      }
+    },
+    "/api/v1/categories/types/all": {
+      "get": {
+        "operationId": "CategoriesController_findAllTypes",
+        "parameters": [],
+        "responses": {
+          "200": { "description": "Returns a list of category types." }
+        },
+        "security": [{ "JWT-auth": [] }],
+        "summary": "Get all category types",
+        "tags": ["categories"]
+      }
+    },
+    "/api/v1/categories/default/all": {
+      "get": {
+        "operationId": "CategoriesController_findDefaultCategories",
+        "parameters": [],
+        "responses": {
+          "200": { "description": "Returns a list of default categories." }
+        },
+        "security": [{ "JWT-auth": [] }],
+        "summary": "Get all default categories",
+        "tags": ["categories"]
+      }
+    },
+    "/api/v1/categories/system/all": {
+      "get": {
+        "operationId": "CategoriesController_findSystemCategories",
+        "parameters": [],
+        "responses": {
+          "200": { "description": "Returns a list of system categories." }
+        },
+        "security": [{ "JWT-auth": [] }],
+        "summary": "Get all system categories",
+        "tags": ["categories"]
+      }
+    },
+    "/api/v1/payment-methods": {
+      "post": {
+        "description": "Creates a new payment method. Note: Setting isDefault or isSystem to true requires admin privileges.",
+        "operationId": "PaymentMethodsController_create",
         "parameters": [],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateExpenseDto"
+                "$ref": "#/components/schemas/CreatePaymentMethodDto"
               }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Payment method created successfully." },
+          "400": { "description": "Bad request." },
+          "403": {
+            "description": "Forbidden. Admin privileges required for setting isDefault or isSystem."
+          },
+          "409": { "description": "Payment method already exists." }
+        },
+        "security": [{ "JWT-auth": [] }],
+        "summary": "Create a new payment method",
+        "tags": ["payment-methods"]
+      },
+      "get": {
+        "operationId": "PaymentMethodsController_findAll",
+        "parameters": [
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "description": "Search by name",
+            "schema": { "example": "Credit", "type": "string" }
+          },
+          {
+            "name": "isDefault",
+            "required": false,
+            "in": "query",
+            "description": "Filter by default flag",
+            "schema": { "example": true, "type": "boolean" }
+          },
+          {
+            "name": "isSystem",
+            "required": false,
+            "in": "query",
+            "description": "Filter by system flag",
+            "schema": { "example": true, "type": "boolean" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Returns a list of payment methods." }
+        },
+        "security": [{ "JWT-auth": [] }],
+        "summary": "Get all payment methods",
+        "tags": ["payment-methods"]
+      }
+    },
+    "/api/v1/payment-methods/{id}": {
+      "get": {
+        "operationId": "PaymentMethodsController_findOne",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Payment method ID",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Returns the payment method." },
+          "404": { "description": "Payment method not found." }
+        },
+        "security": [{ "JWT-auth": [] }],
+        "summary": "Get a payment method by ID",
+        "tags": ["payment-methods"]
+      },
+      "patch": {
+        "description": "Updates a payment method. Note: Setting isDefault or isSystem to true requires admin privileges.",
+        "operationId": "PaymentMethodsController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Payment method ID",
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdatePaymentMethodDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Payment method updated successfully." },
+          "400": { "description": "Bad request." },
+          "403": {
+            "description": "Forbidden. Admin privileges required for setting isDefault or isSystem."
+          },
+          "404": { "description": "Payment method not found." }
+        },
+        "security": [{ "JWT-auth": [] }],
+        "summary": "Update a payment method",
+        "tags": ["payment-methods"]
+      },
+      "delete": {
+        "operationId": "PaymentMethodsController_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Payment method ID",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Payment method deleted successfully." },
+          "400": {
+            "description": "Bad request or payment method has associated transactions."
+          },
+          "404": { "description": "Payment method not found." }
+        },
+        "security": [{ "JWT-auth": [] }],
+        "summary": "Delete a payment method",
+        "tags": ["payment-methods"]
+      }
+    },
+    "/api/v1/payment-methods/default/all": {
+      "get": {
+        "operationId": "PaymentMethodsController_findDefaultPaymentMethods",
+        "parameters": [],
+        "responses": {
+          "200": { "description": "Returns a list of default payment methods." }
+        },
+        "security": [{ "JWT-auth": [] }],
+        "summary": "Get all default payment methods",
+        "tags": ["payment-methods"]
+      }
+    },
+    "/api/v1/payment-methods/system/all": {
+      "get": {
+        "operationId": "PaymentMethodsController_findSystemPaymentMethods",
+        "parameters": [],
+        "responses": {
+          "200": { "description": "Returns a list of system payment methods." }
+        },
+        "security": [{ "JWT-auth": [] }],
+        "summary": "Get all system payment methods",
+        "tags": ["payment-methods"]
+      }
+    },
+    "/api/v1/expenses": {
+      "post": {
+        "operationId": "ExpensesController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CreateExpenseDto" }
             }
           }
         },
@@ -732,41 +1429,20 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "id": {
-                      "type": "string"
-                    },
-                    "amount": {
-                      "type": "number"
-                    },
-                    "description": {
-                      "type": "string"
-                    },
-                    "date": {
-                      "type": "string",
-                      "format": "date-time"
-                    },
-                    "categoryId": {
-                      "type": "string"
-                    },
-                    "userId": {
-                      "type": "string"
-                    },
-                    "createdAt": {
-                      "type": "string",
-                      "format": "date-time"
-                    },
-                    "updatedAt": {
-                      "type": "string",
-                      "format": "date-time"
-                    }
+                    "id": { "type": "string" },
+                    "amount": { "type": "number" },
+                    "description": { "type": "string" },
+                    "date": { "type": "string", "format": "date-time" },
+                    "categoryId": { "type": "string" },
+                    "userId": { "type": "string" },
+                    "createdAt": { "type": "string", "format": "date-time" },
+                    "updatedAt": { "type": "string", "format": "date-time" }
                   }
                 }
               }
             }
           },
-          "400": {
-            "description": "Bad request - Invalid input"
-          },
+          "400": { "description": "Bad request - Invalid input" },
           "401": {
             "description": "Unauthorized - Valid JWT token is required",
             "content": {
@@ -774,134 +1450,98 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "message": {
-                      "type": "string",
-                      "example": "Unauthorized"
-                    },
-                    "statusCode": {
-                      "type": "number",
-                      "example": 401
-                    },
-                    "error": {
-                      "type": "string",
-                      "example": "Unauthorized"
-                    }
+                    "message": { "type": "string", "example": "Unauthorized" },
+                    "statusCode": { "type": "number", "example": 401 },
+                    "error": { "type": "string", "example": "Unauthorized" }
                   }
                 }
               }
             }
           }
         },
-        "security": [
-          {
-            "JWT-auth": []
-          }
-        ],
+        "security": [{ "JWT-auth": [] }],
         "summary": "Create a new expense",
         "tags": ["expenses"]
       },
       "get": {
-        "operationId": "findAll",
+        "operationId": "ExpensesController_findAll",
         "parameters": [
           {
             "name": "startDate",
             "required": false,
             "in": "query",
             "description": "Start date (YYYY-MM-DD)",
-            "schema": {
-              "example": "2023-01-01",
-              "type": "string"
-            }
+            "schema": { "example": "2023-01-01", "type": "string" }
           },
           {
             "name": "endDate",
             "required": false,
             "in": "query",
             "description": "End date (YYYY-MM-DD)",
-            "schema": {
-              "example": "2023-12-31",
-              "type": "string"
-            }
+            "schema": { "example": "2023-12-31", "type": "string" }
           },
           {
             "name": "categoryId",
             "required": false,
             "in": "query",
             "description": "Category ID",
-            "schema": {
-              "example": "category-uuid",
-              "type": "string"
-            }
+            "schema": { "example": "category-uuid", "type": "string" }
           },
           {
             "name": "paymentMethodId",
             "required": false,
             "in": "query",
             "description": "Filter by payment method ID",
-            "schema": {
-              "example": "payment-method-uuid",
-              "type": "string"
-            }
+            "schema": { "example": "payment-method-uuid", "type": "string" }
           },
           {
             "name": "searchTerm",
             "required": false,
             "in": "query",
             "description": "Search term for description",
-            "schema": {
-              "example": "Groceries",
-              "type": "string"
-            }
+            "schema": { "example": "Groceries", "type": "string" }
           },
           {
             "name": "minAmount",
             "required": false,
             "in": "query",
             "description": "Minimum amount in cents",
-            "schema": {
-              "example": 1000,
-              "type": "number"
-            }
+            "schema": { "example": 1000, "type": "number" }
           },
           {
             "name": "maxAmount",
             "required": false,
             "in": "query",
             "description": "Maximum amount in cents",
-            "schema": {
-              "example": 50000,
-              "type": "number"
-            }
+            "schema": { "example": 50000, "type": "number" }
           },
           {
             "name": "page",
             "required": false,
             "in": "query",
             "description": "Page number",
-            "schema": {
-              "example": 1,
-              "type": "number"
-            }
+            "schema": { "example": 1, "type": "number" }
           },
           {
             "name": "limit",
             "required": false,
             "in": "query",
             "description": "Items per page",
-            "schema": {
-              "example": 20,
-              "type": "number"
-            }
+            "schema": { "example": 20, "type": "number" }
           },
           {
             "name": "includeVoid",
             "required": false,
             "in": "query",
             "description": "Include void expenses",
-            "schema": {
-              "example": false,
-              "type": "boolean"
-            }
+            "schema": { "example": false, "type": "boolean" }
+          },
+          {
+            "name": "includeRecurring",
+            "required": false,
+            "in": "query",
+            "description": "Include recurring expenses",
+            "schema": { "example": false, "type": "boolean" }
           }
         ],
         "responses": {
@@ -917,25 +1557,12 @@
                       "items": {
                         "type": "object",
                         "properties": {
-                          "id": {
-                            "type": "string"
-                          },
-                          "amount": {
-                            "type": "number"
-                          },
-                          "description": {
-                            "type": "string"
-                          },
-                          "date": {
-                            "type": "string",
-                            "format": "date-time"
-                          },
-                          "categoryId": {
-                            "type": "string"
-                          },
-                          "userId": {
-                            "type": "string"
-                          },
+                          "id": { "type": "string" },
+                          "amount": { "type": "number" },
+                          "description": { "type": "string" },
+                          "date": { "type": "string", "format": "date-time" },
+                          "categoryId": { "type": "string" },
+                          "userId": { "type": "string" },
                           "createdAt": {
                             "type": "string",
                             "format": "date-time"
@@ -950,18 +1577,10 @@
                     "meta": {
                       "type": "object",
                       "properties": {
-                        "total": {
-                          "type": "number"
-                        },
-                        "page": {
-                          "type": "number"
-                        },
-                        "limit": {
-                          "type": "number"
-                        },
-                        "totalPages": {
-                          "type": "number"
-                        }
+                        "total": { "type": "number" },
+                        "page": { "type": "number" },
+                        "limit": { "type": "number" },
+                        "totalPages": { "type": "number" }
                       }
                     }
                   }
@@ -976,42 +1595,27 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "message": {
-                      "type": "string",
-                      "example": "Unauthorized"
-                    },
-                    "statusCode": {
-                      "type": "number",
-                      "example": 401
-                    },
-                    "error": {
-                      "type": "string",
-                      "example": "Unauthorized"
-                    }
+                    "message": { "type": "string", "example": "Unauthorized" },
+                    "statusCode": { "type": "number", "example": 401 },
+                    "error": { "type": "string", "example": "Unauthorized" }
                   }
                 }
               }
             }
           }
         },
-        "security": [
-          {
-            "JWT-auth": []
-          }
-        ],
+        "security": [{ "JWT-auth": [] }],
         "summary": "Get all expenses with pagination and filters",
         "tags": ["expenses"]
       },
       "put": {
-        "operationId": "update",
+        "operationId": "ExpensesController_update",
         "parameters": [],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateExpenseDto"
-              }
+              "schema": { "$ref": "#/components/schemas/UpdateExpenseDto" }
             }
           }
         },
@@ -1023,37 +1627,19 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "id": {
-                      "type": "string"
-                    },
-                    "amount": {
-                      "type": "number"
-                    },
-                    "description": {
-                      "type": "string"
-                    },
-                    "date": {
-                      "type": "string",
-                      "format": "date-time"
-                    },
-                    "categoryId": {
-                      "type": "string"
-                    },
-                    "userId": {
-                      "type": "string"
-                    },
-                    "updatedAt": {
-                      "type": "string",
-                      "format": "date-time"
-                    }
+                    "id": { "type": "string" },
+                    "amount": { "type": "number" },
+                    "description": { "type": "string" },
+                    "date": { "type": "string", "format": "date-time" },
+                    "categoryId": { "type": "string" },
+                    "userId": { "type": "string" },
+                    "updatedAt": { "type": "string", "format": "date-time" }
                   }
                 }
               }
             }
           },
-          "400": {
-            "description": "Bad request - Invalid input"
-          },
+          "400": { "description": "Bad request - Invalid input" },
           "401": {
             "description": "Unauthorized - Valid JWT token is required",
             "content": {
@@ -1061,52 +1647,33 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "message": {
-                      "type": "string",
-                      "example": "Unauthorized"
-                    },
-                    "statusCode": {
-                      "type": "number",
-                      "example": 401
-                    },
-                    "error": {
-                      "type": "string",
-                      "example": "Unauthorized"
-                    }
+                    "message": { "type": "string", "example": "Unauthorized" },
+                    "statusCode": { "type": "number", "example": 401 },
+                    "error": { "type": "string", "example": "Unauthorized" }
                   }
                 }
               }
             }
           },
-          "404": {
-            "description": "Expense not found"
-          }
+          "404": { "description": "Expense not found" }
         },
-        "security": [
-          {
-            "JWT-auth": []
-          }
-        ],
+        "security": [{ "JWT-auth": [] }],
         "summary": "Update an expense",
         "tags": ["expenses"]
       },
       "delete": {
-        "operationId": "remove",
+        "operationId": "ExpensesController_remove",
         "parameters": [
           {
             "name": "id",
             "required": true,
             "in": "query",
             "description": "Expense ID to delete",
-            "schema": {
-              "type": "string"
-            }
+            "schema": { "type": "string" }
           }
         ],
         "responses": {
-          "200": {
-            "description": "Expense deleted successfully"
-          },
+          "200": { "description": "Expense deleted successfully" },
           "401": {
             "description": "Unauthorized - Valid JWT token is required",
             "content": {
@@ -1114,39 +1681,24 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "message": {
-                      "type": "string",
-                      "example": "Unauthorized"
-                    },
-                    "statusCode": {
-                      "type": "number",
-                      "example": 401
-                    },
-                    "error": {
-                      "type": "string",
-                      "example": "Unauthorized"
-                    }
+                    "message": { "type": "string", "example": "Unauthorized" },
+                    "statusCode": { "type": "number", "example": 401 },
+                    "error": { "type": "string", "example": "Unauthorized" }
                   }
                 }
               }
             }
           },
-          "404": {
-            "description": "Expense not found"
-          }
+          "404": { "description": "Expense not found" }
         },
-        "security": [
-          {
-            "JWT-auth": []
-          }
-        ],
+        "security": [{ "JWT-auth": [] }],
         "summary": "Delete an expense",
         "tags": ["expenses"]
       }
     },
     "/api/v1/expenses/{id}": {
       "get": {
-        "operationId": "findById",
+        "operationId": "ExpensesController_findById",
         "parameters": [
           {
             "name": "id",
@@ -1167,33 +1719,14 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "id": {
-                      "type": "string"
-                    },
-                    "amount": {
-                      "type": "number"
-                    },
-                    "description": {
-                      "type": "string"
-                    },
-                    "date": {
-                      "type": "string",
-                      "format": "date-time"
-                    },
-                    "categoryId": {
-                      "type": "string"
-                    },
-                    "userId": {
-                      "type": "string"
-                    },
-                    "createdAt": {
-                      "type": "string",
-                      "format": "date-time"
-                    },
-                    "updatedAt": {
-                      "type": "string",
-                      "format": "date-time"
-                    }
+                    "id": { "type": "string" },
+                    "amount": { "type": "number" },
+                    "description": { "type": "string" },
+                    "date": { "type": "string", "format": "date-time" },
+                    "categoryId": { "type": "string" },
+                    "userId": { "type": "string" },
+                    "createdAt": { "type": "string", "format": "date-time" },
+                    "updatedAt": { "type": "string", "format": "date-time" }
                   }
                 }
               }
@@ -1206,139 +1739,101 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "message": {
-                      "type": "string",
-                      "example": "Unauthorized"
-                    },
-                    "statusCode": {
-                      "type": "number",
-                      "example": 401
-                    },
-                    "error": {
-                      "type": "string",
-                      "example": "Unauthorized"
-                    }
+                    "message": { "type": "string", "example": "Unauthorized" },
+                    "statusCode": { "type": "number", "example": 401 },
+                    "error": { "type": "string", "example": "Unauthorized" }
                   }
                 }
               }
             }
           },
-          "404": {
-            "description": "Expense not found"
-          }
+          "404": { "description": "Expense not found" }
         },
-        "security": [
-          {
-            "JWT-auth": []
-          }
-        ],
+        "security": [{ "JWT-auth": [] }],
         "summary": "Get an expense by ID",
         "tags": ["expenses"]
       }
     },
     "/api/v1/expenses/stats/by-category": {
       "get": {
-        "operationId": "getExpenseTotalsByCategory",
+        "operationId": "ExpensesController_getExpenseTotalsByCategory",
         "parameters": [
           {
             "name": "startDate",
             "required": true,
             "in": "query",
             "description": "Start date (YYYY-MM-DD)",
-            "schema": {
-              "example": "2023-01-01",
-              "type": "string"
-            }
+            "schema": { "example": "2023-01-01", "type": "string" }
           },
           {
             "name": "endDate",
             "required": true,
             "in": "query",
             "description": "End date (YYYY-MM-DD)",
-            "schema": {
-              "example": "2023-12-31",
-              "type": "string"
-            }
+            "schema": { "example": "2023-12-31", "type": "string" }
           },
           {
             "name": "categoryId",
             "required": false,
             "in": "query",
             "description": "Filter by category ID",
-            "schema": {
-              "example": "category-uuid",
-              "type": "string"
-            }
+            "schema": { "example": "category-uuid", "type": "string" }
           },
           {
             "name": "paymentMethodId",
             "required": false,
             "in": "query",
             "description": "Filter by payment method ID",
-            "schema": {
-              "example": "payment-method-uuid",
-              "type": "string"
-            }
+            "schema": { "example": "payment-method-uuid", "type": "string" }
           },
           {
             "name": "searchTerm",
             "required": false,
             "in": "query",
             "description": "Search term for description",
-            "schema": {
-              "example": "Groceries",
-              "type": "string"
-            }
+            "schema": { "example": "Groceries", "type": "string" }
           },
           {
             "name": "minAmount",
             "required": false,
             "in": "query",
             "description": "Minimum amount in cents",
-            "schema": {
-              "example": 1000,
-              "type": "number"
-            }
+            "schema": { "example": 1000, "type": "number" }
           },
           {
             "name": "maxAmount",
             "required": false,
             "in": "query",
             "description": "Maximum amount in cents",
-            "schema": {
-              "example": 50000,
-              "type": "number"
-            }
+            "schema": { "example": 50000, "type": "number" }
           },
           {
             "name": "page",
             "required": false,
             "in": "query",
             "description": "Page number for pagination",
-            "schema": {
-              "example": 1,
-              "type": "number"
-            }
+            "schema": { "example": 1, "type": "number" }
           },
           {
             "name": "limit",
             "required": false,
             "in": "query",
             "description": "Number of items per page",
-            "schema": {
-              "example": 20,
-              "type": "number"
-            }
+            "schema": { "example": 20, "type": "number" }
           },
           {
             "name": "includeVoid",
             "required": false,
             "in": "query",
             "description": "Include void expenses",
-            "schema": {
-              "example": false,
-              "type": "boolean"
-            }
+            "schema": { "example": false, "type": "boolean" }
+          },
+          {
+            "name": "includeRecurring",
+            "required": false,
+            "in": "query",
+            "description": "Include recurring expenses",
+            "schema": { "example": false, "type": "boolean" }
           }
         ],
         "responses": {
@@ -1351,17 +1846,151 @@
                   "items": {
                     "type": "object",
                     "properties": {
-                      "categoryId": {
-                        "type": "string"
-                      },
-                      "categoryName": {
-                        "type": "string"
-                      },
-                      "total": {
-                        "type": "number"
-                      },
-                      "count": {
-                        "type": "number"
+                      "categoryId": { "type": "string" },
+                      "categoryName": { "type": "string" },
+                      "total": { "type": "number" },
+                      "count": { "type": "number" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "description": "Bad request - Missing date range" },
+          "401": {
+            "description": "Unauthorized - Valid JWT token is required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": { "type": "string", "example": "Unauthorized" },
+                    "statusCode": { "type": "number", "example": 401 },
+                    "error": { "type": "string", "example": "Unauthorized" }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [{ "JWT-auth": [] }],
+        "summary": "Get expense totals by category",
+        "tags": ["expenses"]
+      }
+    },
+    "/api/v1/income": {
+      "get": {
+        "operationId": "IncomeController_findAll",
+        "parameters": [
+          {
+            "name": "startDate",
+            "required": false,
+            "in": "query",
+            "description": "Start date for filtering",
+            "schema": {
+              "format": "date-time",
+              "example": "2023-01-01",
+              "type": "string"
+            }
+          },
+          {
+            "name": "endDate",
+            "required": false,
+            "in": "query",
+            "description": "End date for filtering",
+            "schema": {
+              "format": "date-time",
+              "example": "2023-12-31",
+              "type": "string"
+            }
+          },
+          {
+            "name": "categoryId",
+            "required": false,
+            "in": "query",
+            "description": "Filter by category ID",
+            "schema": { "example": "category-uuid", "type": "string" }
+          },
+          {
+            "name": "paymentMethodId",
+            "required": false,
+            "in": "query",
+            "description": "Filter by payment method ID",
+            "schema": { "example": "payment-method-uuid", "type": "string" }
+          },
+          {
+            "name": "searchTerm",
+            "required": false,
+            "in": "query",
+            "description": "Search in description",
+            "schema": { "example": "Salary", "type": "string" }
+          },
+          {
+            "name": "minAmount",
+            "required": false,
+            "in": "query",
+            "description": "Minimum amount in cents",
+            "schema": { "example": 10000, "type": "number" }
+          },
+          {
+            "name": "maxAmount",
+            "required": false,
+            "in": "query",
+            "description": "Maximum amount in cents",
+            "schema": { "example": 100000, "type": "number" }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "description": "Page number",
+            "schema": { "example": 1, "type": "number" }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "description": "Items per page",
+            "schema": { "example": 20, "type": "number" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Returns income records with pagination.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": { "type": "string" },
+                          "amount": { "type": "number" },
+                          "description": { "type": "string" },
+                          "date": { "type": "string", "format": "date-time" },
+                          "categoryId": { "type": "string" },
+                          "userId": { "type": "string" },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "updatedAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        }
+                      }
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "total": { "type": "number" },
+                        "page": { "type": "number" },
+                        "limit": { "type": "number" },
+                        "totalPages": { "type": "number" }
                       }
                     }
                   }
@@ -1369,8 +1998,145 @@
               }
             }
           },
-          "400": {
-            "description": "Bad request - Missing date range"
+          "401": { "description": "Unauthorized." }
+        },
+        "security": [{ "JWT-auth": [] }],
+        "summary": "Get all income records with pagination and filters",
+        "tags": ["income"]
+      },
+      "post": {
+        "operationId": "IncomeController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CreateIncomeDto" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Income record created successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": { "type": "string" },
+                    "amount": { "type": "number" },
+                    "description": { "type": "string" },
+                    "date": { "type": "string", "format": "date-time" },
+                    "categoryId": { "type": "string" },
+                    "userId": { "type": "string" },
+                    "createdAt": { "type": "string", "format": "date-time" },
+                    "updatedAt": { "type": "string", "format": "date-time" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "description": "Bad request." },
+          "401": { "description": "Unauthorized." }
+        },
+        "security": [{ "JWT-auth": [] }],
+        "summary": "Create a new income record",
+        "tags": ["income"]
+      },
+      "put": {
+        "operationId": "IncomeController_update",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/UpdateIncomeDto" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Income record updated successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": { "type": "string" },
+                    "amount": { "type": "number" },
+                    "description": { "type": "string" },
+                    "date": { "type": "string", "format": "date-time" },
+                    "categoryId": { "type": "string" },
+                    "userId": { "type": "string" },
+                    "updatedAt": { "type": "string", "format": "date-time" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "Unauthorized." },
+          "404": { "description": "Income record not found." }
+        },
+        "security": [{ "JWT-auth": [] }],
+        "summary": "Update an income record",
+        "tags": ["income"]
+      },
+      "delete": {
+        "operationId": "IncomeController_void",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "query",
+            "description": "Income record ID to void",
+            "schema": {}
+          }
+        ],
+        "responses": {
+          "200": { "description": "Income record voided successfully." },
+          "401": { "description": "Unauthorized." },
+          "404": { "description": "Income record not found." }
+        },
+        "security": [{ "JWT-auth": [] }],
+        "summary": "Void an income record",
+        "tags": ["income"]
+      }
+    },
+    "/api/v1/income/{id}": {
+      "get": {
+        "operationId": "IncomeController_findById",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Income ID",
+            "schema": {
+              "example": "123e4567-e89b-12d3-a456-426614174000",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Returns the income record.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": { "type": "string" },
+                    "amount": { "type": "number" },
+                    "description": { "type": "string" },
+                    "date": { "type": "string", "format": "date-time" },
+                    "categoryId": { "type": "string" },
+                    "userId": { "type": "string" },
+                    "createdAt": { "type": "string", "format": "date-time" },
+                    "updatedAt": { "type": "string", "format": "date-time" }
+                  }
+                }
+              }
+            }
           },
           "401": {
             "description": "Unauthorized - Valid JWT token is required",
@@ -1379,478 +2145,135 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "message": {
-                      "type": "string",
-                      "example": "Unauthorized"
-                    },
-                    "statusCode": {
-                      "type": "number",
-                      "example": 401
-                    },
-                    "error": {
-                      "type": "string",
-                      "example": "Unauthorized"
+                    "message": { "type": "string", "example": "Unauthorized" },
+                    "statusCode": { "type": "number", "example": 401 },
+                    "error": { "type": "string", "example": "Unauthorized" }
+                  }
+                }
+              }
+            }
+          },
+          "404": { "description": "Income record not found" }
+        },
+        "security": [{ "JWT-auth": [] }],
+        "summary": "Get an income record by ID",
+        "tags": ["income"]
+      }
+    },
+    "/api/v1/income/stats/by-category": {
+      "get": {
+        "operationId": "IncomeController_getIncomeTotalsByCategory",
+        "parameters": [
+          {
+            "name": "startDate",
+            "required": true,
+            "in": "query",
+            "description": "Start date (YYYY-MM-DD)",
+            "schema": { "example": "2023-01-01", "type": "string" }
+          },
+          {
+            "name": "endDate",
+            "required": true,
+            "in": "query",
+            "description": "End date (YYYY-MM-DD)",
+            "schema": { "example": "2023-12-31", "type": "string" }
+          },
+          {
+            "name": "categoryId",
+            "required": false,
+            "in": "query",
+            "description": "Filter by category ID",
+            "schema": { "example": "category-uuid", "type": "string" }
+          },
+          {
+            "name": "paymentMethodId",
+            "required": false,
+            "in": "query",
+            "description": "Filter by payment method ID",
+            "schema": { "example": "payment-method-uuid", "type": "string" }
+          },
+          {
+            "name": "searchTerm",
+            "required": false,
+            "in": "query",
+            "description": "Search term for description",
+            "schema": { "example": "Salary", "type": "string" }
+          },
+          {
+            "name": "minAmount",
+            "required": false,
+            "in": "query",
+            "description": "Minimum amount in cents",
+            "schema": { "example": 10000, "type": "number" }
+          },
+          {
+            "name": "maxAmount",
+            "required": false,
+            "in": "query",
+            "description": "Maximum amount in cents",
+            "schema": { "example": 100000, "type": "number" }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "description": "Page number for pagination",
+            "schema": { "example": 1, "type": "number" }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "description": "Number of items per page",
+            "schema": { "example": 20, "type": "number" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Returns income totals by category.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "categoryId": { "type": "string" },
+                      "categoryName": { "type": "string" },
+                      "total": { "type": "number" },
+                      "count": { "type": "number" }
                     }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "description": "Bad request - Missing date range" },
+          "401": {
+            "description": "Unauthorized - Valid JWT token is required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": { "type": "string", "example": "Unauthorized" },
+                    "statusCode": { "type": "number", "example": 401 },
+                    "error": { "type": "string", "example": "Unauthorized" }
                   }
                 }
               }
             }
           }
         },
-        "security": [
-          {
-            "JWT-auth": []
-          }
-        ],
-        "summary": "Get expense totals by category",
-        "tags": ["expenses"]
-      }
-    },
-    "/api/v1/categories": {
-      "post": {
-        "operationId": "create",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateCategoryDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "The category has been successfully created."
-          },
-          "400": {
-            "description": "Invalid input data."
-          },
-          "409": {
-            "description": "Category with this name already exists."
-          }
-        },
-        "security": [
-          {
-            "JWT-auth": []
-          }
-        ],
-        "summary": "Create a new category",
-        "tags": ["categories"]
-      },
-      "get": {
-        "operationId": "findAll",
-        "parameters": [
-          {
-            "name": "search",
-            "required": false,
-            "in": "query",
-            "description": "Search categories by name",
-            "schema": {
-              "example": "Groceries",
-              "type": "string"
-            }
-          },
-          {
-            "name": "type",
-            "required": false,
-            "in": "query",
-            "description": "Filter by category type",
-            "schema": {
-              "example": "EXPENSE",
-              "type": "string",
-              "enum": ["INCOME", "EXPENSE"]
-            }
-          },
-          {
-            "name": "isDefault",
-            "required": false,
-            "in": "query",
-            "description": "Filter default categories",
-            "schema": {
-              "example": true,
-              "type": "boolean"
-            }
-          },
-          {
-            "name": "isSystem",
-            "required": false,
-            "in": "query",
-            "description": "Filter system categories",
-            "schema": {
-              "example": true,
-              "type": "boolean"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Returns a list of categories."
-          }
-        },
-        "security": [
-          {
-            "JWT-auth": []
-          }
-        ],
-        "summary": "Get all categories",
-        "tags": ["categories"]
-      }
-    },
-    "/api/v1/categories/{id}": {
-      "get": {
-        "operationId": "findOne",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "description": "Category ID",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Returns the category."
-          },
-          "404": {
-            "description": "Category not found."
-          }
-        },
-        "security": [
-          {
-            "JWT-auth": []
-          }
-        ],
-        "summary": "Get a category by ID",
-        "tags": ["categories"]
-      },
-      "patch": {
-        "operationId": "update",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "description": "Category ID",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateCategoryDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "The category has been successfully updated."
-          },
-          "400": {
-            "description": "Invalid input data or system category."
-          },
-          "404": {
-            "description": "Category not found."
-          },
-          "409": {
-            "description": "Category with this name already exists."
-          }
-        },
-        "security": [
-          {
-            "JWT-auth": []
-          }
-        ],
-        "summary": "Update a category",
-        "tags": ["categories"]
-      },
-      "delete": {
-        "operationId": "remove",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "description": "Category ID",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "The category has been successfully deleted."
-          },
-          "400": {
-            "description": "Cannot delete: system category, default category, or has transactions."
-          },
-          "404": {
-            "description": "Category not found."
-          }
-        },
-        "security": [
-          {
-            "JWT-auth": []
-          }
-        ],
-        "summary": "Delete a category",
-        "tags": ["categories"]
-      }
-    },
-    "/api/v1/categories/types/all": {
-      "get": {
-        "operationId": "findAllTypes",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "Returns a list of category types."
-          }
-        },
-        "security": [
-          {
-            "JWT-auth": []
-          }
-        ],
-        "summary": "Get all category types",
-        "tags": ["categories"]
-      }
-    },
-    "/api/v1/categories/default/all": {
-      "get": {
-        "operationId": "findDefaultCategories",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "Returns a list of default categories."
-          }
-        },
-        "security": [
-          {
-            "JWT-auth": []
-          }
-        ],
-        "summary": "Get all default categories",
-        "tags": ["categories"]
-      }
-    },
-    "/api/v1/categories/system/all": {
-      "get": {
-        "operationId": "findSystemCategories",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "Returns a list of system categories."
-          }
-        },
-        "security": [
-          {
-            "JWT-auth": []
-          }
-        ],
-        "summary": "Get all system categories",
-        "tags": ["categories"]
-      }
-    },
-    "/api/v1/incomes": {
-      "post": {
-        "operationId": "create",
-        "parameters": [],
-        "responses": {
-          "201": {
-            "description": "Income created successfully."
-          }
-        },
-        "security": [
-          {
-            "JWT-auth": []
-          }
-        ],
-        "summary": "Create a new income",
-        "tags": ["incomes"]
-      },
-      "get": {
-        "operationId": "findAll",
-        "parameters": [
-          {
-            "name": "skip",
-            "required": true,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "take",
-            "required": true,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "categoryId",
-            "required": true,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "startDate",
-            "required": true,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "endDate",
-            "required": true,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Returns a list of incomes."
-          }
-        },
-        "security": [
-          {
-            "JWT-auth": []
-          }
-        ],
-        "summary": "Get all incomes",
-        "tags": ["incomes"]
-      }
-    },
-    "/api/v1/incomes/{id}": {
-      "get": {
-        "operationId": "findOne",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Returns the income."
-          }
-        },
-        "security": [
-          {
-            "JWT-auth": []
-          }
-        ],
-        "summary": "Get an income by id",
-        "tags": ["incomes"]
-      },
-      "patch": {
-        "operationId": "update",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Income updated successfully."
-          }
-        },
-        "security": [
-          {
-            "JWT-auth": []
-          }
-        ],
-        "summary": "Update an income",
-        "tags": ["incomes"]
-      },
-      "delete": {
-        "operationId": "remove",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Income deleted successfully."
-          }
-        },
-        "security": [
-          {
-            "JWT-auth": []
-          }
-        ],
-        "summary": "Delete an income",
-        "tags": ["incomes"]
-      }
-    },
-    "/api/v1/incomes/monthly/{year}/{month}": {
-      "get": {
-        "operationId": "getMonthlyTotal",
-        "parameters": [
-          {
-            "name": "year",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "month",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Returns the monthly total."
-          }
-        },
-        "security": [
-          {
-            "JWT-auth": []
-          }
-        ],
-        "summary": "Get monthly total income",
-        "tags": ["incomes"]
+        "security": [{ "JWT-auth": [] }],
+        "summary": "Get income totals by category",
+        "tags": ["income"]
       }
     },
     "/api/v1/newsletter/subscribe": {
       "post": {
         "description": "Subscribe to the newsletter with optional preferences. If no preferences are provided, defaults to all types enabled.",
-        "operationId": "subscribe",
+        "operationId": "NewsletterController_subscribe",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -1863,48 +2286,32 @@
           }
         },
         "responses": {
-          "201": {
-            "description": "Successfully subscribed to newsletter"
-          },
-          "404": {
-            "description": "User not found"
-          }
+          "201": { "description": "Successfully subscribed to newsletter" },
+          "404": { "description": "User not found" }
         },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
+        "security": [{ "JWT-auth": [] }],
         "summary": "Subscribe to newsletter",
-        "tags": ["Newsletter"]
+        "tags": ["newsletter"]
       }
     },
     "/api/v1/newsletter/unsubscribe": {
       "delete": {
         "description": "Unsubscribe from all newsletter types and set unsubscribe timestamp",
-        "operationId": "unsubscribe",
+        "operationId": "NewsletterController_unsubscribe",
         "parameters": [],
         "responses": {
-          "200": {
-            "description": "Successfully unsubscribed from newsletter"
-          },
-          "404": {
-            "description": "Subscription not found"
-          }
+          "200": { "description": "Successfully unsubscribed from newsletter" },
+          "404": { "description": "Subscription not found" }
         },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
+        "security": [{ "JWT-auth": [] }],
         "summary": "Unsubscribe from newsletter",
-        "tags": ["Newsletter"]
+        "tags": ["newsletter"]
       }
     },
     "/api/v1/newsletter/preferences": {
       "put": {
         "description": "Update subscription preferences for different types of newsletters",
-        "operationId": "updatePreferences",
+        "operationId": "NewsletterController_updatePreferences",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -1917,26 +2324,18 @@
           }
         },
         "responses": {
-          "200": {
-            "description": "Successfully updated preferences"
-          },
-          "404": {
-            "description": "Subscription not found"
-          }
+          "200": { "description": "Successfully updated preferences" },
+          "404": { "description": "Subscription not found" }
         },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
+        "security": [{ "JWT-auth": [] }],
         "summary": "Update newsletter preferences",
-        "tags": ["Newsletter"]
+        "tags": ["newsletter"]
       }
     },
     "/api/v1/newsletter/status": {
       "get": {
         "description": "Get current subscription status and preferences",
-        "operationId": "getSubscriptionStatus",
+        "operationId": "NewsletterController_getSubscriptionStatus",
         "parameters": [],
         "responses": {
           "200": {
@@ -1946,21 +2345,13 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "isSubscribed": {
-                      "type": "boolean"
-                    },
+                    "isSubscribed": { "type": "boolean" },
                     "preferences": {
                       "type": "object",
                       "properties": {
-                        "weeklyDigest": {
-                          "type": "boolean"
-                        },
-                        "promotionalEmails": {
-                          "type": "boolean"
-                        },
-                        "productUpdates": {
-                          "type": "boolean"
-                        }
+                        "weeklyDigest": { "type": "boolean" },
+                        "promotionalEmails": { "type": "boolean" },
+                        "productUpdates": { "type": "boolean" }
                       }
                     },
                     "unsubscribedAt": {
@@ -1974,140 +2365,116 @@
             }
           }
         },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
+        "security": [{ "JWT-auth": [] }],
         "summary": "Get newsletter subscription status",
-        "tags": ["Newsletter"]
+        "tags": ["newsletter"]
       }
     },
     "/api/v1/newsletter/send": {
       "post": {
         "description": "Trigger sending of newsletter to all active subscribers. Super Admin only.",
-        "operationId": "sendNewsletter",
+        "operationId": "NewsletterController_sendNewsletter",
         "parameters": [],
         "responses": {
-          "200": {
-            "description": "Newsletter sending initiated"
-          },
-          "401": {
-            "description": "Unauthorized - Invalid API key"
-          },
-          "403": {
-            "description": "Forbidden - Super Admin only"
-          },
-          "429": {
-            "description": "Too Many Requests"
-          }
+          "200": { "description": "Newsletter sending initiated" },
+          "401": { "description": "Unauthorized - Invalid API key" },
+          "403": { "description": "Forbidden - Super Admin only" },
+          "429": { "description": "Too Many Requests" }
         },
-        "security": [
-          {
-            "bearer": []
-          },
-          {
-            "X-API-Key": []
-          }
-        ],
+        "security": [{ "JWT-auth": [] }],
         "summary": "Send newsletter to all subscribers",
-        "tags": ["Newsletter"]
+        "tags": ["newsletter"]
       }
     },
     "/api/v1/newsletter/check-inactive": {
       "post": {
         "description": "Send \"we miss you\" emails to users who have not logged in for over a month. Super Admin only.",
-        "operationId": "checkInactiveUsers",
+        "operationId": "NewsletterController_checkInactiveUsers",
         "parameters": [],
         "responses": {
-          "200": {
-            "description": "Inactive user check completed"
-          },
-          "401": {
-            "description": "Unauthorized - Invalid API key"
-          },
-          "403": {
-            "description": "Forbidden - Super Admin only"
-          },
-          "429": {
-            "description": "Too Many Requests"
-          }
+          "200": { "description": "Inactive user check completed" },
+          "401": { "description": "Unauthorized - Invalid API key" },
+          "403": { "description": "Forbidden - Super Admin only" },
+          "429": { "description": "Too Many Requests" }
         },
-        "security": [
-          {
-            "bearer": []
-          },
-          {
-            "X-API-Key": []
-          }
-        ],
+        "security": [{ "JWT-auth": [] }],
         "summary": "Check and notify inactive users",
-        "tags": ["Newsletter"]
+        "tags": ["newsletter"]
       }
     },
-    "/api/v1": {
-      "get": {
-        "operationId": "getHello",
+    "/api/v1/export": {
+      "post": {
+        "description": "Generate a ZIP file containing user data based on specified options and send it via email",
+        "operationId": "ExportController_generateExport",
         "parameters": [],
-        "responses": {
-          "200": {
-            "description": "Application is running."
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ExportOptionsDto" }
+            }
           }
         },
-        "summary": "Health check endpoint",
-        "tags": ["app"]
+        "responses": {
+          "201": {
+            "description": "Export generated and sent to user email",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "description": "Whether the operation was successful"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "Status message about the export"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "description": "Invalid export options" },
+          "401": { "description": "Unauthorized or email not verified" },
+          "404": { "description": "User not found" }
+        },
+        "security": [{ "JWT-auth": [] }],
+        "summary": "Generate user data export",
+        "tags": ["export"]
       }
     }
   },
   "info": {
     "title": "CurioPay API",
-    "description": "\n      The CurioPay API provides a comprehensive suite of endpoints for managing personal finances.\n      \n      ## Features\n      - User Authentication & Authorization\n      - Expense Management\n      - Income Tracking\n      - Category Management\n      - Multi-factor Authentication\n      - Data Export\n      - Newsletter Management\n      \n      ## Authentication\n      Most endpoints require JWT authentication. Include the JWT token in the Authorization header:\n      ```\n      Authorization: Bearer \u003Cyour_jwt_token\u003E\n      ```\n\n      ## Getting Started\n      1. Register a new account using POST /auth/register\n      2. Login using POST /auth/login to get your JWT token\n      3. Include the token in subsequent requests using the Authorization header\n      4. Token expires in 24 hours by default\n\n      ## Newsletter Operations\n      Some newsletter operations require an API key. Include it in the X-API-Key header:\n      ```\n      X-API-Key: your_api_key\n      ```\n    ",
+    "description": "The CurioPay API documentation",
     "version": "1.0",
     "contact": {}
   },
   "tags": [
-    {
-      "name": "auth",
-      "description": "Authentication endpoints including login, register, and password reset"
-    },
-    {
-      "name": "users",
-      "description": "User management and profile operations"
-    },
-    {
-      "name": "expenses",
-      "description": "Expense tracking and management"
-    },
-    {
-      "name": "incomes",
-      "description": "Income tracking and management"
-    },
-    {
-      "name": "categories",
-      "description": "Category management for expenses and income"
-    },
-    {
-      "name": "export",
-      "description": "Data export functionality"
-    },
-    {
-      "name": "newsletter",
-      "description": "Newsletter subscription and preference management"
-    }
+    { "name": "auth", "description": "Authentication endpoints" },
+    { "name": "users", "description": "User operations" },
+    { "name": "user-preferences", "description": "User preferences" },
+    { "name": "categories", "description": "Category management" },
+    { "name": "payment-methods", "description": "Payment method management" },
+    { "name": "expenses", "description": "Expense management" },
+    { "name": "income", "description": "Income management" },
+    { "name": "export", "description": "Data export" },
+    { "name": "newsletter", "description": "Newsletter management" }
   ],
   "servers": [],
   "components": {
     "securitySchemes": {
-      "bearer": {
+      "JWT-auth": {
         "scheme": "bearer",
         "bearerFormat": "JWT",
-        "type": "http"
+        "type": "http",
+        "name": "JWT",
+        "description": "Enter JWT token",
+        "in": "header"
       },
-      "X-API-Key": {
-        "type": "apiKey",
-        "in": "header",
-        "name": "X-API-Key"
-      }
+      "X-API-Key": { "type": "apiKey", "in": "header", "name": "X-API-Key" }
     },
     "schemas": {
       "RegisterDto": {
@@ -2160,42 +2527,15 @@
             "type": "string",
             "example": "123e4567-e89b-12d3-a456-426614174000"
           },
-          "email": {
-            "type": "string",
-            "example": "john.doe@example.com"
-          },
-          "firstName": {
-            "type": "string",
-            "example": "John"
-          },
-          "lastName": {
-            "type": "string",
-            "example": "Doe"
-          },
-          "role": {
-            "type": "string",
-            "example": "USER"
-          },
-          "isActive": {
-            "type": "boolean",
-            "example": true
-          },
-          "phone": {
-            "type": "string",
-            "example": "+1234567890"
-          },
-          "currencyId": {
-            "type": "string",
-            "example": "usd"
-          },
-          "languageId": {
-            "type": "string",
-            "example": "en"
-          },
-          "themeId": {
-            "type": "string",
-            "example": "light"
-          },
+          "email": { "type": "string", "example": "john.doe@example.com" },
+          "firstName": { "type": "string", "example": "John" },
+          "lastName": { "type": "string", "example": "Doe" },
+          "role": { "type": "string", "example": "USER" },
+          "isActive": { "type": "boolean", "example": true },
+          "phone": { "type": "string", "example": "+1234567890" },
+          "currencyId": { "type": "string", "example": "usd" },
+          "languageId": { "type": "string", "example": "en" },
+          "themeId": { "type": "string", "example": "light" },
           "lastLoginAt": {
             "format": "date-time",
             "type": "string",
@@ -2244,6 +2584,76 @@
         },
         "required": ["currentPassword", "confirm"]
       },
+      "UserPreferencesResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "description": "User preference ID" },
+          "currency": {
+            "type": "object",
+            "description": "Currency",
+            "properties": {
+              "id": { "type": "string" },
+              "code": { "type": "string" },
+              "symbol": { "type": "string" },
+              "name": { "type": "string" }
+            }
+          },
+          "language": {
+            "type": "object",
+            "description": "Language",
+            "properties": {
+              "id": { "type": "string" },
+              "code": { "type": "string" },
+              "name": { "type": "string" }
+            }
+          },
+          "theme": {
+            "type": "object",
+            "description": "Theme",
+            "properties": {
+              "id": { "type": "string" },
+              "name": { "type": "string" }
+            }
+          },
+          "monthlyBudget": {
+            "type": "number",
+            "description": "Monthly budget",
+            "example": 1000,
+            "nullable": true
+          },
+          "enableAiFeatures": {
+            "type": "boolean",
+            "description": "Enable AI features",
+            "default": true
+          }
+        },
+        "required": [
+          "id",
+          "currency",
+          "language",
+          "theme",
+          "monthlyBudget",
+          "enableAiFeatures"
+        ]
+      },
+      "UpdateUserPreferencesDto": {
+        "type": "object",
+        "properties": {
+          "currencyId": { "type": "string", "description": "Currency ID" },
+          "languageId": { "type": "string", "description": "Language ID" },
+          "themeId": { "type": "string", "description": "Theme ID" },
+          "monthlyBudget": {
+            "type": "number",
+            "description": "Monthly budget",
+            "example": 1000
+          },
+          "enableAiFeatures": {
+            "type": "boolean",
+            "description": "Enable AI features",
+            "default": true
+          }
+        }
+      },
       "LoginDto": {
         "type": "object",
         "properties": {
@@ -2256,9 +2666,31 @@
             "type": "string",
             "example": "Password123!",
             "description": "User password"
+          },
+          "rememberMe": {
+            "type": "boolean",
+            "example": false,
+            "description": "Extended session duration when true",
+            "default": false
           }
         },
         "required": ["email", "password"]
+      },
+      "CompleteLoginWithMfaDto": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "example": "123456",
+            "description": "MFA verification code"
+          },
+          "tempToken": {
+            "type": "string",
+            "example": "abc123",
+            "description": "Temporary login token for MFA verification"
+          }
+        },
+        "required": ["code", "tempToken"]
       },
       "RequestPasswordResetDto": {
         "type": "object",
@@ -2324,10 +2756,188 @@
         },
         "required": ["code", "confirm"]
       },
-      "i": {
+      "RequestEmailVerificationDto": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "email": {
+            "type": "string",
+            "description": "Email address to send verification link to (for unauthenticated users)",
+            "example": "user@example.com"
+          },
+          "userId": {
+            "type": "string",
+            "description": "User ID (for authenticated users)",
+            "example": "e0b9f5c4-3d2e-4c9d-b2c3-2a9a3f8c6e5b"
+          }
+        }
       },
+      "VerifyEmailDto": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string",
+            "description": "Verification token sent to user email",
+            "example": "e0b9f5c4-3d2e-4c9d-b2c3-2a9a3f8c6e5b"
+          }
+        },
+        "required": ["token"]
+      },
+      "LinkAccountDto": {
+        "type": "object",
+        "properties": {
+          "provider": {
+            "type": "string",
+            "example": "google",
+            "description": "OAuth provider to link with"
+          },
+          "providerAccountId": {
+            "type": "string",
+            "example": "123456789",
+            "description": "Provider account ID (optional, can be provided by the OAuth flow)"
+          },
+          "accessToken": {
+            "type": "string",
+            "example": "token123",
+            "description": "Provider access token or verification token"
+          }
+        },
+        "required": ["provider"]
+      },
+      "CreateCategoryDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "Groceries",
+            "description": "Name of the category",
+            "minLength": 2,
+            "maxLength": 50
+          },
+          "icon": {
+            "type": "string",
+            "example": "🛒",
+            "description": "Emoji icon for the category"
+          },
+          "type": {
+            "type": "string",
+            "enum": ["INCOME", "EXPENSE"],
+            "example": "EXPENSE",
+            "description": "Type of the category (INCOME or EXPENSE)"
+          },
+          "color": {
+            "type": "string",
+            "example": "#FF5733",
+            "description": "Color code for the category (hex format)",
+            "pattern": "^#[0-9A-Fa-f]{6}$"
+          },
+          "isDefault": {
+            "type": "boolean",
+            "example": false,
+            "description": "Whether this is a default category. Note: Requires admin privileges to set to true.",
+            "default": false
+          },
+          "isSystem": {
+            "type": "boolean",
+            "example": false,
+            "description": "Whether this is a system category. Note: Requires admin privileges to set to true.",
+            "default": false
+          }
+        },
+        "required": ["name", "icon", "type"]
+      },
+      "UpdateCategoryDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "Groceries",
+            "description": "Name of the category",
+            "minLength": 2,
+            "maxLength": 50
+          },
+          "icon": {
+            "type": "string",
+            "example": "🛒",
+            "description": "Emoji icon for the category"
+          },
+          "type": {
+            "type": "string",
+            "enum": ["INCOME", "EXPENSE"],
+            "example": "EXPENSE",
+            "description": "Type of the category (INCOME or EXPENSE)"
+          },
+          "color": {
+            "type": "string",
+            "example": "#FF5733",
+            "description": "Color code for the category (hex format)",
+            "pattern": "^#[0-9A-Fa-f]{6}$"
+          },
+          "isDefault": {
+            "type": "boolean",
+            "example": false,
+            "description": "Whether this is a default category"
+          }
+        }
+      },
+      "CreatePaymentMethodDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Payment method name (from enum)",
+            "enum": [
+              "CASH",
+              "CREDIT_CARD",
+              "DEBIT_CARD",
+              "BANK_TRANSFER",
+              "CHECK",
+              "CRYPTO",
+              "OTHER"
+            ],
+            "example": "CREDIT_CARD"
+          },
+          "icon": {
+            "type": "string",
+            "description": "Icon for the payment method",
+            "example": "credit-card"
+          },
+          "isDefault": {
+            "type": "boolean",
+            "example": false,
+            "description": "Whether this is a default payment method. Note: Requires admin privileges to set to true.",
+            "default": false
+          },
+          "isSystem": {
+            "type": "boolean",
+            "example": false,
+            "description": "Whether this is a system payment method. Note: Requires admin privileges to set to true.",
+            "default": false
+          }
+        },
+        "required": ["name"]
+      },
+      "UpdatePaymentMethodDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Payment method ID",
+            "example": "cma3sh4it0000reguowhqncor"
+          },
+          "icon": {
+            "type": "string",
+            "description": "Icon for the payment method",
+            "example": "credit-card"
+          },
+          "isDefault": {
+            "type": "boolean",
+            "example": false,
+            "description": "Whether this is a default payment method"
+          }
+        },
+        "required": ["id"]
+      },
+      "i": { "type": "object", "properties": {} },
       "CreateExpenseDto": {
         "type": "object",
         "properties": {
@@ -2345,11 +2955,7 @@
           "amount": {
             "example": 15000,
             "description": "Expense amount in cents (e.g., $150.00 = 15000)",
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/i"
-              }
-            ]
+            "allOf": [{ "$ref": "#/components/schemas/i" }]
           },
           "categoryId": {
             "type": "string",
@@ -2392,11 +2998,7 @@
           "amount": {
             "example": 15000,
             "description": "Expense amount in cents (e.g., $150.00 = 15000)",
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/i"
-              }
-            ]
+            "allOf": [{ "$ref": "#/components/schemas/i" }]
           },
           "categoryId": {
             "type": "string",
@@ -2415,79 +3017,82 @@
           }
         }
       },
-      "CreateCategoryDto": {
+      "CreateIncomeDto": {
         "type": "object",
         "properties": {
-          "name": {
+          "date": {
+            "format": "date-time",
             "type": "string",
-            "example": "Groceries",
-            "description": "Name of the category",
-            "minLength": 2,
-            "maxLength": 50
+            "example": "2023-05-15",
+            "description": "Date when the income was received"
           },
-          "icon": {
+          "description": {
             "type": "string",
-            "example": "🛒",
-            "description": "Emoji icon for the category"
+            "example": "Monthly Salary",
+            "description": "Description of the income"
           },
-          "type": {
+          "amount": {
+            "type": "number",
+            "example": 200000,
+            "description": "Income amount in cents (e.g., $2000.00 = 200000)"
+          },
+          "categoryId": {
             "type": "string",
-            "enum": ["INCOME", "EXPENSE"],
-            "example": "EXPENSE",
-            "description": "Type of the category (INCOME or EXPENSE)"
+            "example": "category-uuid",
+            "description": "Category ID for the income"
           },
-          "color": {
+          "paymentMethodId": {
             "type": "string",
-            "example": "#FF5733",
-            "description": "Color code for the category (hex format)",
-            "pattern": "^#[0-9A-Fa-f]{6}$"
+            "example": "payment-method-uuid",
+            "description": "Payment method ID (e.g., bank account, cash)"
           },
-          "isDefault": {
-            "type": "boolean",
-            "example": false,
-            "description": "Whether this is a default category",
-            "default": false
-          },
-          "isSystem": {
-            "type": "boolean",
-            "example": false,
-            "description": "Whether this is a system category",
-            "default": false
+          "notes": {
+            "type": "string",
+            "example": "End of month bonus included",
+            "description": "Additional notes about the income"
           }
         },
-        "required": ["name", "icon", "type"]
+        "required": [
+          "date",
+          "description",
+          "amount",
+          "categoryId",
+          "paymentMethodId"
+        ]
       },
-      "UpdateCategoryDto": {
+      "UpdateIncomeDto": {
         "type": "object",
         "properties": {
-          "name": {
+          "date": {
+            "format": "date-time",
             "type": "string",
-            "example": "Groceries",
-            "description": "Name of the category",
-            "minLength": 2,
-            "maxLength": 50
+            "example": "2023-05-15",
+            "description": "Date when the income was received"
           },
-          "icon": {
+          "description": {
             "type": "string",
-            "example": "🛒",
-            "description": "Emoji icon for the category"
+            "example": "Monthly Salary",
+            "description": "Description of the income"
           },
-          "type": {
+          "amount": {
+            "type": "number",
+            "example": 200000,
+            "description": "Income amount in cents (e.g., $2000.00 = 200000)"
+          },
+          "categoryId": {
             "type": "string",
-            "enum": ["INCOME", "EXPENSE"],
-            "example": "EXPENSE",
-            "description": "Type of the category (INCOME or EXPENSE)"
+            "example": "category-uuid",
+            "description": "Category ID for the income"
           },
-          "color": {
+          "paymentMethodId": {
             "type": "string",
-            "example": "#FF5733",
-            "description": "Color code for the category (hex format)",
-            "pattern": "^#[0-9A-Fa-f]{6}$"
+            "example": "payment-method-uuid",
+            "description": "Payment method ID (e.g., bank account, cash)"
           },
-          "isDefault": {
-            "type": "boolean",
-            "example": false,
-            "description": "Whether this is a default category"
+          "notes": {
+            "type": "string",
+            "example": "End of month bonus included",
+            "description": "Additional notes about the income"
           }
         }
       },
@@ -2511,6 +3116,43 @@
           }
         },
         "required": ["weeklyDigest", "promotionalEmails", "productUpdates"]
+      },
+      "ExportOptionsDto": {
+        "type": "object",
+        "properties": {
+          "includeExpenses": {
+            "type": "boolean",
+            "description": "Include expense data in export",
+            "default": true
+          },
+          "includeIncome": {
+            "type": "boolean",
+            "description": "Include income data in export",
+            "default": true
+          },
+          "includeCategories": {
+            "type": "boolean",
+            "description": "Include categories in export",
+            "default": true
+          },
+          "includePreferences": {
+            "type": "boolean",
+            "description": "Include user preferences in export",
+            "default": true
+          },
+          "includeNewsletter": {
+            "type": "boolean",
+            "description": "Include newsletter preferences in export",
+            "default": true
+          }
+        },
+        "required": [
+          "includeExpenses",
+          "includeIncome",
+          "includeCategories",
+          "includePreferences",
+          "includeNewsletter"
+        ]
       }
     }
   }

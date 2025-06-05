@@ -1,4 +1,4 @@
-m# Getting Started
+# Getting Started
 
 This guide will help you set up the CurioPay API development environment on your local machine.
 
@@ -127,4 +127,4 @@ npm run test:cov
 Follow the project's coding standards defined in the ESLint and Prettier configurations:
 
 - Run linting: `npm run lint`
-- Run formatting: `npm run format` 
+- Run formatting: `npm run format`
