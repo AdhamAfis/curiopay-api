@@ -6,18 +6,15 @@ import {
   Patch,
   Param,
   UseGuards,
-  Query,
   ForbiddenException,
   Delete,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
-import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserRoleDto } from './dto/update-user-role.dto';
 import { UserProfileResponseDto } from './dto/user-profile.dto';
 import { DeleteAccountDto } from './dto/delete-account.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
-import { Roles } from '../auth/decorators/roles.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { IUser } from './interfaces/user.interface';
 import { ROLE_HIERARCHY } from './interfaces/role.enum';
