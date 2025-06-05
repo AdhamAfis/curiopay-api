@@ -2,7 +2,7 @@ site_name: CurioPay API Documentation
 site_description: Documentation for the CurioPay financial API
 repo_url: https://github.com/curiopay/curiopay-api
 edit_uri: edit/main/docs/
-site_url: https://curiopay.github.io/docs/
+site_url: https://curiopay.github.io/curiopay-api/
 
 theme:
   name: material

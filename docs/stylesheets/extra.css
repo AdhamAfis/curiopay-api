@@ -13,23 +13,23 @@
 }
 
 /* Custom styling for better integration with Material theme */
-[data-md-color-scheme='default'] .mermaid {
+[data-md-color-scheme="default"] .mermaid {
   background-color: transparent;
 }
 
-[data-md-color-scheme='slate'] .mermaid {
+[data-md-color-scheme="slate"] .mermaid {
   background-color: transparent;
 }
 
 /* Fix for mermaid diagrams in dark mode */
-[data-md-color-scheme='slate'] .mermaid .node rect,
-[data-md-color-scheme='slate'] .mermaid .node circle,
-[data-md-color-scheme='slate'] .mermaid .node ellipse {
+[data-md-color-scheme="slate"] .mermaid .node rect,
+[data-md-color-scheme="slate"] .mermaid .node circle,
+[data-md-color-scheme="slate"] .mermaid .node ellipse {
   fill: var(--md-default-bg-color);
   stroke: var(--md-default-fg-color--light);
 }
 
-[data-md-color-scheme='slate'] .mermaid .edgeLabel {
+[data-md-color-scheme="slate"] .mermaid .edgeLabel {
   background-color: var(--md-default-bg-color);
   color: var(--md-default-fg-color);
 }
