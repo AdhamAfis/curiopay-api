@@ -2,6 +2,7 @@
 /dist
 /node_modules
 /build
+/site
 
 # Logs
 logs
@@ -35,12 +36,44 @@ lerna-debug.log*
 !.vscode/launch.json
 !.vscode/extensions.json
 
-# dotenv environment variable files
+# Environment
 .env
 .env.development.local
 .env.test.local
 .env.production.local
 .env.local
+.env*.local
+**/*.env
+
+# Docker
+.docker
+
+# MkDocs
+/site
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Temporary files
+tmp/
+.tmp/
 
 # temp directory
 .temp
@@ -54,9 +87,6 @@ pids
 
 # Diagnostic reports (https://nodejs.org/api/report.html)
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
-
-# temp directory
-temp/
 
 # Exclude raw secret files
 **/secrets.yaml

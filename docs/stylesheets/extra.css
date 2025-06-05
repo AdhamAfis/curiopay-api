@@ -1,0 +1,45 @@
+/* Custom styles for MkDocs Material */
+
+/* Mermaid diagram styling */
+.mermaid {
+  text-align: center;
+  margin: 1em 0;
+}
+
+/* Ensure mermaid diagrams are responsive */
+.mermaid svg {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Custom styling for better integration with Material theme */
+[data-md-color-scheme='default'] .mermaid {
+  background-color: transparent;
+}
+
+[data-md-color-scheme='slate'] .mermaid {
+  background-color: transparent;
+}
+
+/* Fix for mermaid diagrams in dark mode */
+[data-md-color-scheme='slate'] .mermaid .node rect,
+[data-md-color-scheme='slate'] .mermaid .node circle,
+[data-md-color-scheme='slate'] .mermaid .node ellipse {
+  fill: var(--md-default-bg-color);
+  stroke: var(--md-default-fg-color--light);
+}
+
+[data-md-color-scheme='slate'] .mermaid .edgeLabel {
+  background-color: var(--md-default-bg-color);
+  color: var(--md-default-fg-color);
+}
+
+/* Ensure code blocks have proper styling */
+.highlight {
+  margin: 1em 0;
+}
+
+/* Custom admonition styles if needed */
+.admonition {
+  margin: 1.5625em 0;
+}
