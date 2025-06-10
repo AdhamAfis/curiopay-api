@@ -1,8 +1,6 @@
 # CurioPay API
 
 [![Build Status](https://img.shields.io/github/actions/workflow/status/adhamafis/curiopay-api/test-build.yml?branch=main&label=build&style=flat-square)](https://github.com/adhamafis/curiopay-api/actions/workflows/test-build.yml)
-<!-- [![Coverage Status](https://img.shields.io/codecov/c/github/adhamafis/curiopay-api?style=flat-square)](https://codecov.io/gh/adhamafis/curiopay-api) -->
-
 [![Open Issues](https://img.shields.io/github/issues/adhamafis/curiopay-api?style=flat-square)](https://github.com/adhamafis/curiopay-api/issues)
 
 ## 📚 Documentation
