@@ -88,18 +88,14 @@ nav:
     - Common Components: architecture/common-components.md
     - Request Flow: architecture/request-flow.md
     - Security: architecture/security.md
-    - Performance: architecture/performance.md
   - 🚢 Deployment:
     - Overview: deployment/environments.md
     - Kubernetes: deployment/kubernetes.md
     - Helm: deployment/helm.md
     - Monitoring: deployment/monitoring.md
-    - CI/CD: deployment/cicd.md
   - 🛠️ Development:
     - Setup Guide: development/getting-started.md
     - Documentation: development/documentation.md
-    - Testing: development/testing.md
-    - Contributing: development/contributing.md
 
 markdown_extensions:
   - admonition
