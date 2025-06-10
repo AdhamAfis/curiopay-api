@@ -1,8 +1,8 @@
 site_name: CurioPay API Documentation
 site_description: Documentation for the CurioPay financial API
-repo_url: https://github.com/curiopay/curiopay-api
+repo_url: https://github.com/adhamafis/curiopay-api
 edit_uri: edit/main/docs/
-site_url: https://curiopay.github.io/curiopay-api/
+site_url: https://adhamafis.github.io/curiopay-api/
 
 theme:
   name: material
@@ -117,7 +117,7 @@ extra:
     property: ${GOOGLE_ANALYTICS_KEY}
   social:
     - icon: fontawesome/brands/github
-      link: https://github.com/curiopay/curiopay-api
+      link: https://github.com/adhamafis/curiopay-api
       name: CurioPay GitHub
 
 extra_css:

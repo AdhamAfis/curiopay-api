@@ -1,11 +1,4 @@
-import {
-  IsString,
-  IsNumber,
-  IsEnum,
-  IsOptional,
-  Min,
-  Max,
-} from 'class-validator';
+import { IsNumber, IsEnum, IsOptional, Min, Max } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export enum RecurringPatternType {

@@ -1,6 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { Prisma } from '@prisma/client';
 import * as crypto from 'crypto';
 
 export interface AuditLogData {
@@ -406,7 +405,8 @@ export class AuditService {
     if (!includeDetails) {
       return logs.map((log) => {
         // Destructure and omit the details field
-        const { details: _omitted, ...rest } = log;
+
+        const { details, ...rest } = log;
         return rest;
       });
     }

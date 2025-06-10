@@ -9,7 +9,6 @@
 
 [![Open Issues](https://img.shields.io/github/issues/adhamafis/curiopay-api?style=flat-square)](https://github.com/adhamafis/curiopay-api/issues)
 
-
 ## Overview
 
 **CurioPay API** is the newly refactored backend REST API for the existing CurioPay financial management web application. It is designed to provide a secure, performant, and scalable service layer for user authentication, financial data management, expense tracking, and reporting.
@@ -17,7 +16,6 @@
 This new backend improves upon the previous system by implementing modern security best practices, optimized database interactions, and a modular architecture to support future features such as AI-powered insights.
 
 > **🚧 Development Status**: This backend is currently under active development. I am working on implementing a comprehensive migration plan to seamlessly transition from the existing legacy backend to this new refactored system. The migration strategy includes data migration utilities, API compatibility layers, and gradual feature rollout to ensure zero downtime during the transition.
-
 
 ## Key Features
 
@@ -46,7 +44,6 @@ This new backend improves upon the previous system by implementing modern securi
 - **Comprehensive Automated Testing:** Improve test coverage and reliability
 - **CI/CD with GitHub Workflows:** Automate builds, tests, and deployments
 - **Detailed Mk-docs:** Documentation for the project
-
 
 ## Getting Started
 
@@ -79,7 +76,6 @@ cp .env.example .env
 npm run start:dev
 ```
 
-
 ## Deployment
 
 CurioPay API supports deployment using both Kubernetes and Helm:
@@ -105,7 +101,6 @@ Both deployment methods include:
 
 > **⚠️ SECURITY WARNING**: Both deployment configurations contain example credentials. Always replace all default credentials and secrets before deploying to production.
 
-
 ## Contributing & Feature Requests
 
 We welcome your contributions!
@@ -119,7 +114,6 @@ We welcome your contributions!
   4. Commit your changes
   5. Push to your fork
   6. Open a Pull Request to the main repo
-
 
 ## License
 

@@ -12,7 +12,6 @@ import { ExpensesModule } from './modules/expenses/expenses.module';
 import { CategoriesModule } from './modules/categories/categories.module';
 import { IncomeModule } from './modules/income/income.module';
 import { EncryptionModule } from './common/encryption.module';
-import { Reflector } from '@nestjs/core';
 import { NewsletterModule } from './modules/newsletter/newsletter.module';
 import { ExportModule } from './modules/export/export.module';
 import { PaymentMethodsModule } from './modules/payment-methods/payment-methods.module';

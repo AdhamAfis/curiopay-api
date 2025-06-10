@@ -12,7 +12,7 @@ This guide will help you set up the CurioPay API development environment on your
 ## Clone the Repository
 
 ```bash
-git clone https://github.com/curiopay/curiopay-api.git
+git clone https://github.com/adhamafis/curiopay-api.git
 cd curiopay-api
 ```
 
