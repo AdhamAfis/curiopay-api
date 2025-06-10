@@ -1,12 +1,6 @@
 # CurioPay API
 
 [![Build Status](https://img.shields.io/github/actions/workflow/status/adhamafis/curiopay-api/test-build.yml?branch=main&label=build&style=flat-square)](https://github.com/adhamafis/curiopay-api/actions/workflows/test-build.yml)
-[![License](https://img.shields.io/github/license/adhamafis/curiopay-api?style=flat-square)](https://github.com/adhamafis/curiopay-api/blob/main/LICENSE)
-[![NPM Version](https://img.shields.io/npm/v/nest-backend?style=flat-square)](https://www.npmjs.com/package/nest-backend)
-[![Node.js](https://img.shields.io/node/v/nest-backend?style=flat-square)](https://nodejs.org/)
-
-<!-- [![Coverage Status](https://img.shields.io/codecov/c/github/adhamafis/curiopay-api?style=flat-square)](https://codecov.io/gh/adhamafis/curiopay-api) -->
-
 [![Open Issues](https://img.shields.io/github/issues/adhamafis/curiopay-api?style=flat-square)](https://github.com/adhamafis/curiopay-api/issues)
 
 ## 📚 Documentation
