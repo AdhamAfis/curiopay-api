@@ -1,7 +1,21 @@
 # CurioPay API
 
 [![Build Status](https://img.shields.io/github/actions/workflow/status/adhamafis/curiopay-api/test-build.yml?branch=main&label=build&style=flat-square)](https://github.com/adhamafis/curiopay-api/actions/workflows/test-build.yml)
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg?style=flat-square)](https://opensource.org/licenses/Apache-2.0)
+[![Node.js Version](https://img.shields.io/badge/node-%3E%3D16.0.0-brightgreen?style=flat-square&logo=node.js)](https://nodejs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+
+[![NestJS](https://img.shields.io/badge/NestJS-E0234E?style=flat-square&logo=nestjs&logoColor=white)](https://nestjs.com/)
+[![Prisma](https://img.shields.io/badge/Prisma-2D3748?style=flat-square&logo=prisma&logoColor=white)](https://www.prisma.io/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-336791?style=flat-square&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+[![Docker](https://img.shields.io/badge/Docker-2496ED?style=flat-square&logo=docker&logoColor=white)](https://www.docker.com/)
+
+[![API Status](https://img.shields.io/website?style=flat-square&url=https%3A%2F%2Fcuriopay-api-production.up.railway.app/api/v1&logo=railway&logoColor=white&label=API)](https://curiopay-api-production.up.railway.app/api/v1)
+[![Documentation](https://img.shields.io/badge/docs-online-brightgreen?style=flat-square&logo=gitbook&logoColor=white)](https://adhamafis.github.io/curiopay-api/)
+[![Swagger API](https://img.shields.io/badge/swagger-online-brightgreen?style=flat-square&logo=swagger&logoColor=white)](https://curiopay-api-production.up.railway.app/docs)
 [![Open Issues](https://img.shields.io/github/issues/adhamafis/curiopay-api?style=flat-square)](https://github.com/adhamafis/curiopay-api/issues)
+
+[![Maintained](https://img.shields.io/badge/maintained-yes-brightgreen?style=flat-square&logo=github&logoColor=white)](https://github.com/adhamafis/curiopay-api/commits/main)
 
 ## 📚 Documentation
 
