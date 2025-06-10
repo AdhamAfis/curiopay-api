@@ -5,7 +5,7 @@ The CurioPay API provides RESTful endpoints for managing financial data, user ac
 ## Base URL
 
 ```
-https://api.curiopay.com/api/v1
+https://curiopay-api-production.up.railway.app/api/v1
 ```
 
 For development:

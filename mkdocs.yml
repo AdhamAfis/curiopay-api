@@ -1,5 +1,5 @@
 site_name: CurioPay API Documentation
-site_description: Documentation for the CurioPay financial API
+site_description: Comprehensive documentation for the CurioPay financial management API - secure, performant, and scalable backend services
 repo_url: https://github.com/adhamafis/curiopay-api
 edit_uri: edit/main/docs/
 site_url: https://adhamafis.github.io/curiopay-api/
@@ -11,38 +11,61 @@ theme:
   favicon: assets/favicon.ico
   icon:
     repo: fontawesome/brands/github
+    edit: material/pencil
+    view: material/eye
   palette:
     # Light mode
     - media: "(prefers-color-scheme: light)"
       scheme: default
-      primary: indigo
-      accent: indigo
+      primary: blue
+      accent: light-blue
       toggle:
-        icon: material/weather-night
+        icon: material/brightness-7
         name: Switch to dark mode
     # Dark mode
     - media: "(prefers-color-scheme: dark)"
       scheme: slate
-      primary: indigo
-      accent: indigo
+      primary: blue
+      accent: light-blue
       toggle:
-        icon: material/weather-sunny
+        icon: material/brightness-4
         name: Switch to light mode
   features:
     # Navigation
     - navigation.instant
+    - navigation.instant.prefetch
     - navigation.tracking
     - navigation.sections
+    - navigation.expand
     - navigation.indexes
     - navigation.top
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.footer
+    # Search
+    - search.suggest
+    - search.highlight
+    - search.share
     # Content
     - toc.follow
+    - toc.integrate
     - content.code.copy
     - content.code.annotate
+    - content.code.select
+    - content.tabs.link
+    - content.tooltips
+    - content.action.edit
+    - content.action.view
+    # Announce
+    - announce.dismiss
 
 nav:
   - Home: index.md
-  - API Reference:
+  - 🚀 Quick Start:
+    - Getting Started: development/getting-started.md
+    - 📖 Live API Docs: "https://curiopay-api-production.up.railway.app/docs"
+    - Configuration: development/configuration.md
+  - 📡 API Reference:
     - Overview: api/overview.md
     - Authentication:
       - Concepts: api/auth.md
@@ -57,23 +80,26 @@ nav:
       - Categories: api/categories-endpoints.md
       - Payment Methods: api/payment-methods-endpoints.md
       - Data Export: api/export-endpoints.md
-    - Complete API Reference: api/endpoints.md
-  - Architecture:
+    - Complete Reference: api/endpoints.md
+  - 🏗️ Architecture:
     - Overview: architecture/overview.md
     - Database Schema: architecture/database.md
     - System Modules: architecture/modules.md
     - Common Components: architecture/common-components.md
     - Request Flow: architecture/request-flow.md
-    - Deployment: architecture/deployment.md
     - Security: architecture/security.md
-  - Development:
-    - Getting Started: development/getting-started.md
-    - Documentation: development/documentation.md
-  - Deployment:
-    - Environments: deployment/environments.md
+    - Performance: architecture/performance.md
+  - 🚢 Deployment:
+    - Overview: deployment/environments.md
     - Kubernetes: deployment/kubernetes.md
     - Helm: deployment/helm.md
     - Monitoring: deployment/monitoring.md
+    - CI/CD: deployment/cicd.md
+  - 🛠️ Development:
+    - Setup Guide: development/getting-started.md
+    - Documentation: development/documentation.md
+    - Testing: development/testing.md
+    - Contributing: development/contributing.md
 
 markdown_extensions:
   - admonition
@@ -81,47 +107,108 @@ markdown_extensions:
   - abbr
   - attr_list
   - def_list
+  - md_in_html
+  - pymdownx.arithmatex:
+      generic: true
+  - pymdownx.betterem:
+      smart_enable: all
+  - pymdownx.caret
   - pymdownx.details
+  - pymdownx.emoji
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+      use_pygments: true
+  - pymdownx.inlinehilite
+  - pymdownx.keys
+  - pymdownx.magiclink:
+      normalize_issue_symbols: true
+      repo_url_shorthand: true
+      user: adhamafis
+      repo: curiopay-api
+  - pymdownx.mark
+  - pymdownx.smartsymbols
+  - pymdownx.snippets:
+      auto_append:
+        - includes/mkdocs.md
   - pymdownx.superfences:
       custom_fences:
         - name: mermaid
           class: mermaid
   - pymdownx.tabbed:
       alternate_style: true
-  - pymdownx.highlight:
-      anchor_linenums: true
-      line_spans: __span
-      pygments_lang_class: true
   - pymdownx.tasklist:
       custom_checkbox: true
-  - pymdownx.emoji
+  - pymdownx.tilde
   - toc:
       permalink: true
+      permalink_title: Anchor link to this section for reference
       toc_depth: 3
 
 plugins:
-  - search
+  - search:
+      separator: '[\s\u200b\-_,:!=\[\]()"`/]+|\.(?!\d)|&[lg]t;|(?!\b)(?=[A-Z][a-z])'
   - tags
   - git-revision-date-localized:
+      type: timeago
       fallback_to_build_date: true
       enable_creation_date: true
+      exclude:
+        - index.md
   - awesome-pages
   - minify:
       minify_html: true
       minify_js: true
       minify_css: true
+      htmlmin_opts:
+        remove_comments: true
+      cache_safe: true
 
 extra:
+  version:
+    provider: mike
+    default: latest
   analytics:
     provider: google
     property: ${GOOGLE_ANALYTICS_KEY}
+    feedback:
+      title: Was this page helpful?
+      ratings:
+        - icon: material/emoticon-happy-outline
+          name: This page was helpful
+          data: 1
+          note: >-
+            Thanks for your feedback!
+        - icon: material/emoticon-sad-outline
+          name: This page could be improved
+          data: 0
+          note: >- 
+            Thanks for your feedback! Help us improve this page by
+            using our <a href="..." target="_blank" rel="noopener">feedback form</a>.
   social:
     - icon: fontawesome/brands/github
       link: https://github.com/adhamafis/curiopay-api
-      name: CurioPay GitHub
+      name: CurioPay API on GitHub
+    - icon: material/api
+      link: https://curiopay-api-production.up.railway.app/docs
+      name: Live API Documentation
+    - icon: material/web
+      link: https://curiopay-api-production.up.railway.app
+      name: Production API
+  status:
+    new: Recently added
+    deprecated: Deprecated
+  announcement: |
+    🚀 New: Interactive API documentation is now available! 
+    <a href="https://curiopay-api-production.up.railway.app/docs" target="_blank">
+      Explore the live Swagger docs →
+    </a>
 
 extra_css:
   - stylesheets/extra.css
 
 extra_javascript:
   - javascripts/extra.js
+  - javascripts/mathjax.js
+  - https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js

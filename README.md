@@ -9,6 +9,15 @@
 
 [![Open Issues](https://img.shields.io/github/issues/adhamafis/curiopay-api?style=flat-square)](https://github.com/adhamafis/curiopay-api/issues)
 
+## 📚 Documentation
+
+### 🔗 Quick Links
+
+- **🚀 [Live API Documentation (Swagger)](https://curiopay-api-production.up.railway.app/docs)** - Interactive API explorer
+- **📖 [Complete Documentation](https://adhamafis.github.io/curiopay-api/)** - Full technical documentation
+- **🏗️ [Architecture Guide](https://adhamafis.github.io/curiopay-api/architecture/overview/)** - System design and architecture
+- **🚢 [Deployment Guide](https://adhamafis.github.io/curiopay-api/deployment/environments/)** - Kubernetes & Helm deployment
+
 ## Overview
 
 **CurioPay API** is the newly refactored backend REST API for the existing CurioPay financial management web application. It is designed to provide a secure, performant, and scalable service layer for user authentication, financial data management, expense tracking, and reporting.
@@ -43,7 +52,7 @@ This new backend improves upon the previous system by implementing modern securi
 - **LLM Integration:** Enhance AI-powered insights and analytics
 - **Comprehensive Automated Testing:** Improve test coverage and reliability
 - **CI/CD with GitHub Workflows:** Automate builds, tests, and deployments
-- **Detailed Mk-docs:** Documentation for the project
+- **Enhanced Documentation:** Comprehensive API and technical documentation
 
 ## Getting Started
 
@@ -75,6 +84,8 @@ cp .env.example .env
 ```bash
 npm run start:dev
 ```
+
+The API will be available at `http://localhost:3000/api/v1` and Swagger documentation at `http://localhost:3000/docs`.
 
 ## Deployment
 
