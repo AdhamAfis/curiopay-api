@@ -29,10 +29,14 @@ async function bootstrap() {
             directives: {
               defaultSrc: ["'self'"],
               scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
-              styleSrc: ["'self'", "'unsafe-inline'"],
-              imgSrc: ["'self'", 'data:'],
+              styleSrc: [
+                "'self'",
+                "'unsafe-inline'",
+                'https://fonts.googleapis.com',
+              ],
+              imgSrc: ["'self'", 'data:', 'https:'],
               connectSrc: ["'self'"],
-              fontSrc: ["'self'"],
+              fontSrc: ["'self'", 'https://fonts.gstatic.com'],
               objectSrc: ["'none'"],
               mediaSrc: ["'self'"],
               frameSrc: ["'none'"],
@@ -141,6 +145,15 @@ function setupSwagger(app) {
     .setTitle('CurioPay API')
     .setDescription('The CurioPay API documentation')
     .setVersion('1.0')
+    .setExternalDoc(
+      'Full Documentation',
+      process.env.DOCS_URL || 'https://adhamafis.github.io/curiopay-api/',
+    )
+    .setContact(
+      'Github Repository',
+      process.env.GITHUB_REPO_URL || 'https://github.com/adhamafis/curiopay-api',
+      '',
+    )
     .addTag('auth', 'Authentication endpoints')
     .addTag('users', 'User operations')
     .addTag('user-preferences', 'User preferences')
@@ -214,6 +227,288 @@ function setupSwagger(app) {
       defaultModelExpandDepth: 1,
     },
     customSiteTitle: 'CurioPay API Documentation',
+    customfavIcon: '/api/v1/favicon.ico',
+    customCss: `
+      /* Modern Theme Overrides */
+      :root {
+        --primary: #2563eb;
+        --primary-dark: #1d4ed8;
+        --secondary: #7c3aed;
+        --accent: #f59e0b;
+        --success: #10b981;
+        --error: #ef4444;
+        --warning: #f59e0b;
+        --info: #3b82f6;
+        --background: #f8fafc;
+        --surface: #ffffff;
+        --text-primary: #1e293b;
+        --text-secondary: #475569;
+        --border: #e2e8f0;
+      }
+
+      .swagger-ui {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        color: var(--text-primary);
+        background: var(--background);
+      }
+
+      /* Hide default topbar */
+      .swagger-ui .topbar { 
+        display: none; 
+      }
+
+      /* Enhanced Info Section */
+      .swagger-ui .info {
+        margin: 20px 0;
+        padding: 20px;
+        background: var(--surface);
+        border-radius: 12px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        border: 1px solid var(--border);
+      }
+
+      .swagger-ui .info .title {
+        color: var(--text-primary);
+        font-size: 2.5em;
+        font-weight: 700;
+        margin-bottom: 0.5em;
+        padding-bottom: 0.5em;
+        border-bottom: 2px solid var(--border);
+      }
+
+      /* Enhanced Links Section */
+      .custom-links {
+        margin: 25px 0;
+        padding: 25px;
+        background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+        border-radius: 12px;
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+        transition: transform 0.3s ease;
+      }
+
+      .custom-links:hover {
+        transform: translateY(-2px);
+      }
+
+      .custom-links h4 {
+        margin: 0 0 20px 0;
+        color: white;
+        font-size: 1.5em;
+        font-weight: 600;
+        text-align: center;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+
+      .custom-links .links-container {
+        display: flex;
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 20px;
+      }
+
+      .custom-links a {
+        display: inline-flex;
+        align-items: center;
+        padding: 14px 24px;
+        background: rgba(255, 255, 255, 0.95);
+        color: var(--text-primary) !important;
+        text-decoration: none !important;
+        border-radius: 8px;
+        font-size: 15px;
+        font-weight: 500;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        position: relative;
+        overflow: hidden;
+      }
+
+      .custom-links a:hover {
+        background: white;
+        transform: translateY(-2px);
+        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+      }
+
+      .custom-links a:active {
+        transform: translateY(0);
+      }
+
+      .custom-links a.github {
+        background: var(--text-primary);
+        color: white !important;
+      }
+
+      .custom-links a.github:hover {
+        background: var(--text-secondary);
+      }
+
+      /* Enhanced API Endpoints */
+      .swagger-ui .opblock {
+        border-radius: 8px;
+        margin: 0 0 15px 0;
+        border: 1px solid var(--border);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        transition: all 0.3s ease;
+      }
+
+      .swagger-ui .opblock:hover {
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      }
+
+      .swagger-ui .opblock .opblock-summary {
+        padding: 12px;
+      }
+
+      .swagger-ui .opblock .opblock-summary-method {
+        border-radius: 6px;
+        font-weight: 600;
+        padding: 6px 12px;
+      }
+
+      /* Method Colors */
+      .swagger-ui .opblock-get {
+        background: rgba(59, 130, 246, 0.1);
+        border-color: var(--info);
+      }
+
+      .swagger-ui .opblock-post {
+        background: rgba(16, 185, 129, 0.1);
+        border-color: var(--success);
+      }
+
+      .swagger-ui .opblock-put {
+        background: rgba(245, 158, 11, 0.1);
+        border-color: var(--warning);
+      }
+
+      .swagger-ui .opblock-delete {
+        background: rgba(239, 68, 68, 0.1);
+        border-color: var(--error);
+      }
+
+      .swagger-ui .opblock-patch {
+        background: rgba(124, 58, 237, 0.1);
+        border-color: var(--secondary);
+      }
+
+      /* Enhanced Buttons */
+      .swagger-ui .btn {
+        border-radius: 6px;
+        font-weight: 500;
+        padding: 8px 16px;
+        transition: all 0.2s ease;
+      }
+
+      .swagger-ui .btn:hover {
+        transform: translateY(-1px);
+      }
+
+      .swagger-ui .btn.execute {
+        background-color: var(--primary);
+        border-color: var(--primary);
+      }
+
+      .swagger-ui .btn.execute:hover {
+        background-color: var(--primary-dark);
+      }
+
+      /* Enhanced Tables */
+      .swagger-ui table {
+        border-radius: 8px;
+        overflow: hidden;
+        border: 1px solid var(--border);
+      }
+
+      .swagger-ui table thead tr {
+        background: var(--background);
+      }
+
+      .swagger-ui table tbody tr {
+        transition: background-color 0.2s ease;
+      }
+
+      .swagger-ui table tbody tr:hover {
+        background-color: var(--background);
+      }
+
+      /* Enhanced Code Blocks */
+      .swagger-ui .highlight-code {
+        border-radius: 8px;
+        background: var(--background);
+        border: 1px solid var(--border);
+      }
+
+      /* Enhanced Schema */
+      .swagger-ui .model {
+        border-radius: 8px;
+        background: var(--surface);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        border: 1px solid var(--border);
+      }
+
+      /* Tags */
+      .swagger-ui .opblock-tag {
+        border-bottom: 1px solid var(--border);
+        color: var(--text-primary);
+      }
+
+      .swagger-ui .opblock-tag:hover {
+        background: var(--background);
+      }
+
+      /* Parameters */
+      .swagger-ui .parameters-container {
+        background: var(--surface);
+        border-radius: 8px;
+        border: 1px solid var(--border);
+      }
+
+      .swagger-ui .parameter__name {
+        color: var(--text-primary);
+        font-weight: 600;
+      }
+
+      .swagger-ui .parameter__type {
+        color: var(--text-secondary);
+      }
+
+      /* Responsive Design */
+      @media (max-width: 768px) {
+        .custom-links {
+          padding: 15px;
+        }
+
+        .custom-links .links-container {
+          flex-direction: column;
+          align-items: stretch;
+        }
+
+        .custom-links a {
+          width: 100%;
+          justify-content: center;
+        }
+      }
+    `,
+    customJs: `
+      window.onload = function() {
+        setTimeout(function() {
+          const info = document.querySelector('.swagger-ui .info');
+          if (info && !document.querySelector('.custom-links')) {
+            const linksDiv = document.createElement('div');
+            linksDiv.className = 'custom-links';
+            linksDiv.innerHTML = \`
+              <h4>📚 Additional Resources</h4>
+              <a href="\${window.location.origin.includes('localhost') ? 'http://localhost:8000' : '${process.env.DOCS_URL || 'https://docs.curiopay.com'}'}" target="_blank">
+                📖 Full Documentation
+              </a>
+              <a href="${process.env.GITHUB_REPO_URL || 'https://github.com/curiopay/curiopay-api'}" target="_blank" class="github">
+                🐙 GitHub Repository
+              </a>
+            \`;
+            info.appendChild(linksDiv);
+          }
+        }, 500);
+      };
+    `,
   };
 
   // Add Basic Auth for Swagger UI in production
