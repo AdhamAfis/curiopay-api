@@ -7,7 +7,9 @@ import {
 @Injectable()
 export class ThrottlerGuard extends NestThrottlerGuard {
   // Override the getTracker method to customize how we track rate limits
-  protected async getTracker(req: Record<string, any>): Promise<string> {
+  protected async getTracker(context: ExecutionContext): Promise<string> {
+    // Extract the request object from the context
+    const req = context.switchToHttp().getRequest();
     // Use X-Forwarded-For header if available (for when behind a proxy/load balancer)
     // Otherwise fall back to the client's IP address
     const ip =
@@ -16,7 +18,6 @@ export class ThrottlerGuard extends NestThrottlerGuard {
       req.connection?.remoteAddress;
 
     // Return a unique identifier for this client
-    // You can customize this to include other factors like user ID if authenticated
     return ip || 'unknown';
   }
 

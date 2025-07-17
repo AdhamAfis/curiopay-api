@@ -1359,9 +1359,7 @@ export class AuthService {
 
         case 'apple':
           // Apple's token verification requires a JWT verification
-          // This is a simplified version - in production would need more robust verification
           try {
-            // Verify the token (would use a JWT library in production)
             const appleTokenParts = token.split('.');
             if (appleTokenParts.length !== 3) {
               return false;

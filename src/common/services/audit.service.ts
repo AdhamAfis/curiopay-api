@@ -46,7 +46,6 @@ export class AuditService {
     }
 
     // If keys are not provided in environment, generate temporary ones
-    // In production, keys should be managed securely and provided via environment
     this.logger.warn(
       'Audit log signing keys not found in environment. Generating temporary keys - NOT RECOMMENDED for production!',
     );

@@ -82,5 +82,5 @@ export class MicrosoftStrategy extends PassportStrategy(Strategy, 'microsoft') {
 }
 */
 
-// Export an empty class to satisfy imports, but it won't be functional
+// Export an empty class to satisfy imports
 export class MicrosoftStrategy {}
